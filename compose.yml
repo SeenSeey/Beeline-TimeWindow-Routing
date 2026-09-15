@@ -1,0 +1,56 @@
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "3000:3000"
+    environment:
+      - BACKEND_HOST=backend:8080
+      - FRONTEND_HOST=pwa:5000
+    env_file: .env
+    networks:
+      - root_network
+    volumes:
+      - ./nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+
+  postgres:
+    image: postgres:16.4-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DATABASE}
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./envionment/postgres:/var/lib/postgresql/data
+    networks:
+      - root_network
+    env_file:
+      - ./.env
+
+  server:
+    build: ./server
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: ${PG_CONNECTION_STRING}
+      SPRING_DATASOURCE_USERNAME: ${PG_USER}
+      SPRING_DATASOURCE_PASSWORD: ${PG_PASSWORD}
+      SERVER_PORT: 8080
+    networks:
+      - root_network
+    env_file:
+      - ./.env
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./pwa:/app
+    networks:
+      - root_network
+
+networks:
+  root_network:
