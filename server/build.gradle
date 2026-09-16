@@ -20,6 +20,8 @@ repositories {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	implementation 'org.apache.commons:commons-csv:1.14.1'
+	implementation 'commons-io:commons-io:2.20.0'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
@@ -32,4 +34,30 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+// Одноразовый генератор демо CSV, в приложение не входит
+sourceSets {
+	generator {
+		compileClasspath += sourceSets.main.output
+		runtimeClasspath += sourceSets.main.output
+	}
+}
+
+configurations {
+	generatorImplementation.extendsFrom implementation
+	generatorRuntimeOnly.extendsFrom runtimeOnly
+}
+
+tasks.register('generateDataset', JavaExec) {
+	group = 'dataset'
+	description = 'Генерирует демо CSV в src/main/resources/demo/dataset из датасета организаторов src/generator/resources/Обезличивание'
+	classpath = sourceSets.generator.runtimeClasspath
+	mainClass = 'stb.core.infrastructure.csv.generator.DatasetGenerator'
+	jvmArgs '-Dstdout.encoding=UTF-8', '-Dstderr.encoding=UTF-8'
+	args = [
+			file('src/generator/resources/Обезличивание').path,
+			file('src/generator/resources/coordinates.csv').path,
+			file('src/main/resources/demo/dataset').path
+	]
 }
