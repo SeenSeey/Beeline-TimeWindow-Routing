@@ -32,7 +32,8 @@ public class JobType extends BaseEntity {
     public enum Keyword {
 
         LOCAL_WORK,
-        INSTALLATION_OR_ADDON,
+        INSTALLATION,
+        ADDON,
         EMERGENCY
     }
 }
