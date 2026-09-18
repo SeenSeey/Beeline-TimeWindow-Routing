@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import stb.core.infrastructure.csv.CsvColumn;
+import stb.core.infrastructure.csv.CsvSkill;
 import stb.core.infrastructure.csv.DatasetFile;
 import stb.core.infrastructure.csv.EngineerColumn;
 import stb.core.infrastructure.csv.EventColumn;
@@ -40,7 +41,7 @@ import stb.core.infrastructure.csv.dto.ReplanEventDto;
 import stb.core.infrastructure.csv.dto.RequestDto;
 import stb.core.infrastructure.csv.generator.SourceDatasetReader.SourceRegion;
 import stb.core.infrastructure.csv.generator.SourceDatasetReader.SourceRow;
-import stb.core.domain.model.Skill;
+import stb.core.domain.model.JobType;
 import stb.core.domain.model.Vehicle;
 
 public final class DatasetGenerator {
@@ -52,35 +53,23 @@ public final class DatasetGenerator {
             "Юго-восток", "yugo-vostok",
             "Югоцентр", "yugo-centr");
 
-    private static final Map<String, Skill.Keyword> SKILL_BY_BK_TYPE = Map.of(
-            "Подключение", Skill.Keyword.INSTALLATION_OR_ADDON,
-            "Дозаказ", Skill.Keyword.INSTALLATION_OR_ADDON,
-            "Локальная заявка", Skill.Keyword.LOCAL_WORK,
-            "Глобальная проблема", Skill.Keyword.EMERGENCY);
+    private static final Map<String, JobType.Keyword> JOB_TYPE_BY_BK_TYPE = Map.of(
+            "Подключение", JobType.Keyword.INSTALLATION,
+            "Дозаказ", JobType.Keyword.ADDON,
+            "Локальная заявка", JobType.Keyword.LOCAL_WORK,
+            "Глобальная проблема", JobType.Keyword.EMERGENCY);
 
-    private record JobType(int durationMinutes, boolean needsCar) {
-    }
+    private static final Map<JobType.Keyword, Integer> ON_SITE_MINUTES = Map.of(
+            JobType.Keyword.INSTALLATION, 70,
+            JobType.Keyword.ADDON, 20,
+            JobType.Keyword.LOCAL_WORK, 30,
+            JobType.Keyword.EMERGENCY, 80);
 
-    private static final JobType DEFAULT_JOB_TYPE = new JobType(45, false);
-    private static final Map<String, JobType> JOB_TYPES = Map.ofEntries(
-            Map.entry("Заявка на подключение", new JobType(90, true)),
-            Map.entry("Заказ подключения/Дозаказ оборудования", new JobType(60, true)),
-            Map.entry("Работа с кабелем", new JobType(60, true)),
-            Map.entry("Авария", new JobType(90, true)),
-            Map.entry("Конвергенция абонента", new JobType(60, false)),
-            Map.entry("Дозаказ оборудования", new JobType(30, false)),
-            Map.entry("Нет линка", new JobType(45, false)),
-            Map.entry("Разрывы", new JobType(45, false)),
-            Map.entry("Низкая скорость", new JobType(40, false)),
-            Map.entry("Рост ошибок на порту", new JobType(40, false)),
-            Map.entry("Переключение на Гбит/с", new JobType(40, false)),
-            Map.entry("Роутер. Замена техническим специалистом", new JobType(30, false)),
-            Map.entry("TVE/ENT. Замена приставки техником", new JobType(30, false)),
-            Map.entry("ТВ. Замена приставки техником", new JobType(30, false)),
-            Map.entry("TVE/ENT. Другие ошибки", new JobType(30, false)),
-            Map.entry("IP-адрес 169...", new JobType(30, false)),
-            Map.entry("Информация", new JobType(20, false)),
-            Map.entry("Мониторинг", new JobType(20, false)));
+    private static final Set<String> CAR_HD_TYPES = Set.of(
+            "Заявка на подключение",
+            "Заказ подключения/Дозаказ оборудования",
+            "Работа с кабелем",
+            "Авария");
 
     private static final Set<String> FAR_DISTRICTS = Set.of("Кашира", "Ступино", "Домодедово");
 
@@ -99,7 +88,6 @@ public final class DatasetGenerator {
     private static final LocalTime CANCEL_TIME = LocalTime.of(11, 0);
     private static final LocalTime UNAVAILABLE_TIME = LocalTime.of(13, 0);
     private static final LocalTime URGENT_TIME = LocalTime.of(14, 0);
-    private static final int URGENT_DURATION_MINUTES = 90;
     private static final int URGENT_WINDOW_HOURS = 2;
 
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
@@ -114,7 +102,7 @@ public final class DatasetGenerator {
         LONGITUDE
     }
 
-    private record Crew(String name, Set<Skill.Keyword> skills, int requestCount, boolean servesFarDistricts) {
+    private record Crew(String name, Set<CsvSkill> skills, int requestCount, boolean servesFarDistricts) {
     }
 
     private DatasetGenerator() {
@@ -159,19 +147,18 @@ public final class DatasetGenerator {
     }
 
     private static RequestDto request(SourceRow row, Map<String, GeoPointDto> coordinates) {
-        Skill.Keyword skill = skill(row.bkType());
-        JobType job = JOB_TYPES.getOrDefault(row.hdType(), DEFAULT_JOB_TYPE);
-        boolean needsCar = job.needsCar() || FAR_DISTRICTS.contains(row.district());
+        JobType.Keyword jobType = jobType(row.bkType());
+        boolean needsCar = CAR_HD_TYPES.contains(row.hdType()) || FAR_DISTRICTS.contains(row.district());
         return new RequestDto(
                 row.id(),
                 row.address(),
                 locate(coordinates, row.address()),
-                job.durationMinutes(),
+                ON_SITE_MINUTES.get(jobType),
                 row.windowStart(),
                 row.windowEnd(),
-                skill == Skill.Keyword.EMERGENCY,
-                skill,
-                needsCar ? Vehicle.Keyword.CAR : null);
+                CsvSkill.of(jobType),
+                needsCar ? Vehicle.Keyword.CAR : null,
+                jobType);
     }
 
     private static List<Crew> crews(SourceRegion region) {
@@ -187,8 +174,8 @@ public final class DatasetGenerator {
     }
 
     private static Crew crew(String name, List<SourceRow> rows) {
-        EnumSet<Skill.Keyword> skills = EnumSet.noneOf(Skill.Keyword.class);
-        rows.forEach(row -> skills.add(skill(row.bkType())));
+        EnumSet<CsvSkill> skills = EnumSet.noneOf(CsvSkill.class);
+        rows.forEach(row -> skills.add(CsvSkill.of(jobType(row.bkType()))));
         boolean far = rows.stream().anyMatch(row -> FAR_DISTRICTS.contains(row.district()));
         return new Crew(name, Set.copyOf(skills), rows.size(), far);
     }
@@ -213,12 +200,13 @@ public final class DatasetGenerator {
         }
 
         RequestDto emergency = requests.reversed().stream()
-                .filter(request -> request.requiredSkill() == Skill.Keyword.EMERGENCY)
+                .filter(request -> request.jobType() == JobType.Keyword.EMERGENCY)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(region.name() + ": нет аварийных заявок"));
         int urgentId = requests.stream().mapToInt(RequestDto::id).max().orElseThrow() + 1;
-        RequestDto urgent = new RequestDto(urgentId, emergency.address(), emergency.location(), URGENT_DURATION_MINUTES,
-                URGENT_TIME, URGENT_TIME.plusHours(URGENT_WINDOW_HOURS), true, Skill.Keyword.EMERGENCY, null);
+        RequestDto urgent = new RequestDto(urgentId, emergency.address(), emergency.location(),
+                ON_SITE_MINUTES.get(JobType.Keyword.EMERGENCY), URGENT_TIME, URGENT_TIME.plusHours(URGENT_WINDOW_HOURS),
+                CsvSkill.EMERGENCY, null, JobType.Keyword.EMERGENCY);
 
         return List.of(
                 new ReplanEventDto.CancelRequest(CANCEL_TIME, canceled.id()),
@@ -226,12 +214,12 @@ public final class DatasetGenerator {
                 new ReplanEventDto.UrgentRequest(URGENT_TIME, urgent));
     }
 
-    private static Skill.Keyword skill(String bkType) {
-        Skill.Keyword skill = SKILL_BY_BK_TYPE.get(bkType);
-        if (skill == null) {
+    private static JobType.Keyword jobType(String bkType) {
+        JobType.Keyword jobType = JOB_TYPE_BY_BK_TYPE.get(bkType);
+        if (jobType == null) {
             throw new IllegalStateException("Неизвестный тип заявки BK: " + bkType);
         }
-        return skill;
+        return jobType;
     }
 
     private static GeoPointDto locate(Map<String, GeoPointDto> coordinates, String address) {
@@ -280,9 +268,9 @@ public final class DatasetGenerator {
         row.put(prefix + RequestColumn.DURATION_MINUTES.header(), request.durationMinutes());
         row.put(prefix + RequestColumn.WINDOW_START.header(), request.windowStart().format(TIME));
         row.put(prefix + RequestColumn.WINDOW_END.header(), request.windowEnd().format(TIME));
-        row.put(prefix + RequestColumn.URGENT.header(), request.urgent());
         row.put(prefix + RequestColumn.REQUIRED_SKILL.header(), request.requiredSkill());
         row.put(prefix + RequestColumn.REQUIRED_VEHICLE.header(), request.requiredVehicle());
+        row.put(prefix + RequestColumn.JOB_TYPE.header(), request.jobType());
         return row;
     }
 

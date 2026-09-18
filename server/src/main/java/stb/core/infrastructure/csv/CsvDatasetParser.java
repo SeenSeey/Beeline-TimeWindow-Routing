@@ -21,7 +21,7 @@ import stb.core.infrastructure.csv.dto.EngineerDto;
 import stb.core.infrastructure.csv.dto.GeoPointDto;
 import stb.core.infrastructure.csv.dto.ReplanEventDto;
 import stb.core.infrastructure.csv.dto.RequestDto;
-import stb.core.domain.model.Skill;
+import stb.core.domain.model.JobType;
 import stb.core.domain.model.Vehicle;
 
 public class CsvDatasetParser {
@@ -68,9 +68,9 @@ public class CsvDatasetParser {
                 row.intValue(RequestColumn.DURATION_MINUTES),
                 row.time(RequestColumn.WINDOW_START),
                 row.time(RequestColumn.WINDOW_END),
-                row.booleanValue(RequestColumn.URGENT),
-                row.enumValue(RequestColumn.REQUIRED_SKILL, Skill.Keyword.class),
-                row.optionalEnum(RequestColumn.REQUIRED_VEHICLE, Vehicle.Keyword.class));
+                row.enumValue(RequestColumn.REQUIRED_SKILL, CsvSkill.class),
+                row.optionalEnum(RequestColumn.REQUIRED_VEHICLE, Vehicle.Keyword.class),
+                row.enumValue(RequestColumn.JOB_TYPE, JobType.Keyword.class));
     }
 
     private static EngineerDto toEngineer(CsvRow row) {
@@ -81,7 +81,7 @@ public class CsvDatasetParser {
                 new GeoPointDto(row.doubleValue(EngineerColumn.START_LATITUDE), row.doubleValue(EngineerColumn.START_LONGITUDE)),
                 row.time(EngineerColumn.SHIFT_START),
                 row.time(EngineerColumn.SHIFT_END),
-                Set.copyOf(row.enumList(EngineerColumn.SKILLS, Skill.Keyword.class)),
+                Set.copyOf(row.enumList(EngineerColumn.SKILLS, CsvSkill.class)),
                 row.enumValue(EngineerColumn.VEHICLE, Vehicle.Keyword.class));
     }
 

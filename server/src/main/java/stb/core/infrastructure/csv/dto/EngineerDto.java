@@ -3,8 +3,8 @@ package stb.core.infrastructure.csv.dto;
 import java.time.LocalTime;
 import java.util.Set;
 
-import stb.core.domain.model.Skill;
 import stb.core.domain.model.Vehicle;
+import stb.core.infrastructure.csv.CsvSkill;
 
 public record EngineerDto(
         int id,
@@ -13,6 +13,6 @@ public record EngineerDto(
         GeoPointDto start,
         LocalTime shiftStart,
         LocalTime shiftEnd,
-        Set<Skill.Keyword> skills,
+        Set<CsvSkill> skills,
         Vehicle.Keyword vehicle) {
 }

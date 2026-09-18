@@ -1,4 +1,4 @@
-event_type;event_time;request_id;engineer_id;request_address;request_latitude;request_longitude;request_duration_minutes;request_window_start;request_window_end;request_urgent;request_required_skill;request_required_vehicle
+event_type;event_time;request_id;engineer_id;request_address;request_latitude;request_longitude;request_duration_minutes;request_window_start;request_window_end;request_required_skill;request_required_vehicle;request_job_type
 CANCEL_REQUEST;11:00;55711;;;;;;;;;;
 ENGINEER_UNAVAILABLE;13:00;;2;;;;;;;;;
-URGENT_REQUEST;14:00;99842;;Город Москва, пр-кт.Ленинский, д. 70/11;55.687926;37.540776;90;14:00;16:00;true;EMERGENCY;
+URGENT_REQUEST;14:00;99842;;Город Москва, пр-кт.Ленинский, д. 70/11;55.687926;37.540776;80;14:00;16:00;EMERGENCY;;EMERGENCY
