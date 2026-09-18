@@ -24,4 +24,15 @@ public class JobType extends BaseEntity {
 
     @Column(name = "total_time_span_minutes", nullable = false)
     private int totalTimeSpanMinutes;
+
+    @Column(name = "keyword", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Keyword keyword;
+
+    public enum Keyword {
+
+        LOCAL_WORK,
+        INSTALLATION_OR_ADDON,
+        EMERGENCY
+    }
 }

@@ -36,7 +36,7 @@ public class Request extends BaseEntity {
     private LocalDateTime deadline;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "job_type_id")
+    @JoinColumn(name = "job_type_id", nullable = false)
     private JobType jobType;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -52,10 +52,6 @@ public class Request extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "required_vehicle_id")
     private Vehicle requiredVehicle;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "required_skill", nullable = false)
-    private Skill requiredSkill;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_crew_id")

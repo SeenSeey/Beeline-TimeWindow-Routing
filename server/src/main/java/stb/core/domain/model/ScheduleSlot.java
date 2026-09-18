@@ -22,10 +22,6 @@ public class ScheduleSlot extends BaseEntity {
     @JoinColumn(name = "request_id", nullable = false)
     private Request request;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_crew_id", nullable = false)
-    private EngineerCrew assignedCrew;
-
     @Column(name = "type", nullable = false)
     @Enumerated(EnumType.STRING)
     private SlotType type;
