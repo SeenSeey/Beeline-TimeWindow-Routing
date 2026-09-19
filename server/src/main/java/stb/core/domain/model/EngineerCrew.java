@@ -3,6 +3,7 @@ package stb.core.domain.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalTime;
 import java.util.List;
 
 @Entity

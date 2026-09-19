@@ -1,4 +1,4 @@
-`package stb.core.domain.model;
+package stb.core.domain.model;
 
 import jakarta.persistence.*;
 import lombok.*;
