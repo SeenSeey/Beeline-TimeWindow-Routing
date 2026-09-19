@@ -14,6 +14,7 @@ public class Region extends BaseEntity {
     @Column(name = "display_name", nullable = false)
     private String displayName;
 
+    // FIXME: если важны регионы в рамках Москвы, хранение дерева зависимостей не требуется
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_region_id")
     private Region parentRegion;

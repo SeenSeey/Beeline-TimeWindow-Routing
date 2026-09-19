@@ -14,6 +14,9 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class EngineerCrew extends BaseEntity {
 
+    @Column(name = "name", nullable = false)
+    private String name;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "region_id", nullable = false)
     private Region region;
@@ -27,6 +30,10 @@ public class EngineerCrew extends BaseEntity {
 
     @Column(name = "shift_end_time", nullable = false)
     private LocalTime shiftEndTime;
+
+    // TODO: пересмотреть логику связи JobType с бригадами. У бригад есть НАВЫКИ (например, установка роутера,
+    //  подключение интернета и другие). НАВЫКИ должны соотноситься с типами работ для вычисления, может ли
+    //  бригада выполнить данную заявку. Хранить тип работ с бригаде - неверно!
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
