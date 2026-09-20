@@ -8,7 +8,6 @@ import java.util.function.Function;
 
 import org.apache.commons.csv.CSVRecord;
 
-
 class CsvRow {
 
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("H:mm");
@@ -49,10 +48,6 @@ class CsvRow {
         return convert(column, Integer::parseInt, "целое число");
     }
 
-    boolean booleanValue(CsvColumn column) {
-        return convert(column, CsvRow::parseBoolean, "true или false");
-    }
-
     double doubleValue(CsvColumn column) {
         return convert(column, Double::parseDouble, "число");
     }
@@ -75,12 +70,8 @@ class CsvRow {
                 "значения через | из " + Arrays.toString(type.getEnumConstants()));
     }
 
-    private static boolean parseBoolean(String value) {
-        return switch (value) {
-            case "true" -> true;
-            case "false" -> false;
-            default -> throw new IllegalArgumentException(value);
-        };
+    <E extends Enum<E>> List<E> optionalEnumList(CsvColumn column, Class<E> type) {
+        return value(column) == null ? List.of() : enumList(column, type);
     }
 
     private <T> T convert(CsvColumn column, Function<String, T> converter, String expected) {

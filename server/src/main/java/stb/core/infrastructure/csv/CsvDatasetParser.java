@@ -1,6 +1,7 @@
 package stb.core.infrastructure.csv;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UncheckedIOException;
@@ -21,7 +22,7 @@ import stb.core.infrastructure.csv.dto.EngineerDto;
 import stb.core.infrastructure.csv.dto.GeoPointDto;
 import stb.core.infrastructure.csv.dto.ReplanEventDto;
 import stb.core.infrastructure.csv.dto.RequestDto;
-import stb.core.domain.model.Skill;
+import stb.core.domain.model.JobType;
 import stb.core.domain.model.Vehicle;
 
 public class CsvDatasetParser {
@@ -37,18 +38,34 @@ public class CsvDatasetParser {
     private final DatasetValidator validator = new DatasetValidator();
 
     public DatasetDto parse(Path dir) {
-        Path eventsFile = dir.resolve(DatasetFile.EVENTS.fileName());
+        return parse(file -> {
+            Path path = dir.resolve(file.fileName());
+            try {
+                return Files.exists(path) ? Files.newInputStream(path) : null;
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+    }
+
+    public DatasetDto parse(Function<DatasetFile, InputStream> source) {
         DatasetDto dataset = new DatasetDto(
-                read(dir, DatasetFile.REQUESTS, CsvDatasetParser::toRequest),
-                read(dir, DatasetFile.ENGINEERS, CsvDatasetParser::toEngineer),
-                Files.exists(eventsFile) ? read(dir, DatasetFile.EVENTS, CsvDatasetParser::toEvent) : List.of());
+                read(source, DatasetFile.REQUESTS, CsvDatasetParser::toRequest),
+                read(source, DatasetFile.ENGINEERS, CsvDatasetParser::toEngineer),
+                read(source, DatasetFile.EVENTS, CsvDatasetParser::toEvent));
         validator.validate(dataset);
         return dataset;
     }
 
-    private static <T> List<T> read(Path dir, DatasetFile file, Function<CsvRow, T> mapper) {
-        Path path = dir.resolve(file.fileName());
-        try (Reader reader = new InputStreamReader(BOMInputStream.builder().setPath(path).get(), StandardCharsets.UTF_8);
+    private static <T> List<T> read(Function<DatasetFile, InputStream> source, DatasetFile file, Function<CsvRow, T> mapper) {
+        InputStream input = source.apply(file);
+        if (input == null) {
+            if (file != DatasetFile.EVENTS) {
+                throw new InvalidDatasetException("нет файла " + file.fileName());
+            }
+            return List.of();
+        }
+        try (Reader reader = new InputStreamReader(BOMInputStream.builder().setInputStream(input).get(), StandardCharsets.UTF_8);
                 CSVParser parser = FORMAT.parse(reader)) {
             List<String> missing = file.header().stream().filter(column -> !parser.getHeaderNames().contains(column)).toList();
             if (!missing.isEmpty()) {
@@ -68,9 +85,9 @@ public class CsvDatasetParser {
                 row.intValue(RequestColumn.DURATION_MINUTES),
                 row.time(RequestColumn.WINDOW_START),
                 row.time(RequestColumn.WINDOW_END),
-                row.booleanValue(RequestColumn.URGENT),
-                row.enumValue(RequestColumn.REQUIRED_SKILL, Skill.Keyword.class),
-                row.optionalEnum(RequestColumn.REQUIRED_VEHICLE, Vehicle.Keyword.class));
+                row.optionalEnum(RequestColumn.REQUIRED_VEHICLE, Vehicle.Keyword.class),
+                row.enumValue(RequestColumn.JOB_TYPE, JobType.Keyword.class),
+                row.optionalEnumList(RequestColumn.REQUIRED_EQUIPMENT, CsvEquipment.class));
     }
 
     private static EngineerDto toEngineer(CsvRow row) {
@@ -81,7 +98,7 @@ public class CsvDatasetParser {
                 new GeoPointDto(row.doubleValue(EngineerColumn.START_LATITUDE), row.doubleValue(EngineerColumn.START_LONGITUDE)),
                 row.time(EngineerColumn.SHIFT_START),
                 row.time(EngineerColumn.SHIFT_END),
-                Set.copyOf(row.enumList(EngineerColumn.SKILLS, Skill.Keyword.class)),
+                Set.copyOf(row.enumList(EngineerColumn.SKILLS, CsvSkill.class)),
                 row.enumValue(EngineerColumn.VEHICLE, Vehicle.Keyword.class));
     }
 

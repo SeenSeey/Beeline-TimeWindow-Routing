@@ -22,7 +22,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - ./envionment/postgres:/var/lib/postgresql/data
+      - ./environment/postgres:/var/lib/postgresql/data
     networks:
       - root_network
     env_file:

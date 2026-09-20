@@ -1,5 +1,6 @@
 package stb.core.infrastructure.csv.generator;
 
+import static java.util.Comparator.comparing;
 import static java.util.Comparator.comparingInt;
 
 import java.io.IOException;
@@ -28,6 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import stb.core.infrastructure.csv.CsvColumn;
+import stb.core.infrastructure.csv.CsvEquipment;
+import stb.core.infrastructure.csv.CsvSkill;
 import stb.core.infrastructure.csv.DatasetFile;
 import stb.core.infrastructure.csv.EngineerColumn;
 import stb.core.infrastructure.csv.EventColumn;
@@ -40,7 +43,7 @@ import stb.core.infrastructure.csv.dto.ReplanEventDto;
 import stb.core.infrastructure.csv.dto.RequestDto;
 import stb.core.infrastructure.csv.generator.SourceDatasetReader.SourceRegion;
 import stb.core.infrastructure.csv.generator.SourceDatasetReader.SourceRow;
-import stb.core.domain.model.Skill;
+import stb.core.domain.model.JobType;
 import stb.core.domain.model.Vehicle;
 
 public final class DatasetGenerator {
@@ -52,35 +55,23 @@ public final class DatasetGenerator {
             "Юго-восток", "yugo-vostok",
             "Югоцентр", "yugo-centr");
 
-    private static final Map<String, Skill.Keyword> SKILL_BY_BK_TYPE = Map.of(
-            "Подключение", Skill.Keyword.INSTALLATION_OR_ADDON,
-            "Дозаказ", Skill.Keyword.INSTALLATION_OR_ADDON,
-            "Локальная заявка", Skill.Keyword.LOCAL_WORK,
-            "Глобальная проблема", Skill.Keyword.EMERGENCY);
+    private static final Map<String, JobType.Keyword> JOB_TYPE_BY_BK_TYPE = Map.of(
+            "Подключение", JobType.Keyword.INSTALLATION,
+            "Дозаказ", JobType.Keyword.ADDON,
+            "Локальная заявка", JobType.Keyword.LOCAL_WORK,
+            "Глобальная проблема", JobType.Keyword.EMERGENCY);
 
-    private record JobType(int durationMinutes, boolean needsCar) {
-    }
+    private static final Map<JobType.Keyword, Integer> ON_SITE_MINUTES = Map.of(
+            JobType.Keyword.INSTALLATION, 70,
+            JobType.Keyword.ADDON, 20,
+            JobType.Keyword.LOCAL_WORK, 30,
+            JobType.Keyword.EMERGENCY, 80);
 
-    private static final JobType DEFAULT_JOB_TYPE = new JobType(45, false);
-    private static final Map<String, JobType> JOB_TYPES = Map.ofEntries(
-            Map.entry("Заявка на подключение", new JobType(90, true)),
-            Map.entry("Заказ подключения/Дозаказ оборудования", new JobType(60, true)),
-            Map.entry("Работа с кабелем", new JobType(60, true)),
-            Map.entry("Авария", new JobType(90, true)),
-            Map.entry("Конвергенция абонента", new JobType(60, false)),
-            Map.entry("Дозаказ оборудования", new JobType(30, false)),
-            Map.entry("Нет линка", new JobType(45, false)),
-            Map.entry("Разрывы", new JobType(45, false)),
-            Map.entry("Низкая скорость", new JobType(40, false)),
-            Map.entry("Рост ошибок на порту", new JobType(40, false)),
-            Map.entry("Переключение на Гбит/с", new JobType(40, false)),
-            Map.entry("Роутер. Замена техническим специалистом", new JobType(30, false)),
-            Map.entry("TVE/ENT. Замена приставки техником", new JobType(30, false)),
-            Map.entry("ТВ. Замена приставки техником", new JobType(30, false)),
-            Map.entry("TVE/ENT. Другие ошибки", new JobType(30, false)),
-            Map.entry("IP-адрес 169...", new JobType(30, false)),
-            Map.entry("Информация", new JobType(20, false)),
-            Map.entry("Мониторинг", new JobType(20, false)));
+    private static final Set<String> CAR_HD_TYPES = Set.of(
+            "Заявка на подключение",
+            "Заказ подключения/Дозаказ оборудования",
+            "Работа с кабелем",
+            "Авария");
 
     private static final Set<String> FAR_DISTRICTS = Set.of("Кашира", "Ступино", "Домодедово");
 
@@ -92,14 +83,17 @@ public final class DatasetGenerator {
             new Shift(LocalTime.of(9, 0), LocalTime.of(18, 0)),
             new Shift(LocalTime.of(10, 0), LocalTime.of(19, 0)),
             new Shift(LocalTime.of(13, 0), LocalTime.of(22, 0)));
-    private static final List<Vehicle.Keyword> VEHICLE_ROTATION = List.of(
-            Vehicle.Keyword.PUBLIC_TRANSPORT, Vehicle.Keyword.CAR, Vehicle.Keyword.BICYCLE, Vehicle.Keyword.PEDESTRIAN);
+
+    private static final double EARTH_RADIUS_KM = 6371;
+    private static final double CAR_HOP_KM = 8;
+    private static final double CAR_RADIUS_KM = 15;
+    private static final double PUBLIC_TRANSPORT_HOP_KM = 4;
+    private static final double BICYCLE_HOP_KM = 2;
 
     private static final String CANCELED_STATUS = "Отменена";
     private static final LocalTime CANCEL_TIME = LocalTime.of(11, 0);
     private static final LocalTime UNAVAILABLE_TIME = LocalTime.of(13, 0);
     private static final LocalTime URGENT_TIME = LocalTime.of(14, 0);
-    private static final int URGENT_DURATION_MINUTES = 90;
     private static final int URGENT_WINDOW_HOURS = 2;
 
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
@@ -114,7 +108,7 @@ public final class DatasetGenerator {
         LONGITUDE
     }
 
-    private record Crew(String name, Set<Skill.Keyword> skills, int requestCount, boolean servesFarDistricts) {
+    private record Crew(String name, Set<CsvSkill> skills, int requestCount, Vehicle.Keyword vehicle) {
     }
 
     private DatasetGenerator() {
@@ -128,72 +122,114 @@ public final class DatasetGenerator {
         Map<String, GeoPointDto> coordinates = readCoordinates(Path.of(args[1]));
         Path outputDir = Path.of(args[2]);
 
+        int engineerIdOffset = 0;
         for (SourceRegion region : SourceDatasetReader.read(sourceDir)) {
             Path dir = outputDir.resolve(REGION_DIRS.get(region.name()));
-            DatasetDto dataset = generate(region, coordinates);
+            DatasetDto dataset = generate(region, coordinates, engineerIdOffset);
+            engineerIdOffset += dataset.engineers().size();
             write(dataset, dir);
             log.info("{}: заявок {}, инженеров {}, событий {} -> {}", region.name(),
                     dataset.requests().size(), dataset.engineers().size(), dataset.events().size(), dir);
         }
     }
 
-    private static DatasetDto generate(SourceRegion region, Map<String, GeoPointDto> coordinates) {
+    private static DatasetDto generate(SourceRegion region, Map<String, GeoPointDto> coordinates, int engineerIdOffset) {
         List<RequestDto> requests = region.rows().stream()
                 .map(row -> request(row, coordinates))
                 .toList();
-        List<Crew> crews = crews(region);
         GeoPointDto office = locate(coordinates, region.officeAddress());
+        List<Crew> crews = crews(region, coordinates, office);
 
         List<EngineerDto> engineers = new ArrayList<>();
-        int rotation = 0;
         for (int i = 0; i < crews.size(); i++) {
             Crew crew = crews.get(i);
             Shift shift = SHIFTS.get(i % SHIFTS.size());
-            Vehicle.Keyword vehicle = crew.servesFarDistricts()
-                    ? Vehicle.Keyword.CAR
-                    : VEHICLE_ROTATION.get(rotation++ % VEHICLE_ROTATION.size());
-            engineers.add(new EngineerDto(i + 1, crew.name(), region.officeAddress(), office,
-                    shift.start(), shift.end(), crew.skills(), vehicle));
+            engineers.add(new EngineerDto(engineerIdOffset + i + 1, crew.name(), region.officeAddress(), office,
+                    shift.start(), shift.end(), crew.skills(), crew.vehicle()));
         }
-        return new DatasetDto(requests, List.copyOf(engineers), events(region, requests, crews));
+        return new DatasetDto(requests, List.copyOf(engineers), events(region, requests, List.copyOf(engineers), crews));
     }
 
     private static RequestDto request(SourceRow row, Map<String, GeoPointDto> coordinates) {
-        Skill.Keyword skill = skill(row.bkType());
-        JobType job = JOB_TYPES.getOrDefault(row.hdType(), DEFAULT_JOB_TYPE);
-        boolean needsCar = job.needsCar() || FAR_DISTRICTS.contains(row.district());
+        JobType.Keyword jobType = jobType(row.bkType());
+        boolean needsCar = CAR_HD_TYPES.contains(row.hdType()) || FAR_DISTRICTS.contains(row.district());
         return new RequestDto(
                 row.id(),
                 row.address(),
                 locate(coordinates, row.address()),
-                job.durationMinutes(),
+                ON_SITE_MINUTES.get(jobType),
                 row.windowStart(),
                 row.windowEnd(),
-                skill == Skill.Keyword.EMERGENCY,
-                skill,
-                needsCar ? Vehicle.Keyword.CAR : null);
+                needsCar ? Vehicle.Keyword.CAR : null,
+                jobType,
+                equipment(jobType, row.id()));
     }
 
-    private static List<Crew> crews(SourceRegion region) {
+    private static List<CsvEquipment> equipment(JobType.Keyword jobType, int requestId) {
+        return switch (jobType) {
+            case INSTALLATION -> requestId % 3 == 0
+                    ? List.of(CsvEquipment.ROUTER, CsvEquipment.SMART_SPEAKER)
+                    : List.of(CsvEquipment.ROUTER);
+            case ADDON -> requestId % 2 == 0
+                    ? List.of(CsvEquipment.SET_TOP_BOX, CsvEquipment.SMART_SPEAKER)
+                    : List.of(CsvEquipment.SET_TOP_BOX);
+            case LOCAL_WORK, EMERGENCY -> List.of();
+        };
+    }
+
+    private static List<Crew> crews(SourceRegion region, Map<String, GeoPointDto> coordinates, GeoPointDto office) {
         Map<String, List<SourceRow>> rowsByCrew = region.rows().stream()
                 .filter(row -> row.crew() != null)
                 .collect(Collectors.groupingBy(SourceRow::crew, LinkedHashMap::new, Collectors.toList()));
         return rowsByCrew.entrySet().stream()
-                .map(entry -> crew(entry.getKey(), entry.getValue()))
+                .map(entry -> crew(entry.getKey(), entry.getValue(), coordinates, office))
                 .sorted(comparingInt((Crew crew) -> crew.skills().size())
                         .thenComparingInt(Crew::requestCount)
                         .reversed())
                 .toList();
     }
 
-    private static Crew crew(String name, List<SourceRow> rows) {
-        EnumSet<Skill.Keyword> skills = EnumSet.noneOf(Skill.Keyword.class);
-        rows.forEach(row -> skills.add(skill(row.bkType())));
-        boolean far = rows.stream().anyMatch(row -> FAR_DISTRICTS.contains(row.district()));
-        return new Crew(name, Set.copyOf(skills), rows.size(), far);
+    private static Crew crew(String name, List<SourceRow> rows, Map<String, GeoPointDto> coordinates, GeoPointDto office) {
+        EnumSet<CsvSkill> skills = EnumSet.noneOf(CsvSkill.class);
+        rows.forEach(row -> skills.add(CsvSkill.of(jobType(row.bkType()))));
+        return new Crew(name, Set.copyOf(skills), rows.size(), vehicle(rows, coordinates, office));
     }
 
-    private static List<ReplanEventDto> events(SourceRegion region, List<RequestDto> requests, List<Crew> crews) {
+    private static Vehicle.Keyword vehicle(List<SourceRow> rows, Map<String, GeoPointDto> coordinates, GeoPointDto office) {
+        List<GeoPointDto> route = rows.stream()
+                .sorted(comparing(SourceRow::windowStart).thenComparing(SourceRow::windowEnd))
+                .map(row -> locate(coordinates, row.address()))
+                .toList();
+        double maxHop = 0;
+        for (int i = 1; i < route.size(); i++) {
+            maxHop = Math.max(maxHop, distanceKm(route.get(i - 1), route.get(i)));
+        }
+        double radius = route.stream().mapToDouble(point -> distanceKm(office, point)).max().orElse(0);
+
+        if (maxHop > CAR_HOP_KM || radius > CAR_RADIUS_KM) {
+            return Vehicle.Keyword.CAR;
+        }
+        if (maxHop > PUBLIC_TRANSPORT_HOP_KM) {
+            return Vehicle.Keyword.PUBLIC_TRANSPORT;
+        }
+        if (maxHop > BICYCLE_HOP_KM) {
+            return Vehicle.Keyword.BICYCLE;
+        }
+        return Vehicle.Keyword.PEDESTRIAN;
+    }
+
+    private static double distanceKm(GeoPointDto from, GeoPointDto to) {
+        double fromLatitude = Math.toRadians(from.latitude());
+        double toLatitude = Math.toRadians(to.latitude());
+        double deltaLatitude = toLatitude - fromLatitude;
+        double deltaLongitude = Math.toRadians(to.longitude() - from.longitude());
+        double haversine = Math.pow(Math.sin(deltaLatitude / 2), 2)
+                + Math.cos(fromLatitude) * Math.cos(toLatitude) * Math.pow(Math.sin(deltaLongitude / 2), 2);
+        return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(haversine));
+    }
+
+    private static List<ReplanEventDto> events(SourceRegion region, List<RequestDto> requests,
+            List<EngineerDto> engineers, List<Crew> crews) {
         List<SourceRow> rows = region.rows();
         RequestDto canceled = null;
         for (int i = 0; i < rows.size() && canceled == null; i++) {
@@ -213,25 +249,26 @@ public final class DatasetGenerator {
         }
 
         RequestDto emergency = requests.reversed().stream()
-                .filter(request -> request.requiredSkill() == Skill.Keyword.EMERGENCY)
+                .filter(request -> request.jobType() == JobType.Keyword.EMERGENCY)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(region.name() + ": нет аварийных заявок"));
         int urgentId = requests.stream().mapToInt(RequestDto::id).max().orElseThrow() + 1;
-        RequestDto urgent = new RequestDto(urgentId, emergency.address(), emergency.location(), URGENT_DURATION_MINUTES,
-                URGENT_TIME, URGENT_TIME.plusHours(URGENT_WINDOW_HOURS), true, Skill.Keyword.EMERGENCY, null);
+        RequestDto urgent = new RequestDto(urgentId, emergency.address(), emergency.location(),
+                ON_SITE_MINUTES.get(JobType.Keyword.EMERGENCY), URGENT_TIME, URGENT_TIME.plusHours(URGENT_WINDOW_HOURS),
+                null, JobType.Keyword.EMERGENCY, List.of());
 
         return List.of(
                 new ReplanEventDto.CancelRequest(CANCEL_TIME, canceled.id()),
-                new ReplanEventDto.EngineerUnavailable(UNAVAILABLE_TIME, unavailable + 1),
+                new ReplanEventDto.EngineerUnavailable(UNAVAILABLE_TIME, engineers.get(unavailable).id()),
                 new ReplanEventDto.UrgentRequest(URGENT_TIME, urgent));
     }
 
-    private static Skill.Keyword skill(String bkType) {
-        Skill.Keyword skill = SKILL_BY_BK_TYPE.get(bkType);
-        if (skill == null) {
+    private static JobType.Keyword jobType(String bkType) {
+        JobType.Keyword jobType = JOB_TYPE_BY_BK_TYPE.get(bkType);
+        if (jobType == null) {
             throw new IllegalStateException("Неизвестный тип заявки BK: " + bkType);
         }
-        return skill;
+        return jobType;
     }
 
     private static GeoPointDto locate(Map<String, GeoPointDto> coordinates, String address) {
@@ -280,9 +317,11 @@ public final class DatasetGenerator {
         row.put(prefix + RequestColumn.DURATION_MINUTES.header(), request.durationMinutes());
         row.put(prefix + RequestColumn.WINDOW_START.header(), request.windowStart().format(TIME));
         row.put(prefix + RequestColumn.WINDOW_END.header(), request.windowEnd().format(TIME));
-        row.put(prefix + RequestColumn.URGENT.header(), request.urgent());
-        row.put(prefix + RequestColumn.REQUIRED_SKILL.header(), request.requiredSkill());
         row.put(prefix + RequestColumn.REQUIRED_VEHICLE.header(), request.requiredVehicle());
+        row.put(prefix + RequestColumn.JOB_TYPE.header(), request.jobType());
+        row.put(prefix + RequestColumn.REQUIRED_EQUIPMENT.header(), request.requiredEquipment().stream()
+                .map(Enum::name)
+                .collect(Collectors.joining("|")));
         return row;
     }
 

@@ -44,7 +44,6 @@ public class DatasetValidator {
             case ReplanEventDto.UrgentRequest urgent -> {
                 RequestDto request = urgent.request();
                 validateRequest(request);
-                check(request.urgent(), "срочная заявка %d: должна быть отмечена как срочная", request.id());
                 check(!requestIds.contains(request.id()), "срочная заявка %d: id уже занят", request.id());
             }
         }
