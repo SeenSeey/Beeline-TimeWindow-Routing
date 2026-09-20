@@ -85,7 +85,6 @@ public class CsvDatasetParser {
                 row.intValue(RequestColumn.DURATION_MINUTES),
                 row.time(RequestColumn.WINDOW_START),
                 row.time(RequestColumn.WINDOW_END),
-                row.enumValue(RequestColumn.REQUIRED_SKILL, CsvSkill.class),
                 row.optionalEnum(RequestColumn.REQUIRED_VEHICLE, Vehicle.Keyword.class),
                 row.enumValue(RequestColumn.JOB_TYPE, JobType.Keyword.class));
     }

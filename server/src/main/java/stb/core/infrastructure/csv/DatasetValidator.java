@@ -26,8 +26,6 @@ public class DatasetValidator {
         check(request.durationMinutes() > 0, "заявка %d: длительность должна быть больше 0", request.id());
         check(request.windowStart().isBefore(request.windowEnd()),
                 "заявка %d: окно заканчивается не позже, чем начинается", request.id());
-        check(request.requiredSkill() == CsvSkill.of(request.jobType()),
-                "заявка %d: навык %s не соответствует типу работ %s", request.id(), request.requiredSkill(), request.jobType());
     }
 
     private void validateEngineer(EngineerDto engineer) {
