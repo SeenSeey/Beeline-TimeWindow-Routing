@@ -47,6 +47,10 @@ public class GeocoderYandexImpl implements Geocoder {
 
             GeoPosition geoPosition = response.getBody().toDomainGeoPosition();
 
+            if (geoPosition == null) {
+                return null;
+            }
+
             log.info("Результат геокодинга для запроса: {}. Ответ [lat, lon]: [{}, {}]", address, geoPosition.latitude(), geoPosition.longitude());
             return geoPosition;
         } catch (Exception exception) {
