@@ -40,13 +40,19 @@ public class RequestSearchUseCase {
 
         if (searchDto.regionId() != null && searchDto.regionId() <= 0) {
             throw new InvalidRequestSearchFiltersException(
-                    "ID региога должен быть положительным числом"
+                    "ID региона должен быть положительным числом"
             );
         }
 
         if (searchDto.statusId() != null && searchDto.statusId() <= 0) {
             throw new InvalidRequestSearchFiltersException(
                     "ID статуса должен быть положительным числом"
+            );
+        }
+
+        if (searchDto.jobTypeId() != null && searchDto.jobTypeId() <= 0) {
+            throw new InvalidRequestSearchFiltersException(
+                    "ID типа работ должен быть положительным числом"
             );
         }
 
