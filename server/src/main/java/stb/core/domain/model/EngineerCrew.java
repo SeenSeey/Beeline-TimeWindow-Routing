@@ -10,7 +10,7 @@ import java.util.List;
 @Table(name = "engineer_crews")
 @Getter
 @Setter(AccessLevel.PROTECTED)
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor()
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class EngineerCrew extends BaseEntity {
 

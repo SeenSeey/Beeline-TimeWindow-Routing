@@ -1,4 +1,4 @@
-event_type;event_time;request_id;engineer_id;request_address;request_latitude;request_longitude;request_duration_minutes;request_window_start;request_window_end;request_required_skill;request_required_vehicle;request_job_type
-CANCEL_REQUEST;11:00;52041;;;;;;;;;;
-ENGINEER_UNAVAILABLE;13:00;;2;;;;;;;;;
-URGENT_REQUEST;14:00;98999;;Москва Булатниковский пр-зд. д. 6к1;55.593612;37.651387;80;14:00;16:00;EMERGENCY;;EMERGENCY
+event_type;event_time;request_id;engineer_id;request_address;request_latitude;request_longitude;request_duration_minutes;request_window_start;request_window_end;request_required_vehicle;request_job_type
+CANCEL_REQUEST;11:00;52041;;;;;;;;;
+ENGINEER_UNAVAILABLE;13:00;;14;;;;;;;;
+URGENT_REQUEST;14:00;98999;;Москва Булатниковский пр-зд. д. 6к1;55.593612;37.651387;80;14:00;16:00;;EMERGENCY

@@ -1,16 +1,16 @@
 services:
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "3000:3000"
-    environment:
-      - BACKEND_HOST=backend:8080
-      - FRONTEND_HOST=pwa:5000
-    env_file: .env
-    networks:
-      - root_network
-    volumes:
-      - ./nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+#  nginx:
+#    image: nginx:alpine
+#    ports:
+#      - "3000:3000"
+#    environment:
+#      - BACKEND_HOST=backend:8080
+#      - FRONTEND_HOST=pwa:5000
+#    env_file: .env
+#    networks:
+#      - root_network
+#    volumes:
+#      - ./nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
 
   postgres:
     image: postgres:16.4-alpine
@@ -41,16 +41,16 @@ services:
     env_file:
       - ./.env
 
-  client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./pwa:/app
-    networks:
-      - root_network
+#  client:
+#    build:
+#      context: ./client
+#      dockerfile: Dockerfile
+#    ports:
+#      - "5000:5000"
+#    volumes:
+#      - ./pwa:/app
+#    networks:
+#      - root_network
 
 networks:
   root_network:
