@@ -11,3 +11,8 @@ spring:
     hibernate:
       ddl-auto: update
     open-in-view: true
+
+app:
+  geo:
+    geocoder-api-key: api-key
+    base-path: https://geocode-maps.yandex.ru/v1
