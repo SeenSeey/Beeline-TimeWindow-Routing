@@ -16,18 +16,22 @@ import stb.core.domain.port.Geocoder;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class GeocoderYandexImpl implements Geocoder {
 
     private static final String API_KEY_LOGGER_PLACEHOLDER = "XXX";
 
     private final RestClient restClient;
+    private final String apiKey;
+    private final String basePath;
 
-    @Value("${app.geo.geocoder-api-key}")
-    private String apiKey;
+    public GeocoderYandexImpl(@Value("${app.geo.geocoder-api-key}") String apiKey,
+                              @Value("${app.geo.base-path}") String basePath,
+                              RestClient restClient) {
 
-    @Value("${app.geo.base-path}")
-    private String basePath;
+        this.apiKey = apiKey;
+        this.basePath = basePath;
+        this.restClient = restClient;
+    }
 
     @Override
     public @Nullable GeoPosition convertAddressToCoordinates(String address) {
