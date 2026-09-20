@@ -7,7 +7,7 @@ import jakarta.persistence.criteria.Root;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.jpa.domain.Specification;
 import stb.core.domain.dto.RequestSearchDto;
-import stb.core.domain.model.Request;
+import stb.core.domain.model.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +27,7 @@ public class RequestSpecification implements Specification<Request> {
         if (request.statusId() != null) {
             predicates.add(
                     cb.equal(
-                            root.get("status").get("id"),
+                            root.get(Request_.STATUS).get(RequestStatus_.ID),
                             request.statusId()
                     )
             );
@@ -35,14 +35,14 @@ public class RequestSpecification implements Specification<Request> {
 
         if (request.urgent() != null) {
             predicates.add(
-                    cb.equal(root.get("urgent"), request.urgent())
+                    cb.equal(root.get(Request_.URGENT), request.urgent())
             );
         }
 
         if (request.regionId() != null) {
             predicates.add(
                     cb.equal(
-                            root.get("region").get("id"),
+                            root.get(Request_.REGION).get(Region_.ID),
                             request.regionId())
             );
         }
@@ -50,20 +50,20 @@ public class RequestSpecification implements Specification<Request> {
         if (request.jobTypeId() != null) {
             predicates.add(
                     cb.equal(
-                            root.get("jobType").get("id"),
+                            root.get(Request_.JOB_TYPE).get(JobType_.ID),
                             request.jobTypeId()
                     )
             );
         }
 
-        if (request.hasAssignedCrew() != null) {
-            if (request.hasAssignedCrew()) {
+        if (request.noAssignedCrew() != null) {
+            if (request.noAssignedCrew()) {
                 predicates.add(
-                        cb.isNotNull(root.get("assignedCrew"))
+                        cb.isNull(root.get(Request_.ASSIGNED_CREW))
                 );
             } else {
                 predicates.add(
-                        cb.isNull(root.get("assignedCrew"))
+                        cb.isNotNull(root.get(Request_.ASSIGNED_CREW))
                 );
             }
         }
@@ -71,8 +71,8 @@ public class RequestSpecification implements Specification<Request> {
         if (request.assignedCrewIds() != null
                 && !request.assignedCrewIds().isEmpty()) {
             predicates.add(
-                    root.get("assignedCrew")
-                            .get("id")
+                    root.get(Request_.ASSIGNED_CREW)
+                            .get(EngineerCrew_.ID)
                             .in(request.assignedCrewIds())
             );
         }

@@ -7,7 +7,7 @@ public record RequestSearchDto(
         Boolean urgent,
         Integer regionId,
         Integer jobTypeId,
-        Boolean hasAssignedCrew,
+        Boolean noAssignedCrew,
         List<Integer> assignedCrewIds
 ) {
 }

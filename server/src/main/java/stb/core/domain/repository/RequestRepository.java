@@ -6,7 +6,5 @@ import org.springframework.stereotype.Repository;
 import stb.core.domain.model.Request;
 
 @Repository
-public interface RequestRepository
-        extends JpaRepository<Request, Integer>,
-                JpaSpecificationExecutor<Request> {
+public interface RequestRepository extends JpaRepository<Request, Integer>, JpaSpecificationExecutor<Request> {
 }
