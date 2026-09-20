@@ -1,11 +1,13 @@
 package stb.core.infrastructure.geo;
 
 import jakarta.annotation.Nullable;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 import stb.core.domain.dto.GeoPosition;
 import stb.core.domain.port.Geocoder;
 
@@ -14,9 +16,12 @@ import stb.core.domain.port.Geocoder;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class GeocoderYandexImpl implements Geocoder {
 
     private static final String API_KEY_LOGGER_PLACEHOLDER = "XXX";
+
+    private final RestClient restClient;
 
     @Value("${app.geo.geocoder-api-key}")
     private String apiKey;
@@ -27,9 +32,7 @@ public class GeocoderYandexImpl implements Geocoder {
     @Override
     public @Nullable GeoPosition convertAddressToCoordinates(String address) {
         try {
-            RestClient client = RestClient.create();
-
-            ResponseEntity<YandexGeocoderApiResponse> response = client.get()
+            ResponseEntity<YandexGeocoderApiResponse> response = restClient.get()
                     .uri(buildUri(apiKey, address))
                     .retrieve()
                     .toEntity(YandexGeocoderApiResponse.class);
@@ -60,6 +63,12 @@ public class GeocoderYandexImpl implements Geocoder {
     }
 
     private String buildUri(String apiKey, String address) {
-        return "%s?apikey=%s&geocode=%s&format=json".formatted(basePath, apiKey, address);
+        return UriComponentsBuilder.fromUriString(basePath)
+                .queryParam("apikey", apiKey)
+                .queryParam("geocode", address)
+                .queryParam("format", "json")
+                .build()
+                .toUri()
+                .toString();
     }
 }

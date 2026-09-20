@@ -27,8 +27,8 @@ public class YandexGeocoderApiResponse {
             return null;
         }
 
-        float longitude = Float.parseFloat(entries[0]);
-        float latitude = Float.parseFloat(entries[1]);
+        double longitude = Float.parseFloat(entries[0]);
+        double latitude = Float.parseFloat(entries[1]);
 
         return new GeoPosition(extractFullAddress(), latitude, longitude);
     }
