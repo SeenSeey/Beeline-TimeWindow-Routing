@@ -4,4 +4,4 @@
 .env*
 !.env.example
 
-envionment/
+environment/

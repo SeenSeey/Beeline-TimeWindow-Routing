@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import stb.core.infrastructure.csv.CsvColumn;
+import stb.core.infrastructure.csv.CsvEquipment;
 import stb.core.infrastructure.csv.CsvSkill;
 import stb.core.infrastructure.csv.DatasetFile;
 import stb.core.infrastructure.csv.EngineerColumn;
@@ -160,7 +161,20 @@ public final class DatasetGenerator {
                 row.windowStart(),
                 row.windowEnd(),
                 needsCar ? Vehicle.Keyword.CAR : null,
-                jobType);
+                jobType,
+                equipment(jobType, row.id()));
+    }
+
+    private static List<CsvEquipment> equipment(JobType.Keyword jobType, int requestId) {
+        return switch (jobType) {
+            case INSTALLATION -> requestId % 3 == 0
+                    ? List.of(CsvEquipment.ROUTER, CsvEquipment.SMART_SPEAKER)
+                    : List.of(CsvEquipment.ROUTER);
+            case ADDON -> requestId % 2 == 0
+                    ? List.of(CsvEquipment.SET_TOP_BOX, CsvEquipment.SMART_SPEAKER)
+                    : List.of(CsvEquipment.SET_TOP_BOX);
+            case LOCAL_WORK, EMERGENCY -> List.of();
+        };
     }
 
     private static List<Crew> crews(SourceRegion region, Map<String, GeoPointDto> coordinates, GeoPointDto office) {
@@ -241,7 +255,7 @@ public final class DatasetGenerator {
         int urgentId = requests.stream().mapToInt(RequestDto::id).max().orElseThrow() + 1;
         RequestDto urgent = new RequestDto(urgentId, emergency.address(), emergency.location(),
                 ON_SITE_MINUTES.get(JobType.Keyword.EMERGENCY), URGENT_TIME, URGENT_TIME.plusHours(URGENT_WINDOW_HOURS),
-                null, JobType.Keyword.EMERGENCY);
+                null, JobType.Keyword.EMERGENCY, List.of());
 
         return List.of(
                 new ReplanEventDto.CancelRequest(CANCEL_TIME, canceled.id()),
@@ -305,6 +319,9 @@ public final class DatasetGenerator {
         row.put(prefix + RequestColumn.WINDOW_END.header(), request.windowEnd().format(TIME));
         row.put(prefix + RequestColumn.REQUIRED_VEHICLE.header(), request.requiredVehicle());
         row.put(prefix + RequestColumn.JOB_TYPE.header(), request.jobType());
+        row.put(prefix + RequestColumn.REQUIRED_EQUIPMENT.header(), request.requiredEquipment().stream()
+                .map(Enum::name)
+                .collect(Collectors.joining("|")));
         return row;
     }
 

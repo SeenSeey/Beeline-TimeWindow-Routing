@@ -27,7 +27,7 @@ import stb.core.domain.model.Vehicle;
 
 class CsvDatasetParserTest {
 
-    private static final String REQUEST = "7;Москва;55.7;37.76;45;9:00;11:00;;EMERGENCY";
+    private static final String REQUEST = "7;Москва;55.7;37.76;45;9:00;11:00;;INSTALLATION;ROUTER|SMART_SPEAKER";
     private static final String ENGINEER = "1;Бригада;Офис;55.7;37.7;09:00;18:00;EMERGENCY|LOCAL_WORK;BICYCLE";
 
     private final CsvDatasetParser parser = new CsvDatasetParser();
@@ -63,13 +63,14 @@ class CsvDatasetParserTest {
     @Test
     void parsesRows() throws IOException {
         write(REQUEST, ENGINEER,
-                "CANCEL_REQUEST;11:00;7;;;;;;;;;",
-                "URGENT_REQUEST;14:00;8;;Москва;55.7;37.7;90;14:00;16:00;CAR;EMERGENCY");
+                "CANCEL_REQUEST;11:00;7;;;;;;;;;;",
+                "URGENT_REQUEST;14:00;8;;Москва;55.7;37.7;90;14:00;16:00;CAR;EMERGENCY;");
 
         DatasetDto dataset = parser.parse(dir);
 
         assertThat(dataset.requests()).containsExactly(new RequestDto(7, "Москва", new GeoPointDto(55.7, 37.76), 45,
-                LocalTime.of(9, 0), LocalTime.of(11, 0), null, JobType.Keyword.EMERGENCY));
+                LocalTime.of(9, 0), LocalTime.of(11, 0), null, JobType.Keyword.INSTALLATION,
+                List.of(CsvEquipment.ROUTER, CsvEquipment.SMART_SPEAKER)));
         assertThat(dataset.engineers().getFirst().skills()).containsExactlyInAnyOrder(CsvSkill.LOCAL_WORK, CsvSkill.EMERGENCY);
         assertThat(dataset.events().getFirst()).isEqualTo(new ReplanEventDto.CancelRequest(LocalTime.of(11, 0), 7));
         assertThat(dataset.events().getLast()).isInstanceOfSatisfying(ReplanEventDto.UrgentRequest.class, urgent -> {
@@ -80,7 +81,7 @@ class CsvDatasetParserTest {
 
     @Test
     void rejectsInvalidTime() throws IOException {
-        write("1;Москва;55.7;37.7;45;25:00;11:00;;LOCAL_WORK", ENGINEER);
+        write("1;Москва;55.7;37.7;45;25:00;11:00;;LOCAL_WORK;", ENGINEER);
 
         assertThatThrownBy(() -> parser.parse(dir))
                 .isInstanceOf(InvalidDatasetException.class)
@@ -98,11 +99,20 @@ class CsvDatasetParserTest {
 
     @Test
     void rejectsWindowEndBeforeStart() throws IOException {
-        write("1;Москва;55.7;37.7;45;11:00;9:00;;LOCAL_WORK", ENGINEER);
+        write("1;Москва;55.7;37.7;45;11:00;9:00;;LOCAL_WORK;", ENGINEER);
 
         assertThatThrownBy(() -> parser.parse(dir))
                 .isInstanceOf(InvalidDatasetException.class)
                 .hasMessageContaining("заявка 1");
+    }
+
+    @Test
+    void rejectsUnknownEquipment() throws IOException {
+        write("1;Москва;55.7;37.7;45;9:00;11:00;;INSTALLATION;ROUTER|TOASTER", ENGINEER);
+
+        assertThatThrownBy(() -> parser.parse(dir))
+                .isInstanceOf(InvalidDatasetException.class)
+                .hasMessageContaining(RequestColumn.REQUIRED_EQUIPMENT.header());
     }
 
     @Test

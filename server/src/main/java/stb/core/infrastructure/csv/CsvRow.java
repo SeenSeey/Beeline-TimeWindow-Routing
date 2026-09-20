@@ -70,6 +70,10 @@ class CsvRow {
                 "значения через | из " + Arrays.toString(type.getEnumConstants()));
     }
 
+    <E extends Enum<E>> List<E> optionalEnumList(CsvColumn column, Class<E> type) {
+        return value(column) == null ? List.of() : enumList(column, type);
+    }
+
     private <T> T convert(CsvColumn column, Function<String, T> converter, String expected) {
         String value = string(column);
         try {

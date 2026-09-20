@@ -32,10 +32,7 @@ public class Request extends BaseEntity {
     @Column(name = "urgent", nullable = false)
     private boolean urgent;
 
-    //нет понимания, что должно быть тут, пока nullable
-    @Column(name = "deadline"
-    // , nullable = false
-    )
+    @Column(name = "deadline", nullable = false)
     private LocalDateTime deadline;
 
     @ManyToOne(fetch = FetchType.LAZY)

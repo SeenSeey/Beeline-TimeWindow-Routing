@@ -18,9 +18,6 @@ public class Vehicle extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Keyword keyword;
 
-    @Column(name = "priority", nullable = false)
-    private int priority;
-
     public enum Keyword {
 
         PEDESTRIAN,

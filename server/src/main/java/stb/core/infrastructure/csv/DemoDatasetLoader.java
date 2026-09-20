@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import stb.core.domain.model.EngineerCrew;
+import stb.core.domain.model.Equipment;
 import stb.core.domain.model.JobType;
 import stb.core.domain.model.Region;
 import stb.core.domain.model.Request;
@@ -21,6 +22,7 @@ import stb.core.domain.model.RequestStatus;
 import stb.core.domain.model.Skill;
 import stb.core.domain.model.Vehicle;
 import stb.core.domain.repository.EngineerCrewRepository;
+import stb.core.domain.repository.EquipmentRepository;
 import stb.core.domain.repository.JobTypeRepository;
 import stb.core.domain.repository.RegionRepository;
 import stb.core.domain.repository.RequestRepository;
@@ -50,6 +52,7 @@ public class DemoDatasetLoader implements CommandLineRunner {
     private final JobTypeRepository jobTypeRepository;
     private final VehicleRepository vehicleRepository;
     private final RequestStatusRepository requestStatusRepository;
+    private final EquipmentRepository equipmentRepository;
     private final EngineerCrewRepository engineerCrewRepository;
     private final RequestRepository requestRepository;
 
@@ -65,6 +68,7 @@ public class DemoDatasetLoader implements CommandLineRunner {
         Map<JobType.Keyword, JobType> jobTypes = jobTypes(skills);
         Map<Vehicle.Keyword, Vehicle> vehicles = vehicles();
         Map<RequestStatus.Keyword, RequestStatus> statuses = statuses();
+        Map<CsvEquipment, Equipment> equipment = equipment();
         LocalDateTime createdAt = LocalDateTime.now();
 
         List<EngineerCrew> crews = new ArrayList<>();
@@ -74,13 +78,20 @@ public class DemoDatasetLoader implements CommandLineRunner {
             Region region = regionRepository.save(mapper.toRegion(REGION_NAMES.get(dir), dataset.engineers().getFirst()));
             dataset.engineers().forEach(engineer -> crews.add(mapper.toCrew(engineer, region, vehicles, skills)));
             dataset.requests().forEach(request -> requests.add(mapper.toRequest(
-                    request, region, jobTypes, vehicles, statuses.get(RequestStatus.Keyword.IDLE), createdAt)));
+                    request, region, jobTypes, vehicles, equipment, statuses.get(RequestStatus.Keyword.IDLE), createdAt)));
         }
         engineerCrewRepository.saveAll(crews);
         requestRepository.saveAll(requests);
 
         log.info("Демо-датасет загружен: регионов {}, бригад {}, заявок {}",
                 REGION_DIRS.size(), crews.size(), requests.size());
+    }
+
+    private Map<CsvEquipment, Equipment> equipment() {
+        Map<CsvEquipment, Equipment> equipment = new EnumMap<>(CsvEquipment.class);
+        DatasetDomainMapper.EQUIPMENT_NAMES.forEach((keyword, name) -> equipment.put(keyword, new Equipment(name)));
+        equipmentRepository.saveAll(equipment.values());
+        return equipment;
     }
 
     private Map<Skill.Keyword, Skill> skills() {
@@ -108,10 +119,10 @@ public class DemoDatasetLoader implements CommandLineRunner {
 
     private Map<Vehicle.Keyword, Vehicle> vehicles() {
         Map<Vehicle.Keyword, Vehicle> vehicles = new EnumMap<>(Vehicle.Keyword.class);
-        vehicles.put(Vehicle.Keyword.PEDESTRIAN, new Vehicle("Пешком", Vehicle.Keyword.PEDESTRIAN, 1));
-        vehicles.put(Vehicle.Keyword.BICYCLE, new Vehicle("Велосипед", Vehicle.Keyword.BICYCLE, 2));
-        vehicles.put(Vehicle.Keyword.PUBLIC_TRANSPORT, new Vehicle("Общественный транспорт", Vehicle.Keyword.PUBLIC_TRANSPORT, 3));
-        vehicles.put(Vehicle.Keyword.CAR, new Vehicle("Автомобиль", Vehicle.Keyword.CAR, 4));
+        vehicles.put(Vehicle.Keyword.PEDESTRIAN, new Vehicle("Пешком", Vehicle.Keyword.PEDESTRIAN));
+        vehicles.put(Vehicle.Keyword.BICYCLE, new Vehicle("Велосипед", Vehicle.Keyword.BICYCLE));
+        vehicles.put(Vehicle.Keyword.PUBLIC_TRANSPORT, new Vehicle("Общественный транспорт", Vehicle.Keyword.PUBLIC_TRANSPORT));
+        vehicles.put(Vehicle.Keyword.CAR, new Vehicle("Автомобиль", Vehicle.Keyword.CAR));
         vehicleRepository.saveAll(vehicles.values());
         return vehicles;
     }

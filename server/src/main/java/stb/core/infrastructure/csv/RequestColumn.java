@@ -9,5 +9,6 @@ public enum RequestColumn implements CsvColumn {
     WINDOW_START,
     WINDOW_END,
     REQUIRED_VEHICLE,
-    JOB_TYPE
+    JOB_TYPE,
+    REQUIRED_EQUIPMENT
 }
