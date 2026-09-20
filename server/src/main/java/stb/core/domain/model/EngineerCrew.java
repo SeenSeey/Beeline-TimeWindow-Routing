@@ -37,10 +37,10 @@ public class EngineerCrew extends BaseEntity {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-            name = "engineer_crew_job_types",
+            name = "engineer_crew_skills",
             joinColumns = @JoinColumn(name = "crew_id"),
-            inverseJoinColumns = @JoinColumn(name = "job_type_id"))
-    private List<JobType> jobTypes;
+            inverseJoinColumns = @JoinColumn(name = "skill_id"))
+    private List<Skill> skills;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(

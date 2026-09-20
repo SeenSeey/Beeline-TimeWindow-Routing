@@ -14,6 +14,11 @@ public class JobType extends BaseEntity {
     @Column(name = "display_name", nullable = false)
     private String displayName;
 
+    // заготовка под метчинг навыков под типы
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "required_skill_id", nullable = false)
+    private Skill requiredSkill;
+
     @Column(name = "max_travel_time_span_minutes", nullable = false)
     private int maxTravelTimeSpanMinutes;
 
