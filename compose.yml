@@ -37,8 +37,12 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${PG_PASSWORD}
       SERVER_PORT: 8080
       APP_GEO_GEOCODERAPIKEY: ${GEOCODER_API_KEY}
+    ports:
+      - "8080:8080"
     networks:
       - root_network
+    volumes:
+      - ./maps/central-fed.osm.pbf:/app/map/central-fed.osm.pbf
     env_file:
       - ./.env
 
