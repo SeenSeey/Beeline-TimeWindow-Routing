@@ -34,20 +34,20 @@ public class RouteBuilderImpl implements RouteBuilder {
 
         GHResponse response = graphHopper.route(request);
 
+        List<GeoPoint> points = new ArrayList<>();
+        double distanceKilometers = 10000;
+
         if (response.hasErrors()) {
             log.error("Ошибка построения маршрута: {}", response.getErrors().stream().map(Throwable::getMessage).toList());
-            return null;
-        }
+        } else {
+            ResponsePath path = response.getBest();
 
-        ResponsePath path = response.getBest();
+            distanceKilometers = path.getDistance() / 1000f;
+            PointList pointList = path.getPoints();
 
-        double distanceKilometers = path.getDistance() / 1000f;
-
-        PointList pointList = path.getPoints();
-        List<GeoPoint> points = new ArrayList<>();
-
-        for (int i = 0; i < pointList.size(); i++) {
-            points.add(new GeoPoint(pointList.getLon(i), pointList.getLat(i)));
+            for (int i = 0; i < pointList.size(); i++) {
+                points.add(new GeoPoint(pointList.getLon(i), pointList.getLat(i)));
+            }
         }
 
         return new RouteDto(pointA, pointB, distanceKilometers, points);
