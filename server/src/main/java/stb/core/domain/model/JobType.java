@@ -3,6 +3,8 @@ package stb.core.domain.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
+
 @Entity
 @Table(name = "job_types")
 @Getter
@@ -14,9 +16,12 @@ public class JobType extends BaseEntity {
     @Column(name = "display_name", nullable = false)
     private String displayName;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "required_skill_id", nullable = false)
-    private Skill requiredSkill;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "job_type_required_skills",
+            joinColumns = @JoinColumn(name = "job_type_id"),
+            inverseJoinColumns = @JoinColumn(name = "skill_id"))
+    private List<Skill> requiredSkills;
 
     @Column(name = "max_travel_time_span_minutes", nullable = false)
     private int maxTravelTimeSpanMinutes;
