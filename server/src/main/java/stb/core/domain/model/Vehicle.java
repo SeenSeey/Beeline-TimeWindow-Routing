@@ -18,6 +18,9 @@ public class Vehicle extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Keyword keyword;
 
+    @Column(name = "average_speed_kmh", nullable = false)
+    private double averageSpeedKmh;
+
     public enum Keyword {
 
         PEDESTRIAN,

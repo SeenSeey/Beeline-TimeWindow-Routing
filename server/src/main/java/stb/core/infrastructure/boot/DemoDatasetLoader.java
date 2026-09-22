@@ -45,6 +45,11 @@ public class DemoDatasetLoader implements CommandLineRunner {
             "yugo-vostok", "Юго-восток",
             "yugo-centr", "Югоцентр");
 
+    private static final double PEDESTRIAN_SPEED_KMH = 5;
+    private static final double BICYCLE_SPEED_KMH = 18;
+    private static final double PUBLIC_TRANSPORT_SPEED_KMH = 38;
+    private static final double CAR_SPEED_KMH = 60;
+
     private static final List<String> REGION_DIRS = List.of("vostok", "yugo-vostok", "yugo-centr");
 
     private final CsvDatasetParser parser = new CsvDatasetParser();
@@ -122,10 +127,10 @@ public class DemoDatasetLoader implements CommandLineRunner {
 
     private Map<Vehicle.Keyword, Vehicle> vehicles() {
         Map<Vehicle.Keyword, Vehicle> vehicles = new EnumMap<>(Vehicle.Keyword.class);
-        vehicles.put(Vehicle.Keyword.PEDESTRIAN, new Vehicle("Пешком", Vehicle.Keyword.PEDESTRIAN));
-        vehicles.put(Vehicle.Keyword.BICYCLE, new Vehicle("Велосипед", Vehicle.Keyword.BICYCLE));
-        vehicles.put(Vehicle.Keyword.PUBLIC_TRANSPORT, new Vehicle("Общественный транспорт", Vehicle.Keyword.PUBLIC_TRANSPORT));
-        vehicles.put(Vehicle.Keyword.CAR, new Vehicle("Автомобиль", Vehicle.Keyword.CAR));
+        vehicles.put(Vehicle.Keyword.PEDESTRIAN, new Vehicle("Пешком", Vehicle.Keyword.PEDESTRIAN, PEDESTRIAN_SPEED_KMH));
+        vehicles.put(Vehicle.Keyword.BICYCLE, new Vehicle("Велосипед", Vehicle.Keyword.BICYCLE, BICYCLE_SPEED_KMH));
+        vehicles.put(Vehicle.Keyword.PUBLIC_TRANSPORT, new Vehicle("Общественный транспорт", Vehicle.Keyword.PUBLIC_TRANSPORT, PUBLIC_TRANSPORT_SPEED_KMH));
+        vehicles.put(Vehicle.Keyword.CAR, new Vehicle("Автомобиль", Vehicle.Keyword.CAR, CAR_SPEED_KMH));
         vehicleRepository.saveAll(vehicles.values());
         return vehicles;
     }
