@@ -36,9 +36,16 @@ services:
       SPRING_DATASOURCE_USERNAME: ${PG_USER}
       SPRING_DATASOURCE_PASSWORD: ${PG_PASSWORD}
       SERVER_PORT: 8080
+      APP_ROUTE_OSMFILE: map/central-fed.osm.pbf
+      APP_ROUTE_GRAPHCACHE: map/graph-cache
       APP_GEO_GEOCODERAPIKEY: ${GEOCODER_API_KEY}
+    ports:
+      - "8080:8080"
     networks:
       - root_network
+    volumes:
+      - ./maps/central-fed.osm.pbf:/app/map/central-fed.osm.pbf
+      - ./environment/maps/graph-cache:/app/map/graph-cache
     env_file:
       - ./.env
 
