@@ -4,6 +4,7 @@ import com.graphhopper.GraphHopper;
 import com.graphhopper.config.Profile;
 import com.graphhopper.util.GHUtility;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import stb.core.infrastructure.route.GraphHopperUtils;
@@ -12,12 +13,16 @@ import stb.core.infrastructure.route.GraphHopperUtils;
 @Configuration
 public class GraphHopperConfig {
 
+    private static final String ENCODED_VALUES = "car_access, car_average_speed, bike_access, bike_average_speed, foot_access, foot_average_speed, bike_priority, bike_road_access, mtb_rating, hike_rating, country, road_class, foot_priority, foot_road_access";
+
     @Bean
-    public GraphHopper graphHopper() {
+    public GraphHopper graphHopper(@Value("${app.route.osm-file}") String osmFile,
+                                   @Value("${app.route.graph-cache}") String graphCache) {
+
         GraphHopper hopper = new GraphHopper();
-        hopper.setGraphHopperLocation("graph-cache");
-        hopper.setOSMFile("map/central-fed.osm.pbf");
-        hopper.setEncodedValuesString("car_access, car_average_speed, bike_access, bike_average_speed, foot_access, foot_average_speed, bike_priority, bike_road_access, mtb_rating, hike_rating, country, road_class, foot_priority, foot_road_access");
+        hopper.setGraphHopperLocation(graphCache);
+        hopper.setOSMFile(osmFile);
+        hopper.setEncodedValuesString(ENCODED_VALUES);
         hopper.setProfiles(GraphHopperUtils.getVehicleTypes().map(this::createProfile).toList());
 
         log.info("Инициализация GraphHopper...");

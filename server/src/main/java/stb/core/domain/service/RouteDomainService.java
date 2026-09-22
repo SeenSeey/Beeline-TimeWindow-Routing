@@ -12,10 +12,7 @@ import stb.core.domain.port.route.dto.RouteDto;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 @Service
 @RequiredArgsConstructor
@@ -47,10 +44,6 @@ public class RouteDomainService {
 
             for (int i = 0; i < requests.size() - 1; i++) {
                 for (int j = i + 1; j < requests.size(); j++) {
-                    if (i == j) {
-                        continue;
-                    }
-
                     final int i_ = i;
                     final int j_ = j;
 
@@ -64,15 +57,13 @@ public class RouteDomainService {
             }
 
             for (Future<RouteDto> future : futures) {
-                routes.add(future.get());
+                routes.add(future.get(1000, TimeUnit.MILLISECONDS));
             }
 
             log.info("Расчёт всех маршрутов завершён за {} мс. Ожидаемое количество: {}, фактическое количество: {}",
                     System.currentTimeMillis() - timeStart,
                     amount,
                     routes.size());
-
-            threadPool.shutdown();
 
             return routes;
         } catch (Exception exception) {

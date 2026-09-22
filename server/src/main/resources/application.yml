@@ -13,6 +13,9 @@ spring:
     open-in-view: true
 
 app:
+  route:
+    osm-file: map/central-fed.osm.pbf
+    graph-cache: map/graph-cache
   geo:
     geocoder-api-key: api-key
     base-path: https://geocode-maps.yandex.ru/v1

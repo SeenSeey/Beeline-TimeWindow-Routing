@@ -42,11 +42,11 @@ public class RouteBuilderImpl implements RouteBuilder {
         } else {
             ResponsePath path = response.getBest();
 
-            distanceKilometers = path.getDistance() / 1000f;
+            distanceKilometers = path.getDistance() / 1000.0;
             PointList pointList = path.getPoints();
 
             for (int i = 0; i < pointList.size(); i++) {
-                points.add(new GeoPoint(pointList.getLon(i), pointList.getLat(i)));
+                points.add(new GeoPoint(pointList.getLat(i), pointList.getLon(i)));
             }
         }
 
