@@ -4,6 +4,7 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.jpa.domain.Specification;
 import stb.core.domain.dto.RequestSearchDto;
@@ -12,13 +13,10 @@ import stb.core.domain.model.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@RequiredArgsConstructor
 public class RequestSpecification implements Specification<Request> {
 
     private final RequestSearchDto request;
-
-    public RequestSpecification(RequestSearchDto request) {
-        this.request = request;
-    }
 
     @Override
     public @Nullable Predicate toPredicate(Root<Request> root, CriteriaQuery<?> query, CriteriaBuilder cb) {

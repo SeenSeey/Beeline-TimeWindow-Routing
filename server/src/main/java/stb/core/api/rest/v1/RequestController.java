@@ -1,5 +1,6 @@
 package stb.core.api.rest.v1;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,14 +14,10 @@ import stb.core.domain.dto.RequestSearchDto;
 
 @RestController
 @RequestMapping("/api/v1/requests")
+@RequiredArgsConstructor
 public class RequestController {
 
     private final RequestSearchUseCase requestSearchUseCase;
-
-    public RequestController(RequestSearchUseCase requestSearchUseCase) {
-        this.requestSearchUseCase = requestSearchUseCase;
-    }
-
 
     @GetMapping
     public ResponseEntity<ServerResponse<PageResponseDto<RequestDto>>> search(
