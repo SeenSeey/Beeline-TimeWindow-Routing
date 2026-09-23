@@ -34,6 +34,7 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                                   String name,
                                   LocalTime shiftStartTime,
                                   LocalTime shiftEndTime,
+                                  DictionaryDto vehicle,
                                   List<TimelineSlotDto> slots) {
 
         public static List<EngineerCrewRow> listFrom(List<ScheduleSlot> slots) {
@@ -62,6 +63,7 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                     crew.getName(),
                     crew.getShiftStartTime(),
                     crew.getShiftEndTime(),
+                    Optional.ofNullable(crew.getVehicle()).map(DictionaryDto::from).orElse(null),
                     slots.stream().map(TimelineSlotDto::from).toList()
             );
         }

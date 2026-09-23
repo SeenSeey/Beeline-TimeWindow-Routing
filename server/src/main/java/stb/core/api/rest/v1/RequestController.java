@@ -1,5 +1,6 @@
 package stb.core.api.rest.v1;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -8,8 +9,12 @@ import org.springframework.web.bind.annotation.*;
 import stb.core.api.rest.v1.dto.PageResponseDto;
 import stb.core.api.rest.v1.dto.ServerResponse;
 import stb.core.api.utils.PaginationUtils;
+import stb.core.application.request.RequestFindByIdUseCase;
+import stb.core.application.request.RequestMapPointsFindByRegionUseCase;
 import stb.core.application.request.RequestSearchUseCase;
+import stb.core.domain.dto.RequestDetailedDto;
 import stb.core.domain.dto.RequestDto;
+import stb.core.domain.dto.RequestMapPointDto;
 import stb.core.domain.dto.RequestSearchDto;
 
 @RestController
@@ -18,14 +23,27 @@ import stb.core.domain.dto.RequestSearchDto;
 public class RequestController {
 
     private final RequestSearchUseCase requestSearchUseCase;
+    private final RequestFindByIdUseCase requestFindByIdUseCase;
+    private final RequestMapPointsFindByRegionUseCase requestMapPointsFindByRegionUseCase;
+
+    @GetMapping("/map")
+    public ResponseEntity<ServerResponse<List<RequestMapPointDto>>> findMapPoints(@RequestParam int regionId) {
+        return ResponseEntity.ok(
+            ServerResponse.ok(HttpStatus.OK.value(), requestMapPointsFindByRegionUseCase.execute(regionId))
+        );
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ServerResponse<RequestDetailedDto>> findById(@PathVariable int id) {
+        return ResponseEntity.ok(ServerResponse.ok(HttpStatus.OK.value(), requestFindByIdUseCase.execute(id)));
+    }
 
     @GetMapping
     public ResponseEntity<ServerResponse<PageResponseDto<RequestDto>>> search(
-            @ModelAttribute RequestSearchDto searchDto,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int limit
+        @ModelAttribute RequestSearchDto searchDto,
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(defaultValue = "20") int limit
     ) {
-
         Pageable pageable = PaginationUtils.create(page, limit);
 
         PageResponseDto<RequestDto> payload = requestSearchUseCase.execute(searchDto, pageable);

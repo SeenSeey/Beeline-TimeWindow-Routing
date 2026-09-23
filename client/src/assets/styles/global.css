@@ -1,0 +1,103 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+@import "tailwindcss";
+
+/* Tokens as Tailwind colours (bg-surface, text-muted, border-line, …). `inline` makes utilities
+   read the variables on the element itself, so the light/dark values below apply. */
+@theme inline {
+  --color-canvas: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-shift: var(--shift);
+  --color-accent: var(--accent);
+  --color-urgent: var(--urgent);
+  --color-danger: var(--unassigned);
+  --color-tooltip: var(--tooltip-bg);
+  --color-tooltip-ink: var(--tooltip-ink);
+}
+
+/* Numbers and times */
+@utility mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Design tokens shared by all pages. AppLayout puts the `board` class on its root element. */
+.board {
+  color-scheme: light;
+  --bg: #f2f4f6;
+  --surface: #ffffff;
+  --ink: #17202b;
+  --muted: #5b6776;
+  --faint: #8a95a3;
+  --line: #dde2e8;
+  --line-strong: #c4ccd6;
+  --shift: #e8edf2;
+  --accent: #0d6e78;
+  --job-installation: #3563c9;
+  --job-local: #16917f;
+  --job-addon: #c98518;
+  --job-emergency: #c93c52;
+  --urgent: #a3378a;
+  --region-1: #2f6fb0;
+  --region-2: #b5652a;
+  --region-3: #4f8a3a;
+  --unassigned: #c93c52;
+  --tooltip-bg: #17202b;
+  --tooltip-ink: #f2f4f6;
+  --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .board {
+    color-scheme: dark;
+    --bg: #11161c;
+    --surface: #182029;
+    --ink: #e5eaf0;
+    --muted: #9aa6b4;
+    --faint: #6d7988;
+    --line: #26313d;
+    --line-strong: #364453;
+    --shift: #1e2833;
+    --accent: #4fb8c2;
+    --job-installation: #6f97ef;
+    --job-local: #3fc2ac;
+    --job-addon: #e3a847;
+    --job-emergency: #ef6f83;
+    --urgent: #de6cc3;
+    --region-1: #6aa5e0;
+    --region-2: #e0935a;
+    --region-3: #86bf6f;
+    --unassigned: #ef6f83;
+    --tooltip-bg: #e5eaf0;
+    --tooltip-ink: #11161c;
+  }
+}
+
+:root[data-theme="dark"] .board {
+  color-scheme: dark;
+  --bg: #11161c;
+  --surface: #182029;
+  --ink: #e5eaf0;
+  --muted: #9aa6b4;
+  --faint: #6d7988;
+  --line: #26313d;
+  --line-strong: #364453;
+  --shift: #1e2833;
+  --accent: #4fb8c2;
+  --job-installation: #6f97ef;
+  --job-local: #3fc2ac;
+  --job-addon: #e3a847;
+  --job-emergency: #ef6f83;
+  --urgent: #de6cc3;
+  --region-1: #6aa5e0;
+  --region-2: #e0935a;
+  --region-3: #86bf6f;
+  --unassigned: #ef6f83;
+  --tooltip-bg: #e5eaf0;
+  --tooltip-ink: #11161c;
+}

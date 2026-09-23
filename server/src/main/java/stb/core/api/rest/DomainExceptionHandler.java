@@ -45,6 +45,4 @@ public class DomainExceptionHandler {
         ServerResponse<?> response = ServerResponse.error(status.value(), code, message);
         return new ResponseEntity<>(response, status);
     }
-
 }
-

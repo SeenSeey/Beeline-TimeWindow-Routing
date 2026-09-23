@@ -29,4 +29,11 @@ public interface RequestRepository extends JpaRepository<Request, Integer>, JpaS
             ORDER BY r.urgent DESC, r.deadline ASC
             """)
     List<Request> findAllActiveByRegionId(@Param("regionId") int regionId);
+
+    @Query("""
+            SELECT r FROM Request r
+            WHERE r.region.id = :regionId
+            ORDER BY r.id
+            """)
+    List<Request> findAllByRegionId(@Param("regionId") int regionId);
 }

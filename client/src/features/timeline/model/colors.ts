@@ -1,0 +1,34 @@
+import type { JobType, JobTypeKeyword, ScheduleStatusKeyword } from "../types";
+
+// Styles are keyed by server enum keywords; display names are only ever shown, never matched.
+
+const JOB_COLORS: Record<JobTypeKeyword, string> = {
+  INSTALLATION: "var(--job-installation)",
+  LOCAL_WORK: "var(--job-local)",
+  ADDON: "var(--job-addon)",
+  EMERGENCY: "var(--job-emergency)",
+};
+
+/** unknown keywords (a server enum grew) stay visible in a neutral colour */
+export const jobTypeColor = (keyword: JobTypeKeyword): string => JOB_COLORS[keyword] ?? "var(--faint)";
+
+export interface JobTypeOption extends JobType {
+  color: string;
+}
+
+/** Distinct job types in the mockup's legend order */
+export function collectJobTypes(jobTypes: JobType[]): JobTypeOption[] {
+  const order = Object.keys(JOB_COLORS);
+  const byKeyword = new Map(jobTypes.map((j) => [j.keyword, j]));
+  return [...byKeyword.values()]
+    .sort((a, b) => order.indexOf(a.keyword) - order.indexOf(b.keyword))
+    .map((j) => ({ ...j, color: jobTypeColor(j.keyword) }));
+}
+
+const SCHEDULE_STATUS_COLORS: Record<ScheduleStatusKeyword, string> = {
+  CREATED: "var(--job-local)",
+  CALCULATING: "var(--job-addon)",
+};
+
+export const scheduleStatusColor = (keyword: ScheduleStatusKeyword): string =>
+  SCHEDULE_STATUS_COLORS[keyword] ?? "var(--muted)";
