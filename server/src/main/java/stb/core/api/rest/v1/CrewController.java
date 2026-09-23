@@ -1,5 +1,6 @@
 package stb.core.api.rest.v1;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,13 +14,10 @@ import stb.core.domain.dto.CrewSearchDto;
 
 @RestController
 @RequestMapping("/api/v1/crews")
+@RequiredArgsConstructor
 public class CrewController {
 
     private final CrewSearchUseCase crewSearchUseCase;
-
-    public CrewController(CrewSearchUseCase crewSearchUseCase) {
-        this.crewSearchUseCase = crewSearchUseCase;
-    }
 
     @GetMapping
     public ResponseEntity<ServerResponse<PageResponseDto<CrewDto>>> search(

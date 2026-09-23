@@ -4,6 +4,7 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.jpa.domain.Specification;
 import stb.core.domain.dto.CrewSearchDto;
@@ -12,13 +13,10 @@ import stb.core.domain.model.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@RequiredArgsConstructor
 public class EngineerCrewSpecification implements Specification<EngineerCrew> {
 
     private final CrewSearchDto crew;
-
-    public EngineerCrewSpecification(CrewSearchDto crew) {
-        this.crew = crew;
-    }
 
     @Override
     public @Nullable Predicate toPredicate(Root<EngineerCrew> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
