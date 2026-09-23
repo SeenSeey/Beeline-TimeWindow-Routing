@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<solver xmlns="https://timefold.ai/xsd/solver"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="https://timefold.ai/xsd/solver https://timefold.ai/xsd/solver/solver.xsd">
+
+    <solutionClass>
+        stb.core.domain.service.scheduler.impl.logic.planning.EngineerRoutingPlan
+    </solutionClass>
+
+    <entityClass>
+        stb.core.domain.service.scheduler.dto.EngineerCrewDto
+    </entityClass>
+    <entityClass>
+        stb.core.domain.service.scheduler.dto.RequestDto
+    </entityClass>
+
+    <scoreDirectorFactory>
+        <constraintProviderClass>
+            stb.core.domain.service.scheduler.impl.logic.planning.RoutingConstraintProvider
+        </constraintProviderClass>
+    </scoreDirectorFactory>
+
+    <termination>
+        <spentLimit>PT10s</spentLimit>
+    </termination>
+
+</solver>

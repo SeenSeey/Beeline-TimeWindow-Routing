@@ -3,14 +3,13 @@ WORKDIR /app
 
 COPY ./gradlew .
 COPY ./gradle ./gradle
-COPY ./build.gradle* .
 COPY ./settings.gradle* .
 COPY ./gradle.properties* .
 
 RUN ./gradlew --version --no-daemon
 
 COPY ./build.gradle* .
-COPY ./settings.gradle* .
+
 RUN ./gradlew dependencies --no-daemon || true
 COPY . .
 RUN ./gradlew bootJar --no-daemon

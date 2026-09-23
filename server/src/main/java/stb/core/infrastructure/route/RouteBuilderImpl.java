@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import stb.core.domain.port.route.dto.GeoPoint;
 import stb.core.domain.model.Vehicle;
 import stb.core.domain.port.route.RouteBuilder;
+import stb.core.domain.port.route.dto.Location;
 import stb.core.domain.port.route.dto.RouteDto;
 
 import java.util.ArrayList;
@@ -25,7 +26,7 @@ public class RouteBuilderImpl implements RouteBuilder {
     private final GraphHopper graphHopper;
 
     @Override
-    public RouteDto buildRoute(GeoPoint pointA, GeoPoint pointB, Vehicle.Keyword vehicleType) {
+    public RouteDto buildRoute(Location pointA, Location pointB, Vehicle.Keyword vehicleType) {
         String vehicle = GraphHopperUtils.getGraphHopperVehicleName(vehicleType);
 
         GHRequest request = new GHRequest(pointA.latitude(), pointA.longitude(), pointB.latitude(), pointB.longitude())

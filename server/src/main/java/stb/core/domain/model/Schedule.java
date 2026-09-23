@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -24,6 +26,10 @@ public class Schedule extends BaseEntity {
     @Column(name = "finished_at", nullable = false)
     private LocalDateTime finishedAt;
 
+    @Column(name = "status", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Status status;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "previous_schedule_id")
     private Schedule previousSchedule;
@@ -32,6 +38,35 @@ public class Schedule extends BaseEntity {
     @JoinColumn(name = "region_id", nullable = false)
     private Region region;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "schedule")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "schedule", cascade = CascadeType.ALL)
     private List<ScheduleSlot> slots;
+
+    public Schedule(LocalDate targetDate, Region region) {
+        setTargetDate(targetDate);
+        setRegion(region);
+        setStatus(Status.CALCULATING);
+        setCreatedAt(LocalDateTime.now());
+        setFinishedAt(LocalDateTime.now());
+        setSlots(new ArrayList<>());
+    }
+
+    public void addSlot(Request request, ScheduleSlot.SlotType type, LocalTime arrivalTime, LocalTime startTimeWindow, LocalTime endTimeWindow) {
+        slots.add(new ScheduleSlot(this, request, type, arrivalTime, startTimeWindow, endTimeWindow));
+    }
+
+    public void markAsCreated() {
+        setStatus(Status.CREATED);
+    }
+
+    public enum Status {
+        CALCULATING("Формируется"),
+        CREATED("Готово");
+
+        @Getter
+        private final String displayName;
+
+        Status(String displayName) {
+            this.displayName = displayName;
+        }
+    }
 }

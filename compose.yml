@@ -4,8 +4,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - BACKEND_HOST=backend:8080
-      - FRONTEND_HOST=pwa:5000
+      - BACKEND_HOST=server:8080
+      - FRONTEND_HOST=client:5173
     env_file: .env
     networks:
       - root_network
@@ -50,13 +50,11 @@ services:
       - ./.env
 
   client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
+    build: ./client
     ports:
-      - "5000:5000"
+      - "5173:5173"
     volumes:
-      - ./pwa:/app
+      - ./client:/app
     networks:
       - root_network
 

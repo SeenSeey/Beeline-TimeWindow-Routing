@@ -26,14 +26,26 @@ public class ScheduleSlot extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private SlotType type;
 
-    @Column(name = "start_time_window", nullable = false)
+    @Column(name = "arrival_time")
+    private LocalTime arrivalTime;
+
+    @Column(name = "start_time_window")
     private LocalTime startTimeWindow;
 
-    @Column(name = "end_time_window", nullable = false)
+    @Column(name = "end_time_window")
     private LocalTime endTimeWindow;
 
     @Column(name = "finished_at")
     private LocalDateTime finishedAt;
+
+    public ScheduleSlot(Schedule schedule, Request request, SlotType type, LocalTime arrivalTime, LocalTime startTimeWindow, LocalTime endTimeWindow) {
+        setSchedule(schedule);
+        setRequest(request);
+        setType(type);
+        setArrivalTime(arrivalTime);
+        setStartTimeWindow(startTimeWindow);
+        setEndTimeWindow(endTimeWindow);
+    }
 
     public enum SlotType {
 

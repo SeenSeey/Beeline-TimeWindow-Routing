@@ -3,6 +3,7 @@ package stb.core.api.rest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import stb.core.api.rest.v1.dto.ServerResponse;
@@ -29,9 +30,17 @@ public class DomainExceptionHandler {
                 case DomainException.ValidationException _ -> HttpStatus.BAD_REQUEST;
                 default -> HttpStatus.INTERNAL_SERVER_ERROR;
             };
-        }
 
-        log.error(message, exception);
+            log.error(message);
+        } else if (exception instanceof ErrorResponse errorResponse) {
+            status = HttpStatus.valueOf(errorResponse.getStatusCode().value());
+            code = status.name();
+            message = errorResponse.getBody().getDetail();
+
+            log.warn(message);
+        } else {
+            log.error(message, exception);
+        }
 
         ServerResponse<?> response = ServerResponse.error(status.value(), code, message);
         return new ResponseEntity<>(response, status);

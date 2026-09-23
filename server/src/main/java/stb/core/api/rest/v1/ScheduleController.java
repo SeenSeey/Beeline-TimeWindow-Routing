@@ -1,0 +1,32 @@
+package stb.core.api.rest.v1;
+
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import stb.core.api.rest.v1.dto.ServerResponse;
+import stb.core.application.schedule.ScheduleInitialBuildUseCase;
+import stb.core.application.schedule.ScheduleTimelineFindCurrentByRegionUseCase;
+import stb.core.domain.dto.ScheduleTimelineDto;
+
+@RestController
+@RequestMapping("/api/v1/schedules")
+@RequiredArgsConstructor
+public class ScheduleController {
+
+    private final ScheduleTimelineFindCurrentByRegionUseCase scheduleTimelineFindCurrentByRegionUseCase;
+    private final ScheduleInitialBuildUseCase scheduleInitialBuildUseCase;
+
+    @GetMapping("/regions/{regionId}")
+    public ResponseEntity<ServerResponse<ScheduleTimelineDto>> findCurrentByRegionId(@PathVariable int regionId) {
+        var result = scheduleTimelineFindCurrentByRegionUseCase.execute(regionId);
+        return ResponseEntity.ok(ServerResponse.ok(HttpStatus.OK.value(), result));
+    }
+
+    @PostMapping("/initialize")
+    public ResponseEntity<ServerResponse<List<ScheduleTimelineDto>>> createInitialSchedule() {
+        var result = scheduleInitialBuildUseCase.execute();
+        return ResponseEntity.ok(ServerResponse.ok(HttpStatus.OK.value(), result));
+    }
+}

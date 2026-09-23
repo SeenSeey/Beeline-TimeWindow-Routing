@@ -12,6 +12,10 @@ spring:
       ddl-auto: update
     open-in-view: true
 
+  task:
+    execution:
+      mode: force
+
 app:
   route:
     osm-file: map/central-fed.osm.pbf

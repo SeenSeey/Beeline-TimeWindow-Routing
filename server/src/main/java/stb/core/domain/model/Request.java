@@ -72,9 +72,19 @@ public class Request extends BaseEntity {
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "request_equipment",
-            joinColumns = @JoinColumn(name = "request_id"),
+            joinColumns =@JoinColumn(name = "request_id"),
             inverseJoinColumns = @JoinColumn(name = "equipment_id"))
     private List<Equipment> equipment;
+
+    public void assignCrew(EngineerCrew engineerCrew, List<RequestStatus> statuses) {
+        setAssignedCrew(engineerCrew);
+        setAssignedAt(LocalDateTime.now());
+        setStatus(statuses
+                .stream()
+                .filter(status -> RequestStatus.Keyword.ASSIGNED.equals(status.getKeyword()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Статус %s не найден".formatted(RequestStatus.Keyword.ASSIGNED))));
+    }
 
     public boolean isAssigned() {
         return assignedAt != null;
