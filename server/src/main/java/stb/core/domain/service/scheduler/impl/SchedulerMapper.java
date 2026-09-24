@@ -33,7 +33,7 @@ public class SchedulerMapper {
                 request.getId(),
                 request.getFullAddress(),
                 Location.from(request),
-                request.getJobType().getTotalTimeSpanMinutes(),
+                request.getJobType().getTotalTimeSpanMinutes() - request.getJobType().getMaxTravelTimeSpanMinutes(),
                 request.getStartTimeWindow(),
                 request.getEndTimeWindow(),
                 request.getJobType().getKeyword(),

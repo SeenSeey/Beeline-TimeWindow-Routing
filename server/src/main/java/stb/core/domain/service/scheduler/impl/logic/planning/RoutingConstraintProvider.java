@@ -24,12 +24,12 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                 hardEngineerCrewDtoMustFinishWorkDay(factory),
                 hardEngineerCrewDtoMustHaveRequiredSkill(factory),
                 hardEngineerCrewDtoMustHaveRequiredTransport(factory),
-                hardUrgentRequestsMustBePlanned(factory),
 
                 mediumMaximizeCompletedRequests(factory),
 
                 softMinimizeUsedEngineerCrews(factory),
                 softMinimizeTravelTime(factory),
+                softStartUrgentRequestsAsEarlyAsPossible(factory),
 //                softMinimizeWaitingTime(factory)
         };
     }
@@ -54,16 +54,6 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                 );
     }
 
-
-    private Constraint hardUrgentRequestsMustBePlanned(ConstraintFactory factory){
-        return factory.forEachIncludingUnassigned(RequestDto.class)
-                .filter(request -> request.isUrgent()
-                && request.getEngineerCrewDto() == null)
-                .penalize(HardMediumSoftScore.ONE_HARD)
-                .asConstraint(
-                        "All urgent requests must be planned"
-                );
-    }
 
     private Constraint hardArrivalMustBeInsideTimeWindow(
             ConstraintFactory factory
@@ -177,6 +167,27 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                         "Minimize travel time"
                 );
     }
+    private Constraint softStartUrgentRequestsAsEarlyAsPossible(
+            ConstraintFactory factory
+    ) {
+        return factory
+                .forEach(RequestDto.class)
+                .filter(request ->
+                        request.isUrgent()
+                                && request.getServiceStartTime() != null
+                )
+                .penalize(
+                        HardMediumSoftScore.ONE_SOFT,
+                        request -> (int) Duration.between(
+                                request.getWindowStart(),
+                                request.getServiceStartTime()
+                        ).toMinutes()
+                )
+                .asConstraint(
+                        "Start urgent requests as early as possible"
+                );
+    }
+
     private Constraint softMinimizeWaitingTime(
             ConstraintFactory factory
     ) {
@@ -227,7 +238,7 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                 .forEachIncludingUnassigned(RequestDto.class)
                 .filter(request -> request.getEngineerCrewDto() == null)
                 .penalize(HardMediumSoftScore.ONE_MEDIUM,
-                        request -> request.getJobTypeKeyword() == JobType.Keyword.INSTALLATION ?10:1)
+                        request -> request.isUrgent() ? 1000 : request.getJobTypeKeyword() == JobType.Keyword.INSTALLATION ?10:1)
                 .asConstraint("Maximize completed requests");
     }
 }
