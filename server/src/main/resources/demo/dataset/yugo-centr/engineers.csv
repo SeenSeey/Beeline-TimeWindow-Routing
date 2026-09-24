@@ -1,8 +1,8 @@
 id;name;start_address;start_latitude;start_longitude;shift_start;shift_end;skills;vehicle
 25;Выговский Сергей;г.Москва проезд Симферопольский, д.7;55.664757;37.615839;09:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON|EMERGENCY;BICYCLE
-26;Бахарев Андрей;г.Москва проезд Симферопольский, д.7;55.664757;37.615839;09:00;18:00;LOCAL_WORK|INSTALLATION_OR_ADDON;PUBLIC_TRANSPORT
+26;Бахарев Андрей;г.Москва проезд Симферопольский, д.7;55.664757;37.615839;09:00;18:00;LOCAL_WORK|INSTALLATION_OR_ADDON;CAR
 27;Исхаков Денис;г.Москва проезд Симферопольский, д.7;55.664757;37.615839;10:00;19:00;LOCAL_WORK|INSTALLATION_OR_ADDON;BICYCLE
-28;Брюзгин Ярослав;г.Москва проезд Симферопольский, д.7;55.664757;37.615839;13:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON;BICYCLE
+28;Брюзгин Ярослав;г.Москва проезд Симферопольский, д.7;55.664757;37.615839;13:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON;CAR
 29;Капитанчук Александр;г.Москва проезд Симферопольский, д.7;55.664757;37.615839;09:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON;PUBLIC_TRANSPORT
 30;Переладов Алексей;г.Москва проезд Симферопольский, д.7;55.664757;37.615839;09:00;18:00;LOCAL_WORK|INSTALLATION_OR_ADDON;PEDESTRIAN
 31;Рыбалкин Егор;г.Москва проезд Симферопольский, д.7;55.664757;37.615839;10:00;19:00;LOCAL_WORK|INSTALLATION_OR_ADDON;BICYCLE

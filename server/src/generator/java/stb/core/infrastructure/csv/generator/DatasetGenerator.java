@@ -68,8 +68,6 @@ public final class DatasetGenerator {
             JobType.Keyword.EMERGENCY, 80);
 
     private static final Set<String> CAR_HD_TYPES = Set.of(
-            "Заявка на подключение",
-            "Заказ подключения/Дозаказ оборудования",
             "Работа с кабелем",
             "Авария");
 
@@ -152,7 +150,6 @@ public final class DatasetGenerator {
 
     private static RequestDto request(SourceRow row, Map<String, GeoPointDto> coordinates) {
         JobType.Keyword jobType = jobType(row.bkType());
-        boolean needsCar = CAR_HD_TYPES.contains(row.hdType()) || FAR_DISTRICTS.contains(row.district());
         return new RequestDto(
                 row.id(),
                 row.address(),
@@ -160,9 +157,13 @@ public final class DatasetGenerator {
                 ON_SITE_MINUTES.get(jobType),
                 row.windowStart(),
                 row.windowEnd(),
-                needsCar ? Vehicle.Keyword.CAR : null,
+                needsCar(row) ? Vehicle.Keyword.CAR : null,
                 jobType,
                 equipment(jobType, row.id()));
+    }
+
+    private static boolean needsCar(SourceRow row) {
+        return CAR_HD_TYPES.contains(row.hdType()) || FAR_DISTRICTS.contains(row.district());
     }
 
     private static List<CsvEquipment> equipment(JobType.Keyword jobType, int requestId) {
@@ -196,6 +197,9 @@ public final class DatasetGenerator {
     }
 
     private static Vehicle.Keyword vehicle(List<SourceRow> rows, Map<String, GeoPointDto> coordinates, GeoPointDto office) {
+        if (rows.stream().anyMatch(DatasetGenerator::needsCar)) {
+            return Vehicle.Keyword.CAR;
+        }
         List<GeoPointDto> route = rows.stream()
                 .sorted(comparing(SourceRow::windowStart).thenComparing(SourceRow::windowEnd))
                 .map(row -> locate(coordinates, row.address()))
