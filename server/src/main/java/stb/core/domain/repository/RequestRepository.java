@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import stb.core.domain.model.Request;
+import stb.core.domain.model.RequestStatus;
 
 import java.util.List;
 
@@ -33,7 +34,24 @@ public interface RequestRepository extends JpaRepository<Request, Integer>, JpaS
     @Query("""
             SELECT r FROM Request r
             WHERE r.region.id = :regionId
+            AND r.assignedCrew IS NULL
+            AND r.status.keyword = :status
+            ORDER BY r.urgent DESC, r.deadline ASC
+            """)
+    List<Request> findAllUnassignedByRegionIdAndStatus(@Param("regionId") int regionId,
+                                                       @Param("status") RequestStatus.Keyword status);
+
+    @Query("""
+            SELECT r FROM Request r
+            WHERE r.region.id = :regionId
             ORDER BY r.id
             """)
     List<Request> findAllByRegionId(@Param("regionId") int regionId);
+
+    @Query("""
+            SELECT r FROM Request r
+            WHERE r.assignedCrew.id = :crewId
+            ORDER BY r.assignedAt DESC, r.id DESC
+            """)
+    List<Request> findAllByAssignedCrewId(@Param("crewId") int crewId);
 }

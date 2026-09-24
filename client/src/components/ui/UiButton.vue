@@ -1,10 +1,13 @@
 <template>
+  <!-- Preline buttons: white (outline) with a hairline shadow, or solid blue -->
   <button
     :type="type"
-    class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border py-1 text-[13px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-default disabled:opacity-40 motion-safe:transition-colors motion-safe:duration-[120ms]"
+    class="inline-flex cursor-pointer items-center justify-center gap-x-2 rounded-lg border text-sm font-medium whitespace-nowrap focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50 disabled:pointer-events-none disabled:opacity-50 motion-safe:transition-colors"
     :class="[
-      filled ? 'border-ink bg-ink text-canvas' : 'border-line-strong bg-surface text-ink',
-      size === 'icon' ? 'w-[30px] justify-center px-0' : 'px-[11px]',
+      filled
+        ? 'border-transparent bg-accent text-white hover:bg-accent-hover'
+        : 'border-line bg-surface text-ink shadow-2xs hover:bg-shift',
+      size === 'icon' ? 'size-9.5 px-0' : 'h-9.5 px-3',
     ]"
     :aria-pressed="pressed"
   >

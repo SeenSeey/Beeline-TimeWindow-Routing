@@ -2,7 +2,7 @@
   <!-- stop: the click/Enter must not reach the crew row, which toggles selection and prevents Enter's default -->
   <RouterLink
     :to="{ name: 'request', params: { id: visit.slot.requestId } }"
-    class="absolute top-1.5 bottom-1.5 min-w-[3px] overflow-hidden rounded-[3px] text-[11px] leading-[1.25] text-surface no-underline hover:z-[1] hover:brightness-[1.12] focus-visible:z-[1] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+    class="absolute top-1.5 bottom-1.5 min-w-[3px] overflow-hidden rounded-md text-[11px] leading-[1.25] text-white no-underline shadow-2xs hover:z-[1] hover:brightness-110 focus:outline-hidden focus-visible:z-[1] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1"
     :class="{ 'outline-2 outline-offset-1 outline-urgent outline-dashed': visit.urgent }"
     :data-visit="visitKey(visit)"
     :aria-label="ariaLabel"
@@ -19,7 +19,7 @@
          so it survives truncation -->
     <div v-if="scale.px(from, to) >= MIN_TEXT_PX" class="px-1.5 py-[3px]">
       <!-- right padding keeps the number clear of the vehicle icon -->
-      <div class="mono truncate font-semibold" :class="{ 'pr-3.5': showVehicle }">#{{ visit.slot.requestId }}</div>
+      <div class="mono truncate font-semibold" :class="{ 'pe-3.5': showVehicle }">#{{ visit.slot.requestId }}</div>
       <div class="mono truncate opacity-90">
         {{ formatTime(visit.slot.startSlotTime) }}–{{ formatTime(visit.slot.endSlotTime) }}
       </div>
@@ -29,7 +29,7 @@
     <VehicleIcon
       v-if="showVehicle && visit.slot.requiredVehicle"
       :vehicle="visit.slot.requiredVehicle"
-      class="pointer-events-none absolute top-[3px] right-[3px] h-3 w-3"
+      class="pointer-events-none absolute top-[3px] end-[3px] size-3"
     />
   </RouterLink>
 </template>

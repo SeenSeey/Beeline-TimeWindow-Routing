@@ -8,7 +8,9 @@ import org.springframework.web.bind.annotation.*;
 import stb.core.api.rest.v1.dto.PageResponseDto;
 import stb.core.api.rest.v1.dto.ServerResponse;
 import stb.core.api.utils.PaginationUtils;
+import stb.core.application.crew.CrewFindByIdUseCase;
 import stb.core.application.crew.CrewSearchUseCase;
+import stb.core.domain.dto.CrewDetailedDto;
 import stb.core.domain.dto.CrewDto;
 import stb.core.domain.dto.CrewSearchDto;
 
@@ -18,6 +20,7 @@ import stb.core.domain.dto.CrewSearchDto;
 public class CrewController {
 
     private final CrewSearchUseCase crewSearchUseCase;
+    private final CrewFindByIdUseCase crewFindByIdUseCase;
 
     @GetMapping
     public ResponseEntity<ServerResponse<PageResponseDto<CrewDto>>> search(
@@ -31,5 +34,10 @@ public class CrewController {
         PageResponseDto<CrewDto> payload = crewSearchUseCase.execute(searchDto, pageable);
 
         return ResponseEntity.ok(ServerResponse.ok(HttpStatus.OK.value(), payload));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ServerResponse<CrewDetailedDto>> findById(@PathVariable int id) {
+        return ResponseEntity.ok(ServerResponse.ok(HttpStatus.OK.value(), crewFindByIdUseCase.execute(id)));
     }
 }

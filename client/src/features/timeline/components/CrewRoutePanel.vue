@@ -1,5 +1,15 @@
 <template>
-  <UiPanel :title="crew ? crew.name : 'Маршрут бригады'">
+  <UiPanel>
+    <template #title>
+      <RouterLink
+        v-if="crew"
+        :to="{ name: 'crew', params: { id: crew.id } }"
+        class="rounded-sm text-ink no-underline hover:text-accent hover:underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50"
+      >
+        {{ crew.name }}
+      </RouterLink>
+      <template v-else>Маршрут бригады</template>
+    </template>
     <template v-if="crew" #aside>
       {{ regionName }} · смена {{ formatTime(crew.shiftStartTime) }}–{{ formatTime(crew.shiftEndTime) }}
       <template v-if="crew.vehicle"> · {{ crew.vehicle.displayName }}</template>

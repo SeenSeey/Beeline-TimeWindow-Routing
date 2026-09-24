@@ -1,11 +1,14 @@
 <template>
-  <li class="grid grid-cols-[14px_1fr_auto] items-baseline gap-x-2.5 border-t border-line px-4 py-2.5 first:border-t-0">
-    <UiDot :color="color" />
+  <!-- list tile with a square status icon in the job type colour -->
+  <li class="grid grid-cols-[28px_1fr_auto] items-start gap-x-3 rounded-md bg-shift px-3 py-2.5 hover:bg-line">
+    <span class="inline-flex size-7 items-center justify-center rounded-md bg-current/15" :style="{ color }">
+      <UiDot />
+    </span>
 
-    <div class="grid min-w-0 gap-1">
+    <div class="grid min-w-0 gap-1.5">
       <RouterLink
         :to="{ name: 'request', params: { id: request.id } }"
-        class="block truncate text-ink no-underline hover:text-accent hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        class="block truncate rounded-sm text-sm font-medium text-ink no-underline hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50"
         :title="request.fullAddress"
       >
         {{ request.fullAddress }}
@@ -18,15 +21,15 @@
         <UiBadge v-if="request.status">{{ request.status.displayName }}</UiBadge>
       </div>
 
-      <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[12px]">
+      <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
         <template v-for="d in details" :key="d.label">
           <dt class="text-muted">{{ d.label }}</dt>
-          <dd class="m-0" :class="{ mono: d.mono }">{{ d.value }}</dd>
+          <dd class="m-0 text-ink" :class="{ mono: d.mono }">{{ d.value }}</dd>
         </template>
       </dl>
     </div>
 
-    <div class="mono text-right text-[12px] whitespace-nowrap">
+    <div class="mono text-end text-xs whitespace-nowrap text-ink">
       №{{ request.id }}
       <div class="text-muted">создана {{ formatDateTime(request.createdAt) }}</div>
     </div>

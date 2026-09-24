@@ -3,8 +3,6 @@ package stb.core.application.schedule;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -14,9 +12,8 @@ import stb.core.domain.dto.UnassignedRequestDto;
 import stb.core.domain.exception.RegionNotFoundException;
 import stb.core.domain.exception.ScheduleNotFoundException;
 import stb.core.domain.model.Region;
-import stb.core.domain.model.Request;
+import stb.core.domain.model.RequestStatus;
 import stb.core.domain.model.Schedule;
-import stb.core.domain.model.ScheduleSlot;
 import stb.core.domain.repository.RegionRepository;
 import stb.core.domain.repository.RequestRepository;
 import stb.core.domain.repository.ScheduleRepository;
@@ -59,18 +56,9 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
             return List.of();
         }
 
-        Set<Integer> scheduledRequestIds = schedule
-            .getSlots()
-            .stream()
-            .map(ScheduleSlot::getRequest)
-            .filter(request -> request.getAssignedCrew() != null)
-            .map(Request::getId)
-            .collect(Collectors.toSet());
-
         return requestRepository
-            .findAllActiveByRegionId(regionId)
+            .findAllUnassignedByRegionIdAndStatus(regionId, RequestStatus.Keyword.IDLE)
             .stream()
-            .filter(request -> !scheduledRequestIds.contains(request.getId()))
             .map(UnassignedRequestDto::from)
             .toList();
     }

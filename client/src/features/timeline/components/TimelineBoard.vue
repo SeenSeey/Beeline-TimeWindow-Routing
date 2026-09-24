@@ -10,7 +10,7 @@
 
     <TimelinePanel :region-name="schedule.region.displayName" />
 
-    <div class="grid grid-cols-1 items-start gap-5 min-[901px]:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
+    <div class="grid grid-cols-1 items-start gap-4 sm:gap-6 min-[901px]:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
       <CrewRoutePanel :crew="board.selectedCrew" :region-name="schedule.region.displayName" />
       <UnassignedRequestsPanel
         :requests="board.unassigned"

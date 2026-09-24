@@ -1,5 +1,5 @@
 <template>
-  <ul class="m-0 flex list-none flex-wrap items-center gap-x-4 gap-y-1.5 p-0 text-[12px] text-muted">
+  <ul class="m-0 flex list-none flex-wrap items-center gap-x-4 gap-y-1.5 p-0 text-xs text-muted">
     <li v-for="j in jobTypes" :key="j.keyword" class="inline-flex items-center gap-1.5">
       <UiDot :color="j.color" />{{ j.displayName }}
     </li>

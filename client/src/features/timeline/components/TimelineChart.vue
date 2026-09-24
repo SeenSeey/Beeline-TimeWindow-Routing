@@ -3,10 +3,10 @@
     <div class="relative" :style="{ width: LABEL_WIDTH + trackWidth + 'px' }">
       <TimelineAxis :hours="board.axis.hours" :scale="scale" :scrolled="scrolled" />
 
-      <div class="border-t border-line px-4 pt-2.5 pb-1 text-[13px] font-semibold">
-        <div class="sticky left-4 flex w-fit items-center gap-2">
+      <div class="border-b border-line px-5 py-2.5 text-sm font-semibold text-ink">
+        <div class="sticky left-5 flex w-fit items-center gap-2">
           <UiDot color="var(--accent)" />{{ regionName }}
-          <small class="font-normal text-muted">
+          <small class="text-xs font-normal text-muted">
             {{ board.visibleCrews.length }} бригад · {{ visibleRequestCount }} заявок
           </small>
         </div>

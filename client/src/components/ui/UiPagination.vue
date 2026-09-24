@@ -1,42 +1,49 @@
 <template>
-  <nav class="flex flex-wrap items-center gap-1" aria-label="Страницы">
-    <UiButton size="icon" :disabled="disabled || page <= 1" aria-label="Предыдущая страница" @click="go(page - 1)">
-      <svg class="h-2.5 w-2.5" viewBox="0 0 10 10" aria-hidden="true">
-        <path d="M6.5 1.5 3 5l3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.5" />
+  <!-- Preline pagination: borderless square buttons, the current page on a gray fill -->
+  <nav class="flex flex-wrap items-center gap-x-1" aria-label="Страницы">
+    <button
+      type="button"
+      class="inline-flex min-h-9.5 min-w-9.5 cursor-pointer items-center justify-center rounded-lg px-2 text-sm text-ink hover:bg-shift focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50 disabled:pointer-events-none disabled:opacity-50"
+      :disabled="disabled || page <= 1"
+      aria-label="Предыдущая страница"
+      @click="go(page - 1)"
+    >
+      <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="m15 18-6-6 6-6" />
       </svg>
-    </UiButton>
+    </button>
 
     <template v-for="(item, i) in items" :key="i">
-      <span v-if="item === 'gap'" class="w-6 text-center text-faint" aria-hidden="true">…</span>
-      <UiButton
+      <span v-if="item === 'gap'" class="inline-flex min-w-9.5 justify-center text-faint" aria-hidden="true">…</span>
+      <button
         v-else
-        size="icon"
-        class="mono"
-        :variant="item === page ? 'solid' : 'outline'"
+        type="button"
+        class="mono inline-flex min-h-9.5 min-w-9.5 cursor-pointer items-center justify-center rounded-lg px-3 text-sm text-ink focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50 disabled:pointer-events-none disabled:opacity-50"
+        :class="item === page ? 'bg-shift font-medium' : 'hover:bg-shift'"
         :disabled="disabled"
         :aria-current="item === page ? 'page' : undefined"
         @click="go(item)"
       >
         {{ item }}
-      </UiButton>
+      </button>
     </template>
 
-    <UiButton
-      size="icon"
+    <button
+      type="button"
+      class="inline-flex min-h-9.5 min-w-9.5 cursor-pointer items-center justify-center rounded-lg px-2 text-sm text-ink hover:bg-shift focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50 disabled:pointer-events-none disabled:opacity-50"
       :disabled="disabled || page >= totalPages"
       aria-label="Следующая страница"
       @click="go(page + 1)"
     >
-      <svg class="h-2.5 w-2.5" viewBox="0 0 10 10" aria-hidden="true">
-        <path d="M3.5 1.5 7 5 3.5 8.5" fill="none" stroke="currentColor" stroke-width="1.5" />
+      <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="m9 18 6-6-6-6" />
       </svg>
-    </UiButton>
+    </button>
   </nav>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
-import UiButton from "./UiButton.vue";
 
 const props = withDefaults(
   defineProps<{

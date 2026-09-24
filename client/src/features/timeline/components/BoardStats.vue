@@ -1,5 +1,6 @@
 <template>
-  <div class="flex flex-wrap gap-x-7 gap-y-2 pt-1">
+  <!-- Preline stats grid: a row of stat cards -->
+  <div class="grid gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-5">
     <UiStat v-for="s in stats" :key="s.label" :value="s.value" :label="s.label" :color="s.color" />
   </div>
 </template>

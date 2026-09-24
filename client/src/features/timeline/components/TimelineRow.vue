@@ -1,7 +1,7 @@
 <template>
   <div
-    class="group grid min-h-[60px] cursor-pointer grid-cols-[230px_1fr] rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-safe:transition-colors motion-safe:duration-[120ms]"
-    :class="selected ? 'bg-shift' : 'hover:bg-[color-mix(in_srgb,var(--shift)_60%,transparent)]'"
+    class="group grid min-h-[60px] cursor-pointer grid-cols-[230px_1fr] border-b border-line last:border-b-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-inset motion-safe:transition-colors"
+    :class="selected ? 'bg-accent-soft' : 'hover:bg-canvas'"
     tabindex="0"
     :aria-pressed="selected"
     @click="emit('select')"
@@ -9,15 +9,26 @@
   >
     <!-- Sticky crew label: opaque background mirrors the row's hover/selected state -->
     <div
-      class="sticky left-0 z-[2] grid min-w-0 content-center rounded-l py-[5px] pr-3 pl-4 motion-safe:transition-colors motion-safe:duration-[120ms]"
+      class="sticky left-0 z-[2] grid min-w-0 content-center py-1.5 ps-5 pe-3 motion-safe:transition-colors"
       :class="[
-        selected ? 'bg-shift' : 'bg-surface group-hover:bg-[color-mix(in_srgb,var(--shift)_60%,var(--surface))]',
-        { 'shadow-[2px_0_4px_rgb(0_0_0/0.08)]': scrolled },
+        selected ? 'bg-accent-soft' : 'bg-surface group-hover:bg-canvas',
+        { 'shadow-[2px_0_4px_rgb(0_0_0/0.06)]': scrolled },
       ]"
     >
-      <div class="truncate font-medium">{{ crew.name.replace(/^Бригада\s+/, "") }}</div>
-      <div v-if="crew.vehicle" class="truncate text-[11.5px] text-muted">{{ crew.vehicle.displayName }}</div>
-      <div class="mono text-[11.5px] whitespace-nowrap text-muted">
+      <!-- the name opens the crew's page; stop: the click/Enter must not reach the row, which toggles
+           selection and prevents Enter's default -->
+      <RouterLink
+        :to="{ name: 'crew', params: { id: crew.id } }"
+        class="w-fit max-w-full truncate rounded-sm text-sm font-medium no-underline hover:underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50"
+        :class="selected ? 'text-accent' : 'text-ink hover:text-accent'"
+        :title="`Открыть бригаду ${crew.name}`"
+        @click.stop
+        @keydown.enter.stop
+      >
+        {{ crew.name.replace(/^Бригада\s+/, "") }}
+      </RouterLink>
+      <div v-if="crew.vehicle" class="truncate text-xs text-muted">{{ crew.vehicle.displayName }}</div>
+      <div class="mono text-xs whitespace-nowrap text-muted">
         {{ formatTime(crew.shiftStartTime) }}–{{ formatTime(crew.shiftEndTime) }} · {{ crew.requests.length }} заявок
       </div>
     </div>
@@ -32,8 +43,8 @@
       ></div>
 
       <div
-        class="absolute top-[7px] bottom-[7px] rounded-[3px]"
-        :class="selected ? 'bg-[color-mix(in_srgb,var(--line-strong)_45%,var(--shift))]' : 'bg-shift'"
+        class="absolute top-[7px] bottom-[7px] rounded-md"
+        :class="selected ? 'bg-accent/10' : 'bg-shift'"
         :style="{ left: scale.left(crew.shift[0]), width: scale.width(crew.shift[0], crew.shift[1]) }"
       ></div>
 
@@ -50,7 +61,7 @@
         />
         <div
           v-else-if="seg.kind === 'break'"
-          class="absolute top-[11px] bottom-[11px] rounded-[3px] bg-line-strong"
+          class="absolute top-[11px] bottom-[11px] rounded-sm bg-line-strong"
           :style="{ left: scale.left(seg.from), width: scale.width(seg.from, seg.to) }"
         ></div>
         <TimelineWorkBar
@@ -65,7 +76,7 @@
 
       <span
         v-if="!crew.requests.length"
-        class="absolute top-2 pl-2 text-[12px] text-faint"
+        class="absolute top-2 ps-2 text-xs text-faint"
         :style="{ left: scale.left(crew.shift[0]) }"
       >
         без заявок

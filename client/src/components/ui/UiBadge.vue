@@ -1,10 +1,11 @@
 <template>
+  <!-- Preline soft badge: tinted background in the badge colour, coloured text -->
   <span
-    class="inline-flex items-center gap-1.5 rounded-full border border-current whitespace-nowrap"
-    :class="size === 'md' ? 'px-2.5 py-0.5 text-[12px] font-medium' : 'px-[7px] py-px text-[11px]'"
+    class="inline-flex items-center gap-x-1.5 rounded-full bg-current/12 text-xs font-medium whitespace-nowrap"
+    :class="size === 'md' ? 'px-2.5 py-1' : 'px-2 py-0.5'"
     :style="{ color }"
   >
-    <UiDot v-if="dot" />
+    <UiDot v-if="dot" size="sm" />
     <slot />
   </span>
 </template>
@@ -14,7 +15,7 @@ import UiDot from "./UiDot.vue";
 
 withDefaults(
   defineProps<{
-    /** any CSS colour; used for text and border */
+    /** any CSS colour; used for the text and, tinted, for the background */
     color?: string;
     size?: "sm" | "md";
     dot?: boolean;

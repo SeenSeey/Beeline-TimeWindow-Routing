@@ -2,7 +2,7 @@
   <div
     v-if="visit"
     ref="tipEl"
-    class="pointer-events-none fixed z-10 max-w-[300px] rounded-md bg-tooltip px-2.5 py-2 text-[12.5px] leading-[1.4] text-tooltip-ink shadow-[0_6px_20px_rgb(0_0_0/0.18)]"
+    class="pointer-events-none fixed z-30 grid max-w-[300px] gap-0.5 rounded-lg bg-tooltip px-3 py-2 text-xs leading-normal text-tooltip-ink shadow-md"
     :style="{ left: x + 'px', top: y + 'px' }"
   >
     <div>
@@ -10,20 +10,16 @@
       >{{ visit.urgent ? " · срок сегодня" : "" }}
     </div>
     <div>{{ visit.slot.fullAddress }}</div>
-    <div class="mono text-[12px]">
+    <div class="mono">
       Окно {{ formatTime(visit.slot.requestTimeWindowStart) }}–{{ formatTime(visit.slot.requestTimeWindowEnd) }} ·
       {{ visit.duration }} мин
     </div>
-    <div class="mono text-[12px]">
-      Приезд {{ formatTime(visit.arrival) }}
-    </div>
-    <div class="mono text-[12px]">
-      Работа {{ formatTime(visit.slot.startSlotTime) }}–{{ formatTime(visit.slot.endSlotTime) }}
-    </div>
+    <div class="mono">Приезд {{ formatTime(visit.arrival) }}</div>
+    <div class="mono">Работа {{ formatTime(visit.slot.startSlotTime) }}–{{ formatTime(visit.slot.endSlotTime) }}</div>
     <div>{{ visit.crewName }}</div>
     <div v-if="visit.slot.status">Статус: {{ visit.slot.status.displayName }}</div>
     <div v-if="visit.slot.requiredVehicle">Нужен транспорт: {{ visit.slot.requiredVehicle.displayName }}</div>
-    <div v-if="visit.outOfWindow" class="text-red-500">Назначено вне запрошенного окна</div>
+    <div v-if="visit.outOfWindow" class="font-medium text-red-400">Назначено вне запрошенного окна</div>
   </div>
 </template>
 

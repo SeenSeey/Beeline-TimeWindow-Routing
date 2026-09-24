@@ -1,11 +1,12 @@
 <template>
-  <dl class="m-0 grid grid-cols-[minmax(110px,auto)_1fr] gap-x-4 gap-y-2 px-4 py-3.5">
-    <template v-for="row in rows" :key="row.label">
+  <!-- Preline description list: muted labels, divided rows -->
+  <dl class="m-0 divide-y divide-line px-5">
+    <div v-for="row in rows" :key="row.label" class="grid grid-cols-[minmax(120px,40%)_1fr] gap-x-4 py-3 text-sm">
       <dt class="text-muted">{{ row.label }}</dt>
-      <dd class="m-0 min-w-0 break-words" :class="{ mono: row.mono, 'text-faint': row.value == null }">
+      <dd class="m-0 min-w-0 break-words" :class="row.value == null ? 'text-faint' : ['text-ink', { mono: row.mono }]">
         {{ row.value ?? "—" }}
       </dd>
-    </template>
+    </div>
   </dl>
 </template>
 

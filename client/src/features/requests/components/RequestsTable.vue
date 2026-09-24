@@ -1,45 +1,44 @@
 <template>
-  <div class="overflow-x-auto">
-    <table class="w-full border-collapse text-left">
+  <!-- Preline table: gray head with small uppercase labels, divided rows. Scrolls both ways inside
+       its container; the head stays pinned (its bottom rule is a shadow, since borders scroll away). -->
+  <div class="overflow-auto">
+    <table class="min-w-full text-start">
       <thead>
-        <tr class="border-b border-line text-[11px] font-medium tracking-[0.08em] text-muted uppercase">
-          <th scope="col" class="w-[1%] px-4 py-2 font-medium whitespace-nowrap">№</th>
-          <th scope="col" class="px-4 py-2 font-medium">Адрес</th>
-          <th scope="col" class="w-[1%] px-4 py-2 font-medium whitespace-nowrap">Статус</th>
-          <th scope="col" class="w-[1%] px-4 py-2 font-medium whitespace-nowrap">Тип работ</th>
-          <th scope="col" class="w-[1%] px-4 py-2 font-medium whitespace-nowrap">Регион</th>
-          <th scope="col" class="w-[1%] px-4 py-2 font-medium whitespace-nowrap">Бригада</th>
-          <th scope="col" class="w-[1%] px-4 py-2 font-medium whitespace-nowrap">Срочность</th>
+        <tr>
+          <th
+            v-for="column in COLUMNS"
+            :key="column.label"
+            scope="col"
+            class="sticky top-0 z-[1] bg-canvas px-5 py-3 text-start text-xs font-semibold tracking-wide whitespace-nowrap text-ink uppercase shadow-[inset_0_-1px_0_var(--line)]"
+            :class="{ 'w-[1%]': column.narrow }"
+          >
+            {{ column.label }}
+          </th>
         </tr>
       </thead>
-      <tbody>
-        <tr
-          v-for="r in requests"
-          :key="r.id"
-          class="cursor-pointer border-b border-line last:border-b-0 hover:bg-shift"
-          @click="openRow($event, r.id)"
-        >
-          <td class="px-4 py-2.5">
+      <tbody class="divide-y divide-line">
+        <tr v-for="r in requests" :key="r.id" class="cursor-pointer hover:bg-canvas" @click="openRow($event, r.id)">
+          <td class="px-5 py-3 text-sm">
             <RouterLink
               :to="detailsRoute(r.id)"
-              class="mono text-accent no-underline hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              class="mono rounded-sm font-medium text-accent no-underline hover:underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50"
             >
               {{ r.id }}
             </RouterLink>
           </td>
-          <td class="px-4 py-2.5">{{ r.fullAddress }}</td>
-          <td class="px-4 py-2.5">
+          <td class="px-5 py-3 text-sm text-ink">{{ r.fullAddress }}</td>
+          <td class="px-5 py-3">
             <UiBadge :color="statusColor(r.status)" dot>{{ statusLabel(r.status) }}</UiBadge>
           </td>
-          <td class="px-4 py-2.5">
+          <td class="px-5 py-3">
             <UiBadge :color="jobTypeColor(r.jobType.keyword)">{{ r.jobType.displayName }}</UiBadge>
           </td>
-          <td class="px-4 py-2.5 whitespace-nowrap">{{ r.region.displayName }}</td>
-          <td class="px-4 py-2.5 whitespace-nowrap">
+          <td class="px-5 py-3 text-sm whitespace-nowrap text-muted">{{ r.region.displayName }}</td>
+          <td class="px-5 py-3 text-sm whitespace-nowrap text-muted">
             <template v-if="r.assignedCrew">{{ r.assignedCrew.name }}</template>
             <span v-else class="text-faint">—</span>
           </td>
-          <td class="px-4 py-2.5">
+          <td class="px-5 py-3 text-sm">
             <UiBadge v-if="r.urgent" color="var(--urgent)">Срочная</UiBadge>
             <span v-else class="text-faint">—</span>
           </td>
@@ -59,6 +58,17 @@ import type { RequestItem } from "../types";
 defineProps<{
   requests: RequestItem[];
 }>();
+
+/** narrow columns shrink to their content; the address takes the rest */
+const COLUMNS = [
+  { label: "№", narrow: true },
+  { label: "Адрес", narrow: false },
+  { label: "Статус", narrow: true },
+  { label: "Тип работ", narrow: true },
+  { label: "Регион", narrow: true },
+  { label: "Бригада", narrow: true },
+  { label: "Срочность", narrow: true },
+];
 
 const router = useRouter();
 

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 /* Tokens as Tailwind colours (bg-surface, text-muted, border-line, …). `inline` makes utilities
@@ -13,91 +13,102 @@
   --color-line-strong: var(--line-strong);
   --color-shift: var(--shift);
   --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
   --color-urgent: var(--urgent);
   --color-danger: var(--unassigned);
   --color-tooltip: var(--tooltip-bg);
   --color-tooltip-ink: var(--tooltip-ink);
 }
 
-/* Numbers and times */
+/* Numbers and times: same font, fixed-width digits so columns line up */
 @utility mono {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
 }
 
-/* Design tokens shared by all pages. AppLayout puts the `board` class on its root element. */
+/* Design tokens shared by all pages — a dispatch-console look: near-black navy panels, a vivid blue
+   accent, green/yellow/red for states. AppLayout puts the `board` class on its root element.
+   Domain colours (job types, urgency) are also read by inline styles and by MapLibre, so they stay
+   variables. */
 .board {
   color-scheme: light;
-  --bg: #f2f4f6;
+  --bg: #f3f5f8;
   --surface: #ffffff;
-  --ink: #17202b;
-  --muted: #5b6776;
-  --faint: #8a95a3;
-  --line: #dde2e8;
-  --line-strong: #c4ccd6;
-  --shift: #e8edf2;
-  --accent: #0d6e78;
-  --job-installation: #3563c9;
-  --job-local: #16917f;
-  --job-addon: #c98518;
-  --job-emergency: #c93c52;
-  --urgent: #a3378a;
-  --region-1: #2f6fb0;
-  --region-2: #b5652a;
-  --region-3: #4f8a3a;
-  --unassigned: #c93c52;
-  --tooltip-bg: #17202b;
-  --tooltip-ink: #f2f4f6;
-  --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --ink: #111827;
+  --muted: #5b6474;
+  --faint: #9aa3b2;
+  --line: #e3e7ee;
+  --line-strong: #cdd4de;
+  --shift: #eef1f6; /* tiles inside panels, hover */
+  --accent: #1d5cff;
+  --accent-hover: #174ad6;
+  --accent-soft: #e8efff;
+  --job-installation: #1d5cff; /* blue */
+  --job-local: #16a34a; /* green */
+  --job-addon: #d4a106; /* yellow */
+  --job-emergency: #e11d48; /* red */
+  --urgent: #c026d3;
+  --region-1: #1d5cff;
+  --region-2: #ea580c;
+  --region-3: #16a34a;
+  --unassigned: #e11d48;
+  --tooltip-bg: #0f141c;
+  --tooltip-ink: #ffffff;
+  --sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --mono: var(--sans);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .board {
     color-scheme: dark;
-    --bg: #11161c;
-    --surface: #182029;
-    --ink: #e5eaf0;
-    --muted: #9aa6b4;
-    --faint: #6d7988;
-    --line: #26313d;
-    --line-strong: #364453;
-    --shift: #1e2833;
-    --accent: #4fb8c2;
-    --job-installation: #6f97ef;
-    --job-local: #3fc2ac;
-    --job-addon: #e3a847;
-    --job-emergency: #ef6f83;
-    --urgent: #de6cc3;
-    --region-1: #6aa5e0;
-    --region-2: #e0935a;
-    --region-3: #86bf6f;
-    --unassigned: #ef6f83;
-    --tooltip-bg: #e5eaf0;
-    --tooltip-ink: #11161c;
+    --bg: #0a0d12; /* near-black navy */
+    --surface: #11161e; /* panels */
+    --ink: #e6ebf2;
+    --muted: #8b95a7;
+    --faint: #586274;
+    --line: #1c232e;
+    --line-strong: #2a3342;
+    --shift: #171e28; /* tiles inside panels, hover */
+    --accent: #2563ff; /* vivid blue */
+    --accent-hover: #4178ff;
+    --accent-soft: #14213d;
+    --job-installation: #3b7bff;
+    --job-local: #22c55e;
+    --job-addon: #facc15;
+    --job-emergency: #f43f5e;
+    --urgent: #e879f9;
+    --region-1: #3b7bff;
+    --region-2: #fb923c;
+    --region-3: #22c55e;
+    --unassigned: #f43f5e;
+    --tooltip-bg: #1f2733;
+    --tooltip-ink: #ffffff;
   }
 }
 
 :root[data-theme="dark"] .board {
   color-scheme: dark;
-  --bg: #11161c;
-  --surface: #182029;
-  --ink: #e5eaf0;
-  --muted: #9aa6b4;
-  --faint: #6d7988;
-  --line: #26313d;
-  --line-strong: #364453;
-  --shift: #1e2833;
-  --accent: #4fb8c2;
-  --job-installation: #6f97ef;
-  --job-local: #3fc2ac;
-  --job-addon: #e3a847;
-  --job-emergency: #ef6f83;
-  --urgent: #de6cc3;
-  --region-1: #6aa5e0;
-  --region-2: #e0935a;
-  --region-3: #86bf6f;
-  --unassigned: #ef6f83;
-  --tooltip-bg: #e5eaf0;
-  --tooltip-ink: #11161c;
+  --bg: #0a0d12;
+  --surface: #11161e;
+  --ink: #e6ebf2;
+  --muted: #8b95a7;
+  --faint: #586274;
+  --line: #1c232e;
+  --line-strong: #2a3342;
+  --shift: #171e28;
+  --accent: #2563ff;
+  --accent-hover: #4178ff;
+  --accent-soft: #14213d;
+  --job-installation: #3b7bff;
+  --job-local: #22c55e;
+  --job-addon: #facc15;
+  --job-emergency: #f43f5e;
+  --urgent: #e879f9;
+  --region-1: #3b7bff;
+  --region-2: #fb923c;
+  --region-3: #22c55e;
+  --unassigned: #f43f5e;
+  --tooltip-bg: #1f2733;
+  --tooltip-ink: #ffffff;
 }

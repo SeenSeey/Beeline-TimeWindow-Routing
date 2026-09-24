@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import stb.core.domain.model.ScheduleSlot;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -20,4 +21,17 @@ public interface ScheduleSlotRepository extends JpaRepository<ScheduleSlot, Inte
             """)
     List<ScheduleSlot> findAllByRequestIdAndType(@Param("requestId") int requestId,
                                                  @Param("type") ScheduleSlot.SlotType type);
+
+    @Query("""
+            SELECT s FROM ScheduleSlot s
+            JOIN FETCH s.schedule sc
+            JOIN FETCH s.request r
+            WHERE sc.targetDate = :targetDate
+            AND r.assignedCrew.id = :crewId
+            AND s.type = :type
+            ORDER BY s.startTimeWindow
+            """)
+    List<ScheduleSlot> findAllByTargetDateAndCrewIdAndType(@Param("targetDate") LocalDate targetDate,
+                                                           @Param("crewId") int crewId,
+                                                           @Param("type") ScheduleSlot.SlotType type);
 }

@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { computed, onBeforeUnmount, onMounted } from "vue";
 import BoardMessage from "@/features/timeline/components/BoardMessage.vue";
 import RegionSelect from "@/features/timeline/components/RegionSelect.vue";
 import TimelineBoard from "@/features/timeline/components/TimelineBoard.vue";
@@ -66,4 +66,6 @@ function retry(): void {
 }
 
 onMounted(init);
+// the store outlives the page; don't keep refetching a calculating schedule nobody looks at
+onBeforeUnmount(() => scheduleStore.stopPolling());
 </script>

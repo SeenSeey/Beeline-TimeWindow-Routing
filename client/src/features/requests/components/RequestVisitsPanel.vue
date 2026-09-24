@@ -5,36 +5,39 @@
     <UiEmptyState v-if="!visits.length">Заявка пока не попадала ни в одно расписание.</UiEmptyState>
 
     <div v-else class="overflow-x-auto">
-      <table class="w-full border-collapse text-left">
-        <thead>
-          <tr class="border-b border-line text-[11px] font-medium tracking-[0.08em] text-muted uppercase">
-            <th scope="col" class="px-4 py-2 font-medium whitespace-nowrap">Дата</th>
-            <th scope="col" class="px-4 py-2 font-medium whitespace-nowrap">Расписание</th>
-            <th scope="col" class="px-4 py-2 font-medium whitespace-nowrap">Приезд</th>
-            <th scope="col" class="px-4 py-2 font-medium whitespace-nowrap">Работа</th>
-            <th scope="col" class="px-4 py-2 font-medium whitespace-nowrap">Завершено</th>
-            <th scope="col" class="w-[1%] px-4 py-2"><span class="sr-only">Ссылка</span></th>
+      <!-- Preline table: gray head with small uppercase labels, divided rows -->
+      <table class="min-w-full divide-y divide-line text-start">
+        <thead class="bg-canvas">
+          <tr class="text-xs font-semibold tracking-wide text-ink uppercase">
+            <th scope="col" class="px-5 py-3 text-start whitespace-nowrap">Дата</th>
+            <th scope="col" class="px-5 py-3 text-start whitespace-nowrap">Расписание</th>
+            <th scope="col" class="px-5 py-3 text-start whitespace-nowrap">Приезд</th>
+            <th scope="col" class="px-5 py-3 text-start whitespace-nowrap">Работа</th>
+            <th scope="col" class="px-5 py-3 text-start whitespace-nowrap">Завершено</th>
+            <th scope="col" class="w-[1%] px-5 py-3"><span class="sr-only">Ссылка</span></th>
           </tr>
         </thead>
-        <tbody>
-          <tr v-for="v in visits" :key="v.scheduleId" class="border-b border-line last:border-b-0">
-            <td class="mono px-4 py-2.5 whitespace-nowrap">{{ formatDate(v.targetDate) }}</td>
-            <td class="px-4 py-2.5">
+        <tbody class="divide-y divide-line text-sm">
+          <tr v-for="v in visits" :key="v.scheduleId" class="hover:bg-canvas">
+            <td class="mono px-5 py-3 whitespace-nowrap text-ink">{{ formatDate(v.targetDate) }}</td>
+            <td class="px-5 py-3">
               <UiBadge :color="scheduleStatusColor(v.scheduleStatus.keyword)">
                 {{ v.scheduleStatus.displayName }}
               </UiBadge>
             </td>
-            <td class="mono px-4 py-2.5 whitespace-nowrap">{{ formatTime(v.arrivalTime) }}</td>
-            <td class="mono px-4 py-2.5 whitespace-nowrap">{{ formatTime(v.startTime) }}–{{ formatTime(v.endTime) }}</td>
-            <td class="mono px-4 py-2.5 whitespace-nowrap" :class="{ 'text-faint': !v.finishedAt }">
+            <td class="mono px-5 py-3 whitespace-nowrap text-muted">{{ formatTime(v.arrivalTime) }}</td>
+            <td class="mono px-5 py-3 whitespace-nowrap text-muted">
+              {{ formatTime(v.startTime) }}–{{ formatTime(v.endTime) }}
+            </td>
+            <td class="mono px-5 py-3 whitespace-nowrap" :class="v.finishedAt ? 'text-muted' : 'text-faint'">
               {{ v.finishedAt ? formatDateTime(v.finishedAt) : "—" }}
             </td>
-            <td class="px-4 py-2.5 whitespace-nowrap">
+            <td class="px-5 py-3 whitespace-nowrap">
               <!-- the schedule page shows only today's schedule -->
               <RouterLink
                 v-if="v.targetDate === today"
                 :to="{ name: 'schedule', query: { region: regionId } }"
-                class="text-accent no-underline hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                class="rounded-sm font-medium text-accent no-underline hover:underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50"
               >
                 Открыть
               </RouterLink>

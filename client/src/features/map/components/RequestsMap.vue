@@ -6,6 +6,7 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import maplibregl, { type GeoJSONSource, type MapLayerMouseEvent } from "maplibre-gl";
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { currentMapStyleUrl } from "@/utils/mapStyle";
 import { boundsOf, jobTypeColor, toFeatureCollection } from "../model/points";
 import type { RequestPoint } from "../types";
 
@@ -21,8 +22,6 @@ const emit = defineEmits<{
 }>();
 
 const SOURCE = "requests";
-/** light vector basemap, free and without an API key */
-const STYLE_URL = "https://tiles.openfreemap.org/styles/positron";
 /** Central Russia, until the first points arrive */
 const FALLBACK_CENTER: [number, number] = [37.62, 55.75];
 
@@ -64,7 +63,7 @@ function addLayers(): void {
     type: "circle",
     source: SOURCE,
     filter: ["==", ["get", "id"], -1],
-    paint: { "circle-radius": 14, "circle-color": "#17202b", "circle-opacity": 0.2 },
+    paint: { "circle-radius": 14, "circle-color": resolveColor("var(--accent)"), "circle-opacity": 0.35 },
   });
 
   map.addLayer({
@@ -90,7 +89,7 @@ onMounted(() => {
   if (!container.value) return;
   map = new maplibregl.Map({
     container: container.value,
-    style: STYLE_URL,
+    style: currentMapStyleUrl(),
     center: FALLBACK_CENTER,
     zoom: 9,
     attributionControl: { compact: true },

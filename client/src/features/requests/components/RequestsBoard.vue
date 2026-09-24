@@ -1,65 +1,73 @@
 <template>
-  <!-- same page frame as the schedule board (timeline BoardLayout) -->
-  <div class="px-5 pt-5 pb-10">
-    <div class="mx-auto grid max-w-[1440px] grid-cols-[minmax(0,1fr)] gap-5">
-      <UiPanel title="Заявки">
-        <template #aside>
-          <span v-if="data" class="inline-flex items-center gap-2">
-            <UiDot v-if="switching" size="sm" color="var(--accent)" pulse />
-            Всего: <b class="mono font-medium text-ink">{{ data.totalElements }}</b>
-          </span>
-        </template>
+  <!-- Fills the viewport under the app header (h-14 + border): the card takes the remaining height,
+       only the table scrolls inside it, so the pagination bar is always on screen -->
+  <div
+    class="grid h-[calc(100dvh-57px)] min-h-80 grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-4 p-4 sm:gap-6 sm:p-6"
+  >
+    <h1 class="m-0 text-2xl font-semibold text-ink">Заявки</h1>
 
-        <div class="border-b border-line px-4 py-3">
-          <RequestFiltersBar v-model:filters="filters" :regions="regions" @reset="emit('reset')" />
-        </div>
+    <UiPanel title="Список заявок" class="min-h-0">
+      <template #aside>
+        <span v-if="data" class="inline-flex items-center gap-2">
+          <UiDot v-if="switching" size="sm" color="var(--accent)" pulse />
+          Всего: <b class="mono font-medium text-ink">{{ data.totalElements }}</b>
+        </span>
+      </template>
 
-        <div v-if="state.kind === 'loading'" class="flex items-center gap-2.5 p-4 text-muted" role="status">
-          <UiDot color="var(--faint)" pulse />
-          Загружаем заявки…
-        </div>
+      <div class="shrink-0 border-b border-line px-5 py-4">
+        <RequestFiltersBar v-model:filters="filters" :regions="regions" @reset="emit('reset')" />
+      </div>
 
-        <div v-else-if="state.kind !== 'ready'" class="grid justify-items-start gap-3 p-4" role="alert">
+      <div
+        v-if="state.kind === 'loading'"
+        class="flex flex-1 items-center gap-2.5 px-5 py-8 text-sm text-muted"
+        role="status"
+      >
+        <UiDot color="var(--faint)" pulse />
+        Загружаем заявки…
+      </div>
+
+      <div v-else-if="state.kind !== 'ready'" class="grid flex-1 content-start justify-items-start gap-3 overflow-auto px-5 py-6" role="alert">
           <div class="flex items-center gap-2.5">
             <UiDot color="var(--unassigned)" />
-            <span class="font-medium">Не удалось загрузить заявки</span>
+            <span class="text-sm font-medium text-ink">Не удалось загрузить заявки</span>
           </div>
-          <p v-if="state.message" class="mono m-0 rounded-md bg-shift px-3 py-2 text-[12.5px]">{{ state.message }}</p>
+          <p v-if="state.message" class="mono m-0 rounded-lg bg-shift px-3 py-2 text-xs text-ink">{{ state.message }}</p>
           <div class="flex items-center gap-4">
             <UiButton variant="solid" @click="emit('retry')">Обновить</UiButton>
-            <span v-if="state.status" class="mono text-[12px] text-faint">HTTP {{ state.status }}</span>
+            <span v-if="state.status" class="mono text-xs text-faint">HTTP {{ state.status }}</span>
           </div>
         </div>
 
-        <UiEmptyState v-else-if="!state.data.payload.length">
+        <UiEmptyState v-else-if="!state.data.payload.length" class="flex-1">
           {{ hasActiveFilters(filters) ? "Нет заявок, подходящих под фильтры." : "Заявок пока нет." }}
         </UiEmptyState>
 
+        <!-- the only scrolling part of the card -->
         <RequestsTable
           v-else
           :requests="state.data.payload"
-          class="motion-safe:transition-opacity"
+          class="min-h-0 flex-1 motion-safe:transition-opacity"
           :class="{ 'opacity-60': switching }"
           :aria-busy="switching"
         />
 
         <div
           v-if="data && data.totalElements > 0"
-          class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2.5 border-t border-line px-4 py-3"
+          class="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-line px-5 py-3"
         >
-          <UiPagination
-            :page="data.page"
-            :total-pages="data.totalPages"
-            :disabled="switching"
-            @update:page="emit('update:page', $event)"
-          />
-          <div class="flex items-center gap-4 text-[12px] text-muted">
-            <span class="mono">{{ rangeLabel }}</span>
+          <p class="mono m-0 text-sm text-muted">{{ rangeLabel }}</p>
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
             <UiSelect v-model="limit" label="На странице" :options="limitOptions" />
+            <UiPagination
+              :page="data.page"
+              :total-pages="data.totalPages"
+              :disabled="switching"
+              @update:page="emit('update:page', $event)"
+            />
           </div>
         </div>
-      </UiPanel>
-    </div>
+    </UiPanel>
   </div>
 </template>
 

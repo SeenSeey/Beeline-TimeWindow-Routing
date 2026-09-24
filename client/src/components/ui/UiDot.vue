@@ -1,7 +1,7 @@
 <template>
   <span
     class="inline-block flex-none rounded-full"
-    :class="[size === 'sm' ? 'h-[7px] w-[7px]' : 'h-[9px] w-[9px]', { 'motion-safe:animate-pulse': pulse }]"
+    :class="[size === 'sm' ? 'size-1.5' : 'size-2', { 'motion-safe:animate-pulse': pulse }]"
     :style="hollow ? { border: `2px solid ${color}` } : { background: color }"
     aria-hidden="true"
   ></span>

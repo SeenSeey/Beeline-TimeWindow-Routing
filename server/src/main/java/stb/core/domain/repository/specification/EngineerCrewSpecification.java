@@ -22,8 +22,9 @@ public class EngineerCrewSpecification implements Specification<EngineerCrew> {
     public @Nullable Predicate toPredicate(Root<EngineerCrew> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
         List<Predicate> predicates = new ArrayList<>();
 
-        if (crew.name() != null) {
-            predicates.add(cb.equal(root.get(EngineerCrew_.NAME), crew.name()));
+        if (crew.name() != null && !crew.name().isBlank()) {
+            String pattern = "%" + crew.name().trim().toLowerCase() + "%";
+            predicates.add(cb.like(cb.lower(root.get(EngineerCrew_.NAME)), pattern));
         }
 
         if (crew.regionId() != null) {

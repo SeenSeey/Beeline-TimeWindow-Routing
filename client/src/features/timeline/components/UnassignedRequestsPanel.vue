@@ -5,7 +5,7 @@
     <UiEmptyState v-if="!ready">Список появится, когда расписание будет сформировано.</UiEmptyState>
     <UiEmptyState v-else-if="!requests.length">Все активные заявки региона вошли в расписание.</UiEmptyState>
 
-    <ul v-else class="m-0 max-h-[640px] list-none overflow-y-auto py-1.5">
+    <ul v-else class="m-0 grid max-h-[640px] list-none gap-2 overflow-y-auto p-3">
       <!-- the server orders them urgent first, then by deadline -->
       <UnassignedRequestItem v-for="r in requests" :key="r.id" :request="r" :target-date="targetDate" />
     </ul>

@@ -19,6 +19,13 @@ const router = createRouter({
           props: (route) => ({ id: Number(route.params.id) }),
         },
         { path: 'crews', name: 'crews', component: () => import('@/pages/CrewsPage.vue') },
+        {
+          path: 'crews/:id(\\d+)',
+          name: 'crew',
+          component: () => import('@/pages/CrewDetailedPage.vue'),
+          props: (route) => ({ id: Number(route.params.id) }),
+        },
+        { path: 'system', name: 'system', component: () => import('@/pages/SystemPage.vue') },
       ],
     },
     { path: '/:pathMatch(.*)*', redirect: { name: 'schedule' } },

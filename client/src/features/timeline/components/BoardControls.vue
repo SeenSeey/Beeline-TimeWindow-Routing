@@ -1,8 +1,9 @@
 <template>
-  <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+  <!-- Preline toolbar card -->
+  <div class="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border border-line bg-surface p-4 shadow-2xs">
     <JobTypeFilter />
     <UiCheckbox v-model="board.onlyUrgent">только бригады с заявками со сроком сегодня</UiCheckbox>
-    <ZoomControls class="ml-auto" />
+    <ZoomControls class="ms-auto" />
   </div>
 </template>
 

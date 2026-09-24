@@ -1,13 +1,19 @@
 <template>
-  <div class="sticky top-0 z-[3] grid grid-cols-[230px_1fr] border-b border-line bg-surface">
+  <!-- Preline table head: gray-50 band with small muted labels -->
+  <div class="sticky top-0 z-[3] grid grid-cols-[230px_1fr] border-b border-line bg-canvas">
     <!-- corner above the sticky crew column -->
-    <div class="sticky left-0 z-[2] bg-surface" :class="{ 'shadow-[2px_0_4px_rgb(0_0_0/0.08)]': scrolled }"></div>
-    <div class="relative h-7">
+    <div
+      class="sticky left-0 z-[2] flex items-center bg-canvas px-5 text-xs font-semibold tracking-wide text-ink uppercase"
+      :class="{ 'shadow-[2px_0_4px_rgb(0_0_0/0.06)]': scrolled }"
+    >
+      Бригада
+    </div>
+    <div class="relative h-9">
       <span
         v-for="(h, i) in hours"
         :key="h"
-        class="mono absolute top-2 text-[11px] text-faint"
-        :class="i === 0 ? 'pl-1' : '-translate-x-1/2'"
+        class="mono absolute top-2.5 text-xs text-muted"
+        :class="i === 0 ? 'ps-1' : '-translate-x-1/2'"
         :style="{ left: scale.left(h * 60) }"
       >
         {{ formatHour(h) }}

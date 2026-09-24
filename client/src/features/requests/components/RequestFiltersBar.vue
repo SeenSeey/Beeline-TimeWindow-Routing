@@ -1,5 +1,9 @@
 <template>
-  <div class="flex flex-wrap items-center gap-x-4 gap-y-2.5">
+  <!-- one sideways-scrolling row on phones (keeps the page's content visible), wrapping from sm up;
+       the vertical padding keeps focus rings from being clipped by the scroll box -->
+  <div
+    class="-my-1 flex items-center gap-x-4 gap-y-2.5 overflow-x-auto py-1 *:shrink-0 sm:flex-wrap sm:overflow-visible"
+  >
     <UiSelect v-model="status" label="Статус" :options="statusOptions" />
     <UiSelect v-model="jobType" label="Тип работ" :options="jobTypeOptions" />
     <UiSelect v-if="regions" v-model="region" label="Регион" :options="regionOptions" />
