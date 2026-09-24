@@ -16,6 +16,7 @@ import java.util.Collections;
 @Component
 public class RoutingConstraintProvider implements ConstraintProvider {
     private static final int USED_ENGINEER_SOFT_WEIGHT = 1_000_000;
+    private static final int URGENT_START_DELAY_SOFT_WEIGHT = 100;
     @Override
     public Constraint[] defineConstraints(ConstraintFactory factory) {
         return new Constraint[] {
@@ -178,7 +179,7 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                 )
                 .penalize(
                         HardMediumSoftScore.ONE_SOFT,
-                        request -> (int) Duration.between(
+                        request -> URGENT_START_DELAY_SOFT_WEIGHT * (int) Duration.between(
                                 request.getWindowStart(),
                                 request.getServiceStartTime()
                         ).toMinutes()

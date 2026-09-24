@@ -55,6 +55,7 @@ services:
       - "5173:5173"
     volumes:
       - ./client:/app
+      - /app/node_modules
     networks:
       - root_network
 
