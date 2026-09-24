@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import stb.core.api.rest.v1.dto.ServerResponse;
+import stb.core.application.dev.DevStateResetUseCase;
 import stb.core.application.schedule.ScheduleInitialBuildUseCase;
 import stb.core.application.schedule.ScheduleTimelineFindCurrentByRegionUseCase;
 import stb.core.domain.dto.ScheduleTimelineDto;
@@ -17,6 +18,7 @@ public class ScheduleController {
 
     private final ScheduleTimelineFindCurrentByRegionUseCase scheduleTimelineFindCurrentByRegionUseCase;
     private final ScheduleInitialBuildUseCase scheduleInitialBuildUseCase;
+    private final DevStateResetUseCase devStateResetUseCase;
 
     @GetMapping("/regions/{regionId}")
     public ResponseEntity<ServerResponse<ScheduleTimelineDto>> findCurrentByRegionId(@PathVariable int regionId) {
@@ -28,5 +30,12 @@ public class ScheduleController {
     public ResponseEntity<ServerResponse<List<ScheduleTimelineDto>>> createInitialSchedule() {
         var result = scheduleInitialBuildUseCase.execute();
         return ResponseEntity.ok(ServerResponse.ok(HttpStatus.OK.value(), result));
+    }
+
+    @PostMapping("/reset")
+    public ResponseEntity<ServerResponse<Void>> reset() {
+        devStateResetUseCase.execute();
+
+        return ResponseEntity.ok(ServerResponse.ok(HttpStatus.OK.value(), null));
     }
 }
