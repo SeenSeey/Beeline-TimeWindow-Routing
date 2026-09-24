@@ -30,6 +30,9 @@
               </RouterLink>
             </td>
             <td class="px-5 py-3 text-ink">{{ request.fullAddress }}</td>
+            <td class="mono px-5 py-3 whitespace-nowrap text-muted">
+              {{ formatCoordinates(request.latitude, request.longitude) }}
+            </td>
             <td class="px-5 py-3">
               <div class="flex flex-wrap gap-1.5">
                 <UiBadge v-if="request.status" :color="statusColor(request.status.keyword)" dot>
@@ -58,6 +61,7 @@ import UiEmptyState from "@/components/ui/UiEmptyState.vue";
 import UiPanel from "@/components/ui/UiPanel.vue";
 import { jobTypeColor, statusColor } from "@/features/requests/model/colors";
 import { formatDateTime } from "@/features/timeline/model/format";
+import { formatCoordinates } from "../model/format";
 import type { CrewAssignedRequest } from "../types";
 
 defineProps<{
@@ -65,5 +69,5 @@ defineProps<{
   requests: CrewAssignedRequest[];
 }>();
 
-const COLUMNS = ["№", "Адрес", "Статус", "Тип работ", "Крайний срок", "Назначена"];
+const COLUMNS = ["№", "Адрес", "Координаты", "Статус", "Тип работ", "Крайний срок", "Назначена"];
 </script>

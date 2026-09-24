@@ -4,6 +4,7 @@ import { collectJobTypes } from "../model/colors";
 import { buildAxis, buildCrewRows, visitKey } from "../model/timeline";
 import type { JobTypeKeyword } from "../types";
 import { useScheduleStore } from "./schedule";
+import { useScheduleEditStore } from "./scheduleEdit";
 
 export const ZOOM_MIN = 1;
 export const ZOOM_MAX = 6;
@@ -29,7 +30,9 @@ function readPrefs(): SavedPrefs {
 /** View state of the board and everything derived from the loaded schedule */
 export const useBoardStore = defineStore("timeline/board", () => {
   const scheduleStore = useScheduleStore();
-  const schedule = computed(() => scheduleStore.schedule);
+  const editStore = useScheduleEditStore();
+  /** while editing, the draft's recalculated schedule; otherwise the saved one */
+  const schedule = computed(() => editStore.previewSchedule ?? scheduleStore.schedule);
 
   // ── Preferences ──
   const saved = readPrefs();
@@ -60,17 +63,29 @@ export const useBoardStore = defineStore("timeline/board", () => {
     ),
   );
 
-  const crews = computed(() => (schedule.value ? buildCrewRows(schedule.value, axis.value) : []));
+  // Rows are ordered by each crew's first job — except while editing: then they keep the order they had
+  // when editing started, so a change never makes rows jump
+  const crews = computed(() => {
+    if (!schedule.value) return [];
+    const rows = buildCrewRows(schedule.value, axis.value);
+    if (!editStore.active || !editStore.crewOrder.length) return rows;
+    const position = new Map(editStore.crewOrder.map((crewId, index) => [crewId, index]));
+    const last = editStore.crewOrder.length;
+    return [...rows].sort((a, b) => (position.get(a.id) ?? last) - (position.get(b.id) ?? last));
+  });
   const visits = computed(() => crews.value.flatMap((c) => c.requests));
   const visitsByKey = computed(() => new Map(visits.value.map((v) => [visitKey(v), v])));
   const unassigned = computed(() => schedule.value?.unassignedRequests ?? []);
 
+  // while editing every crew stays visible — any of them can be a drop target; the filters only dim bars
   const visibleCrews = computed(() =>
-    crews.value.filter(
-      (c) =>
-        (!jobType.value || c.requests.some((v) => v.slot.jobType.keyword === jobType.value)) &&
-        (!onlyUrgent.value || c.requests.some((v) => v.urgent)),
-    ),
+    editStore.active
+      ? crews.value
+      : crews.value.filter(
+          (c) =>
+            (!jobType.value || c.requests.some((v) => v.slot.jobType.keyword === jobType.value)) &&
+            (!onlyUrgent.value || c.requests.some((v) => v.urgent)),
+        ),
   );
 
   // ── Crew selection ──
@@ -81,10 +96,14 @@ export const useBoardStore = defineStore("timeline/board", () => {
     selectedCrewId.value = selectedCrewId.value === id ? null : id;
   }
 
-  // A new schedule (e.g. another region): preselect the first busy crew and drop a job type filter
-  // this schedule doesn't have — it would hide every crew
+  // A new schedule (another region, or it finished calculating): preselect the first busy crew and drop
+  // a job type filter this schedule doesn't have — it would hide every crew. Edit previews and saves
+  // keep the same schedule, so they keep the selection.
   watch(
-    schedule,
+    () => {
+      const shown = schedule.value;
+      return shown ? `${shown.region.id}|${shown.targetDate}|${shown.status.keyword}` : null;
+    },
     () => {
       selectedCrewId.value = crews.value.find((c) => c.requests.length)?.id ?? null;
       if (jobType.value && !jobTypes.value.some((j) => j.keyword === jobType.value)) jobType.value = "";

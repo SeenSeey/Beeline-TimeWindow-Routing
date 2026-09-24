@@ -20,23 +20,31 @@
     <div v-if="visit.slot.status">Статус: {{ visit.slot.status.displayName }}</div>
     <div v-if="visit.slot.requiredVehicle">Нужен транспорт: {{ visit.slot.requiredVehicle.displayName }}</div>
     <div v-if="visit.outOfWindow" class="font-medium text-red-400">Назначено вне запрошенного окна</div>
+    <!-- edit mode: what the new position breaks -->
+    <div v-for="message in violations" :key="message" class="font-medium text-red-400">⚠ {{ message }}</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { formatTime } from "../model/format";
 import type { Visit } from "../model/timeline";
 import { useBoardStore } from "../stores/board";
+import { useScheduleEditStore } from "../stores/scheduleEdit";
 
 // Follows the mouse over any element marked with data-visit="<visitKey>"
 
 const board = useBoardStore();
+const edit = useScheduleEditStore();
 
 const tipEl = ref<HTMLElement | null>(null);
 const visit = ref<Visit | null>(null);
 const x = ref(0);
 const y = ref(0);
+
+const violations = computed(() =>
+  visit.value && edit.active ? (edit.violationsByRequest.get(visit.value.slot.requestId) ?? []) : [],
+);
 
 async function onMouseMove(e: MouseEvent): Promise<void> {
   const el = (e.target as Element | null)?.closest?.("[data-visit]");

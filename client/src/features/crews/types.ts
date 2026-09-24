@@ -41,6 +41,8 @@ export interface RouteVisit {
 export interface CrewAssignedRequest {
   id: number;
   fullAddress: string;
+  latitude: number;
+  longitude: number;
   status: RequestStatus | null;
   urgent: boolean;
   jobType: JobType;

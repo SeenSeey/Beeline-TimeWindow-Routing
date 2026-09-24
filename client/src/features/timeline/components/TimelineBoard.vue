@@ -8,6 +8,8 @@
 
     <BoardControls />
 
+    <ScheduleEditBar />
+
     <TimelinePanel :region-name="schedule.region.displayName" />
 
     <div class="grid grid-cols-1 items-start gap-4 sm:gap-6 min-[901px]:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
@@ -20,6 +22,7 @@
     </div>
 
     <VisitTooltip />
+    <ScheduleEditMenu />
   </BoardLayout>
 </template>
 
@@ -30,6 +33,8 @@ import BoardControls from "./BoardControls.vue";
 import BoardHeader from "./BoardHeader.vue";
 import BoardLayout from "./BoardLayout.vue";
 import CrewRoutePanel from "./CrewRoutePanel.vue";
+import ScheduleEditBar from "./ScheduleEditBar.vue";
+import ScheduleEditMenu from "./ScheduleEditMenu.vue";
 import TimelinePanel from "./TimelinePanel.vue";
 import UnassignedRequestsPanel from "./UnassignedRequestsPanel.vue";
 import VisitTooltip from "./VisitTooltip.vue";

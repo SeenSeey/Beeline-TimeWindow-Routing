@@ -87,6 +87,8 @@ public record CrewDetailedDto(
     public record AssignedRequestDto(
             int id,
             String fullAddress,
+            double latitude,
+            double longitude,
             DictionaryDto status,
             boolean urgent,
             DictionaryDto jobType,
@@ -100,6 +102,8 @@ public record CrewDetailedDto(
             return new AssignedRequestDto(
                     request.getId(),
                     request.getFullAddress(),
+                    request.getLatitude(),
+                    request.getLongitude(),
                     Optional.ofNullable(request.getStatus()).map(DictionaryDto::from).orElse(null),
                     request.isUrgent(),
                     DictionaryDto.from(request.getJobType()),

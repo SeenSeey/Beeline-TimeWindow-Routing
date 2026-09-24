@@ -1,6 +1,13 @@
 <template>
-  <!-- list tile with a square status icon in the job type colour -->
-  <li class="grid grid-cols-[28px_1fr_auto] items-start gap-x-3 rounded-md bg-shift px-3 py-2.5 hover:bg-line">
+  <!-- list tile with a square status icon in the job type colour; in edit mode it can be dragged onto a
+       crew row, or put into a route from its menu -->
+  <li
+    class="grid grid-cols-[28px_1fr_auto] items-start gap-x-3 rounded-md bg-shift px-3 py-2.5 hover:bg-line"
+    :class="{ 'cursor-grab active:cursor-grabbing': edit.active, 'opacity-40': dragging }"
+    :draggable="edit.active ? 'true' : undefined"
+    @dragstart="onDragStart"
+    @dragend="dragging = false"
+  >
     <span class="inline-flex size-7 items-center justify-center rounded-md bg-current/15" :style="{ color }">
       <UiDot />
     </span>
@@ -29,19 +36,27 @@
       </dl>
     </div>
 
-    <div class="mono text-end text-xs whitespace-nowrap text-ink">
-      №{{ request.id }}
-      <div class="text-muted">создана {{ formatDateTime(request.createdAt) }}</div>
+    <div class="mono grid justify-items-end gap-1.5 text-end text-xs whitespace-nowrap text-ink">
+      <span>
+        №{{ request.id }}
+        <span class="block text-muted">создана {{ formatDateTime(request.createdAt) }}</span>
+      </span>
+      <UiButton v-if="edit.active" aria-haspopup="menu" :disabled="!!edit.busy" @click="openMenu">
+        В расписание…
+      </UiButton>
     </div>
   </li>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import UiBadge from "@/components/ui/UiBadge.vue";
+import UiButton from "@/components/ui/UiButton.vue";
 import UiDot from "@/components/ui/UiDot.vue";
 import { jobTypeColor } from "../model/colors";
 import { formatDateTime, formatTime, isOnDate } from "../model/format";
+import { DRAG_REQUEST_TYPE, encodeDragPayload } from "../model/scheduleDraft";
+import { useScheduleEditStore } from "../stores/scheduleEdit";
 import type { UnassignedRequest } from "../types";
 
 const props = defineProps<{
@@ -49,6 +64,23 @@ const props = defineProps<{
   /** schedule's "YYYY-MM-DD", to tell deadlines due today */
   targetDate: string;
 }>();
+
+const edit = useScheduleEditStore();
+const dragging = ref(false);
+
+function onDragStart(event: DragEvent): void {
+  if (!edit.active || !event.dataTransfer) return;
+  // from the list the cursor marks the start: there is no bar to grab
+  event.dataTransfer.setData(DRAG_REQUEST_TYPE, encodeDragPayload({ requestId: props.request.id, grabOffsetPx: 0 }));
+  event.dataTransfer.effectAllowed = "move";
+  edit.closeMenu();
+  dragging.value = true;
+}
+
+function openMenu(event: MouseEvent): void {
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  edit.openMenu({ requestId: props.request.id, x: rect.left, y: rect.bottom });
+}
 
 const color = computed(() => jobTypeColor(props.request.jobType.keyword));
 const dueToday = computed(() => isOnDate(props.request.deadline, props.targetDate));

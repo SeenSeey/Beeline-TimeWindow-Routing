@@ -72,5 +72,13 @@ export const useScheduleStore = defineStore("timeline/schedule", () => {
     }
   }
 
-  return { state, switching, schedule, reset, fail, failWith, load, stopPolling };
+  /** Shows a schedule the server returned from another call (e.g. after saving an edit) */
+  function replace(data: ScheduleData): void {
+    requestSeq++;
+    stopPolling();
+    switching.value = false;
+    state.value = { kind: "ready", data };
+  }
+
+  return { state, switching, schedule, reset, fail, failWith, load, replace, stopPolling };
 });

@@ -14,6 +14,7 @@ import stb.core.domain.exception.ScheduleNotFoundException;
 import stb.core.domain.model.Region;
 import stb.core.domain.model.RequestStatus;
 import stb.core.domain.model.Schedule;
+import stb.core.domain.repository.EngineerCrewRepository;
 import stb.core.domain.repository.RegionRepository;
 import stb.core.domain.repository.RequestRepository;
 import stb.core.domain.repository.ScheduleRepository;
@@ -28,6 +29,7 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
     private final ScheduleRepository scheduleRepository;
     private final RegionRepository regionRepository;
     private final RequestRepository requestRepository;
+    private final EngineerCrewRepository engineerCrewRepository;
 
     @Transactional(readOnly = true)
     public ScheduleTimelineDto execute(int regionId) {
@@ -48,7 +50,11 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
                 )
             );
 
-        return ScheduleTimelineDto.from(schedule, findUnassignedRequests(schedule, regionId));
+        return ScheduleTimelineDto.from(
+            schedule,
+            findUnassignedRequests(schedule, regionId),
+            engineerCrewRepository.findAllByRegionId(regionId)
+        );
     }
 
     private List<UnassignedRequestDto> findUnassignedRequests(Schedule schedule, int regionId) {

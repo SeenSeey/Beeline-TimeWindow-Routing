@@ -1,4 +1,4 @@
-import type { JobType, JobTypeKeyword, ScheduleStatusKeyword } from "../types";
+import type { JobType, JobTypeKeyword, ScheduleStatusKeyword, SkillKeyword } from "../types";
 
 // Styles are keyed by server enum keywords; display names are only ever shown, never matched.
 
@@ -11,6 +11,15 @@ const JOB_COLORS: Record<JobTypeKeyword, string> = {
 
 /** unknown keywords (a server enum grew) stay visible in a neutral colour */
 export const jobTypeColor = (keyword: JobTypeKeyword): string => JOB_COLORS[keyword] ?? "var(--faint)";
+
+/** each skill in the colour of the job types it covers */
+const SKILL_COLORS: Record<SkillKeyword, string> = {
+  LOCAL_WORK: "var(--job-local)",
+  INSTALLATION_OR_ADDON: "var(--job-installation)",
+  EMERGENCY: "var(--job-emergency)",
+};
+
+export const skillColor = (keyword: SkillKeyword): string => SKILL_COLORS[keyword] ?? "var(--muted)";
 
 export interface JobTypeOption extends JobType {
   color: string;

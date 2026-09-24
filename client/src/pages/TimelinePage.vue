@@ -32,9 +32,11 @@ import RegionSelect from "@/features/timeline/components/RegionSelect.vue";
 import TimelineBoard from "@/features/timeline/components/TimelineBoard.vue";
 import { useRegionsStore } from "@/features/timeline/stores/regions";
 import { useScheduleStore } from "@/features/timeline/stores/schedule";
+import { useScheduleEditStore } from "@/features/timeline/stores/scheduleEdit";
 
 const regionsStore = useRegionsStore();
 const scheduleStore = useScheduleStore();
+const scheduleEditStore = useScheduleEditStore();
 
 const state = computed(() => scheduleStore.state);
 
@@ -66,6 +68,11 @@ function retry(): void {
 }
 
 onMounted(init);
-// the store outlives the page; don't keep refetching a calculating schedule nobody looks at
-onBeforeUnmount(() => scheduleStore.stopPolling());
+// the stores outlive the page: don't keep refetching a calculating schedule nobody looks at, and don't
+// carry an edit draft over to a schedule that will be loaded afresh next time
+onBeforeUnmount(() => {
+  scheduleStore.stopPolling();
+  scheduleEditStore.stop();
+  scheduleEditStore.dismissNotice();
+});
 </script>

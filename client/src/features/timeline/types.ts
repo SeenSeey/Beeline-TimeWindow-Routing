@@ -66,6 +66,8 @@ export interface Engineer {
   shiftEndTime: string;
   /** the crew's vehicle; null if the server has none on record */
   vehicle: Vehicle | null;
+  /** what the crew can do; shown in edit mode */
+  skills: Skill[];
   slots: Slot[];
 }
 
@@ -93,6 +95,36 @@ export interface UnassignedRequest {
   assignedCrew: string | null;
   assignedAt: string | null;
   createdAt: string;
+}
+
+/** ScheduleEditDto.Stop — one visit of an edited route */
+export interface DraftStop {
+  requestId: number;
+  /** "HH:mm:ss" the work starts at, as placed on the timeline; null: as early as possible */
+  startTime: string | null;
+}
+
+/** ScheduleEditDto.CrewRoute — a crew's stops in visit order */
+export interface CrewRouteDraft {
+  crewId: number;
+  stops: DraftStop[];
+}
+
+/** SchedulePreviewDto.Violation — a visit that breaks a rule (time window, shift, skill, vehicle) */
+export interface RouteViolation {
+  crewId: number;
+  requestId: number;
+  message: string;
+}
+
+/** SchedulePreviewDto — POST /api/v1/schedules/regions/{id}/preview */
+export interface SchedulePreview {
+  /** recalculated rows of the edited crews */
+  engineers: Engineer[];
+  /** the region's requests left without a crew after the edit */
+  unassignedRequests: UnassignedRequest[];
+  /** the edit can only be saved when this is empty */
+  violations: RouteViolation[];
 }
 
 export interface ScheduleData {

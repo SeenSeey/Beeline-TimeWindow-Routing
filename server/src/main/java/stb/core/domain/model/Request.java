@@ -86,6 +86,16 @@ public class Request extends BaseEntity {
                 .orElseThrow(() -> new IllegalArgumentException("Статус %s не найден".formatted(RequestStatus.Keyword.ASSIGNED))));
     }
 
+    public void unassign(List<RequestStatus> statuses) {
+        setAssignedCrew(null);
+        setAssignedAt(null);
+        setStatus(statuses
+                .stream()
+                .filter(status -> RequestStatus.Keyword.IDLE.equals(status.getKeyword()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Статус %s не найден".formatted(RequestStatus.Keyword.IDLE))));
+    }
+
     public boolean isAssigned() {
         return assignedAt != null;
     }

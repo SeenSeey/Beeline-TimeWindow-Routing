@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { ApiResponse, RegionInfo, ScheduleData } from "../types";
+import type { ApiResponse, CrewRouteDraft, RegionInfo, ScheduleData, SchedulePreview } from "../types";
 
 export interface ApiFailure {
   kind: "not-found" | "error";
@@ -16,6 +16,25 @@ export async function fetchRegions(): Promise<RegionInfo[]> {
 /** null when the server answered without a schedule */
 export async function fetchSchedule(regionId: number): Promise<ScheduleData | null> {
   const response = await axios.get<ApiResponse<ScheduleData>>(`/api/v1/schedules/regions/${regionId}`);
+  return response.data?.payload ?? null;
+}
+
+/**
+ * Recalculates the edited crews' routes of today's schedule without saving them. `routes` lists only
+ * the crews that changed; a request dropped from their routes leaves the schedule.
+ */
+export async function previewScheduleEdit(regionId: number, routes: CrewRouteDraft[]): Promise<SchedulePreview> {
+  const response = await axios.post<ApiResponse<SchedulePreview>>(`/api/v1/schedules/regions/${regionId}/preview`, {
+    routes,
+  });
+  return response.data?.payload ?? { engineers: [], unassignedRequests: [], violations: [] };
+}
+
+/** Saves the edited routes; the server re-checks them (400 if a visit breaks a rule) and returns the updated schedule */
+export async function saveScheduleEdit(regionId: number, routes: CrewRouteDraft[]): Promise<ScheduleData | null> {
+  const response = await axios.put<ApiResponse<ScheduleData>>(`/api/v1/schedules/regions/${regionId}/routes`, {
+    routes,
+  });
   return response.data?.payload ?? null;
 }
 

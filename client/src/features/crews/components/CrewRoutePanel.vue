@@ -40,6 +40,9 @@
           >
             {{ visit.fullAddress }}
           </RouterLink>
+          <span class="mono text-xs text-muted" :title="`Координаты заявки #${visit.requestId}`">
+            {{ formatCoordinates(visit.latitude, visit.longitude) }}
+          </span>
           <div class="flex flex-wrap items-center gap-1.5 text-xs text-muted">
             <UiBadge :color="jobTypeColor(visit.jobType.keyword)">{{ visit.jobType.displayName }}</UiBadge>
             <UiBadge v-if="visit.status" :color="statusColor(visit.status.keyword)">{{ visit.status.displayName }}</UiBadge>
@@ -67,6 +70,7 @@ import UiPanel from "@/components/ui/UiPanel.vue";
 import UiRouteMap, { type UiRouteStop } from "@/components/ui/UiRouteMap.vue";
 import { jobTypeColor, statusColor } from "@/features/requests/model/colors";
 import { formatDate, formatTime } from "@/features/timeline/model/format";
+import { formatCoordinates } from "../model/format";
 import type { RouteVisit } from "../types";
 
 const props = defineProps<{

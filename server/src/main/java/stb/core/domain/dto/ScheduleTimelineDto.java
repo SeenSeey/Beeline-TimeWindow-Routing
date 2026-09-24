@@ -30,11 +30,31 @@ public record ScheduleTimelineDto(LocalDate targetDate,
         );
     }
 
+    public static ScheduleTimelineDto from(Schedule schedule,
+                                           List<UnassignedRequestDto> unassignedRequests,
+                                           List<EngineerCrew> regionCrews) {
+        List<EngineerCrewRow> rows = new ArrayList<>(EngineerCrewRow.listFrom(schedule.getSlots()));
+        Set<Integer> crewsWithSlots = rows.stream().map(EngineerCrewRow::id).collect(Collectors.toSet());
+        regionCrews.stream()
+                .filter(crew -> !crewsWithSlots.contains(crew.getId()))
+                .forEach(crew -> rows.add(EngineerCrewRow.of(crew, List.of())));
+
+        return new ScheduleTimelineDto(
+                schedule.getTargetDate(),
+                schedule.getCreatedAt(),
+                DictionaryDto.from(schedule.getStatus()),
+                RegionDto.from(schedule.getRegion()),
+                rows,
+                unassignedRequests
+        );
+    }
+
     public record EngineerCrewRow(int id,
                                   String name,
                                   LocalTime shiftStartTime,
                                   LocalTime shiftEndTime,
                                   DictionaryDto vehicle,
+                                  List<DictionaryDto> skills,
                                   List<TimelineSlotDto> slots) {
 
         public static List<EngineerCrewRow> listFrom(List<ScheduleSlot> slots) {
@@ -58,13 +78,18 @@ public record ScheduleTimelineDto(LocalDate targetDate,
         }
 
         public static EngineerCrewRow from(EngineerCrew crew, List<ScheduleSlot> slots) {
+            return of(crew, slots.stream().map(TimelineSlotDto::from).toList());
+        }
+
+        public static EngineerCrewRow of(EngineerCrew crew, List<TimelineSlotDto> slots) {
             return new EngineerCrewRow(
                     crew.getId(),
                     crew.getName(),
                     crew.getShiftStartTime(),
                     crew.getShiftEndTime(),
                     Optional.ofNullable(crew.getVehicle()).map(DictionaryDto::from).orElse(null),
-                    slots.stream().map(TimelineSlotDto::from).toList()
+                    Optional.ofNullable(crew.getSkills()).orElse(List.of()).stream().map(DictionaryDto::from).toList(),
+                    slots
             );
         }
     }
@@ -88,24 +113,32 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                                   LocalDateTime canceledAt) {
 
         public static TimelineSlotDto from(ScheduleSlot slot) {
+            return of(slot.getRequest(), slot.getType(), slot.getArrivalTime(), slot.getStartTimeWindow(), slot.getEndTimeWindow());
+        }
+
+        public static TimelineSlotDto of(Request request,
+                                         ScheduleSlot.SlotType type,
+                                         LocalTime arrivalTime,
+                                         LocalTime startTime,
+                                         LocalTime endTime) {
             return new TimelineSlotDto(
-                    slot.getRequest().getId(),
-                    slot.getRequest().getFullAddress(),
-                    slot.getRequest().getLatitude(),
-                    slot.getRequest().getLongitude(),
-                    slot.getType().name(),
-                    Optional.ofNullable(slot.getRequest().getStatus()).map(DictionaryDto::from).orElse(null),
-                    slot.getRequest().getDeadline(),
-                    DictionaryDto.from(slot.getRequest().getJobType()),
-                    Optional.ofNullable(slot.getRequest().getRequiredVehicle()).map(DictionaryDto::from).orElse(null),
-                    slot.getArrivalTime(),
-                    slot.getStartTimeWindow(),
-                    slot.getEndTimeWindow(),
-                    slot.getRequest().getStartTimeWindow(),
-                    slot.getRequest().getEndTimeWindow(),
-                    slot.getRequest().getCreatedAt(),
-                    slot.getRequest().getCompletedAt(),
-                    slot.getRequest().getCanceledAt()
+                    request.getId(),
+                    request.getFullAddress(),
+                    request.getLatitude(),
+                    request.getLongitude(),
+                    type.name(),
+                    Optional.ofNullable(request.getStatus()).map(DictionaryDto::from).orElse(null),
+                    request.getDeadline(),
+                    DictionaryDto.from(request.getJobType()),
+                    Optional.ofNullable(request.getRequiredVehicle()).map(DictionaryDto::from).orElse(null),
+                    arrivalTime,
+                    startTime,
+                    endTime,
+                    request.getStartTimeWindow(),
+                    request.getEndTimeWindow(),
+                    request.getCreatedAt(),
+                    request.getCompletedAt(),
+                    request.getCanceledAt()
             );
         }
     }

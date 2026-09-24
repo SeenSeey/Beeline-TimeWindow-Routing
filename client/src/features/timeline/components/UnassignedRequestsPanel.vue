@@ -1,6 +1,19 @@
 <template>
   <UiPanel title="Не вошли в расписание">
-    <template #aside>{{ requests.length }} заявок</template>
+    <template #aside>
+      <span class="inline-flex flex-wrap items-center gap-2">
+        <span><span class="mono">{{ requests.length }}</span> заявок</span>
+        <!-- emergencies left out are the first thing a dispatcher needs to see -->
+        <UiBadge
+          v-if="emergencyCount"
+          :color="jobTypeColor('EMERGENCY')"
+          dot
+          :title="`Не вошли в расписание: заявок типа «${emergencyLabel}» — ${emergencyCount}`"
+        >
+          аварийных: <span class="mono">{{ emergencyCount }}</span>
+        </UiBadge>
+      </span>
+    </template>
 
     <UiEmptyState v-if="!ready">Список появится, когда расписание будет сформировано.</UiEmptyState>
     <UiEmptyState v-else-if="!requests.length">Все активные заявки региона вошли в расписание.</UiEmptyState>
@@ -13,15 +26,24 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
+import UiBadge from "@/components/ui/UiBadge.vue";
 import UiEmptyState from "@/components/ui/UiEmptyState.vue";
 import UiPanel from "@/components/ui/UiPanel.vue";
+import { jobTypeColor } from "../model/colors";
 import type { UnassignedRequest } from "../types";
 import UnassignedRequestItem from "./UnassignedRequestItem.vue";
 
-defineProps<{
+const props = defineProps<{
   requests: UnassignedRequest[];
   /** the schedule has been calculated; before that the list is always empty */
   ready: boolean;
   targetDate: string;
 }>();
+
+/** requests of the EMERGENCY job type among those left out */
+const emergencies = computed(() => props.requests.filter((request) => request.jobType.keyword === "EMERGENCY"));
+const emergencyCount = computed(() => emergencies.value.length);
+/** the job type's display name, as the server sends it */
+const emergencyLabel = computed(() => emergencies.value[0]?.jobType.displayName ?? "аварийные");
 </script>

@@ -31,10 +31,26 @@
       <div class="mono text-xs whitespace-nowrap text-muted">
         {{ formatTime(crew.shiftStartTime) }}–{{ formatTime(crew.shiftEndTime) }} · {{ crew.requests.length }} заявок
       </div>
+      <!-- edit mode: what the crew can do, to pick where a request fits -->
+      <div v-if="edit.active" class="mt-1 flex flex-wrap gap-1" :aria-label="`Навыки: ${skillNames || 'нет'}`">
+        <UiBadge v-for="skill in skills" :key="skill.keyword" :color="skillColor(skill.keyword)">
+          {{ skill.displayName }}
+        </UiBadge>
+        <span v-if="!skills.length" class="text-xs text-faint">нет навыков</span>
+      </div>
+      <UiBadge v-if="edit.active && edit.changedCrewIds.has(crew.id)" color="var(--accent)" class="mt-1 w-fit">
+        изменено
+      </UiBadge>
     </div>
 
-    <!-- Track -->
-    <div class="relative">
+    <!-- Track; in edit mode also a drop target for requests dragged from other rows or the unassigned list -->
+    <div
+      class="relative"
+      :class="{ 'bg-accent/10 outline-2 -outline-offset-2 outline-accent outline-dashed': dropHover }"
+      @dragover="onDragOver"
+      @dragleave="dropHover = false"
+      @drop="onDrop"
+    >
       <div
         v-for="h in hours"
         :key="h"
@@ -86,13 +102,19 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from "vue";
+import UiBadge from "@/components/ui/UiBadge.vue";
+import { skillColor } from "../model/colors";
 import { formatTime } from "../model/format";
+import { axisMinuteToTime, decodeDragPayload, DRAG_REQUEST_TYPE, indexByDropMinute } from "../model/scheduleDraft";
 import type { CrewRow, TimeScale } from "../model/timeline";
+import { useBoardStore } from "../stores/board";
+import { useScheduleEditStore } from "../stores/scheduleEdit";
 import type { JobTypeKeyword } from "../types";
 import TimelineWorkBar from "./TimelineWorkBar.vue";
 import WaitHatch from "./WaitHatch.vue";
 
-defineProps<{
+const props = defineProps<{
   crew: CrewRow;
   hours: number[];
   scale: TimeScale;
@@ -106,4 +128,46 @@ defineProps<{
 const emit = defineEmits<{
   select: [];
 }>();
+
+const board = useBoardStore();
+const edit = useScheduleEditStore();
+
+// `?? []`: a server from before skills were added to the schedule doesn't send them
+const skills = computed(() => props.crew.skills ?? []);
+const skillNames = computed(() => skills.value.map((skill) => skill.displayName).join(", "));
+
+/** a request is being dragged over this row */
+const dropHover = ref(false);
+
+const carriesRequest = (event: DragEvent): boolean =>
+  edit.active && !!event.dataTransfer?.types.includes(DRAG_REQUEST_TYPE);
+
+function onDragOver(event: DragEvent): void {
+  if (!carriesRequest(event) || !event.dataTransfer) return;
+  event.preventDefault(); // accept the drop
+  event.dataTransfer.dropEffect = "move";
+  dropHover.value = true;
+}
+
+/**
+ * Puts the request into this crew's route exactly where it was dropped: the bar's left edge (the cursor
+ * minus where the bar was grabbed) marks its start time. The server then checks the new position.
+ */
+function onDrop(event: DragEvent): void {
+  dropHover.value = false;
+  if (!carriesRequest(event) || !event.dataTransfer) return;
+  event.preventDefault();
+  const payload = decodeDragPayload(event.dataTransfer.getData(DRAG_REQUEST_TYPE));
+  if (!payload) return;
+
+  const track = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  const fraction = Math.min(1, Math.max(0, (event.clientX - payload.grabOffsetPx - track.left) / track.width));
+  const startMinute = board.axis.origin + fraction * (board.axis.end - board.axis.origin);
+  void edit.place(
+    payload.requestId,
+    props.crew.id,
+    indexByDropMinute(props.crew, payload.requestId, startMinute),
+    axisMinuteToTime(startMinute),
+  );
+}
 </script>
