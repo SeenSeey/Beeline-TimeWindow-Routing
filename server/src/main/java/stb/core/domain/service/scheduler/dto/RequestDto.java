@@ -35,8 +35,8 @@ public class RequestDto {
     private final LocalTime windowEnd;
     private final JobType.Keyword jobTypeKeyword;
     private final List<Skill> requiredSkills;
-    private Vehicle.Keyword requiredTransportTypeDto;
-
+    private final Vehicle.Keyword requiredTransportTypeDto;
+    private final boolean isUrgent;
     //Shadow vars
 
     private EngineerCrewDto engineerCrewDto;

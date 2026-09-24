@@ -44,7 +44,7 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                         request.getEngineerCrewDto() != null
                 )
                 .filter(request ->
-                        request.getDepartureTime() == null
+                        request.getDepartureTime() == null || request.getDepartureTime().isAfter(request.getEngineerCrewDto().getWorkDayEnd())
                 )
                 .penalize(
                         HardMediumSoftScore.ONE_HARD
@@ -56,8 +56,8 @@ public class RoutingConstraintProvider implements ConstraintProvider {
 
 
     private Constraint hardUrgentRequestsMustBePlanned(ConstraintFactory factory){
-        return factory.forEach(RequestDto.class)
-                .filter(request -> request.getJobTypeKeyword() == JobType.Keyword.EMERGENCY
+        return factory.forEachIncludingUnassigned(RequestDto.class)
+                .filter(request -> request.isUrgent()
                 && request.getEngineerCrewDto() == null)
                 .penalize(HardMediumSoftScore.ONE_HARD)
                 .asConstraint(

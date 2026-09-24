@@ -37,7 +37,10 @@ public class SchedulerMapper {
                 request.getStartTimeWindow(),
                 request.getEndTimeWindow(),
                 request.getJobType().getKeyword(),
-                request.getJobType().getRequiredSkills());
+                request.getJobType().getRequiredSkills(),
+                request.getRequiredVehicle()!=null ? request.getRequiredVehicle().getKeyword() : null,
+                request.isUrgent()
+        );
     }
 
     public ScheduleCalculationResult toSchedulerResult(EngineerRoutingPlan plan){
