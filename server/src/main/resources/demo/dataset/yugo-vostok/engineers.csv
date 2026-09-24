@@ -1,5 +1,5 @@
 id;name;start_address;start_latitude;start_longitude;shift_start;shift_end;skills;vehicle
-13;Бригада Горбанев;г. Москва, ул Бирюлёвская, д 1с1;55.588927;37.664614;09:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON|EMERGENCY;PUBLIC_TRANSPORT
+13;Бригада Горбанев;г. Москва, ул Бирюлёвская, д 1с1;55.588927;37.664614;09:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON|EMERGENCY;CAR
 14;Бригада Паршин;г. Москва, ул Бирюлёвская, д 1с1;55.588927;37.664614;09:00;18:00;LOCAL_WORK|INSTALLATION_OR_ADDON|EMERGENCY;CAR
 15;Бригада Саламатин;г. Москва, ул Бирюлёвская, д 1с1;55.588927;37.664614;10:00;19:00;LOCAL_WORK|INSTALLATION_OR_ADDON|EMERGENCY;CAR
 16;Бригада Козырь;г. Москва, ул Бирюлёвская, д 1с1;55.588927;37.664614;13:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON|EMERGENCY;CAR
@@ -7,7 +7,7 @@ id;name;start_address;start_latitude;start_longitude;shift_start;shift_end;skill
 18;Бригада Рыбин;г. Москва, ул Бирюлёвская, д 1с1;55.588927;37.664614;09:00;18:00;LOCAL_WORK|INSTALLATION_OR_ADDON;BICYCLE
 19;Бригада Андреев;г. Москва, ул Бирюлёвская, д 1с1;55.588927;37.664614;10:00;19:00;LOCAL_WORK|INSTALLATION_OR_ADDON;PUBLIC_TRANSPORT
 20;Бригада Бузань;г. Москва, ул Бирюлёвская, д 1с1;55.588927;37.664614;13:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON;BICYCLE
-21;Бригада Макаров;г. Москва, ул Бирюлёвская, д 1с1;55.588927;37.664614;09:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON;PEDESTRIAN
+21;Бригада Макаров;г. Москва, ул Бирюлёвская, д 1с1;55.588927;37.664614;09:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON;CAR
 22;Бригада Царьков;г. Москва, ул Бирюлёвская, д 1с1;55.588927;37.664614;09:00;18:00;INSTALLATION_OR_ADDON;PEDESTRIAN
 23;Бригада Каушнян;г. Москва, ул Бирюлёвская, д 1с1;55.588927;37.664614;10:00;19:00;INSTALLATION_OR_ADDON;CAR
 24;Бригада Демин;г. Москва, ул Бирюлёвская, д 1с1;55.588927;37.664614;13:00;22:00;LOCAL_WORK;PEDESTRIAN
