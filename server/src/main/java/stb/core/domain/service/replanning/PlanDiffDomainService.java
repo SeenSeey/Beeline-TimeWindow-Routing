@@ -24,8 +24,6 @@ import java.util.stream.Collectors;
 public class PlanDiffDomainService {
 
     public PlanDiff compare(PlanSnapshot previousPlan, PlanSnapshot newPlan) {
-        Objects.requireNonNull(previousPlan, "previousPlan не должент быть null");
-        Objects.requireNonNull(newPlan, "newPlan не должент быть null");
         validateComparable(previousPlan, newPlan);
 
         Map<Integer, RequestPlacement> previousPlacements = index(previousPlan);

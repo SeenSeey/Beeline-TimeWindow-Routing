@@ -27,10 +27,6 @@ public final class ReplanningExplanationDomainService {
                                          PlanDiff diff,
                                          PlanSnapshot previousPlan,
                                          PlanSnapshot newPlan) {
-        Objects.requireNonNull(context, "context не должен быть null");
-        Objects.requireNonNull(diff, "diff не должен быть null");
-        Objects.requireNonNull(previousPlan, "previousPlan не должен быть null");
-        Objects.requireNonNull(newPlan, "newPlan не должен быть null");
         validatePlanIdentity(context, diff, previousPlan, newPlan);
 
         CrewNames crewNames = CrewNames.from(previousPlan, newPlan);
