@@ -3,6 +3,7 @@ package stb.core.domain.service.scheduler.dto;
 import lombok.Data;
 import stb.core.domain.model.EngineerCrew;
 import stb.core.domain.model.Request;
+import stb.core.domain.repository.projection.CrewLatestSlot;
 import stb.core.domain.service.scheduler.impl.logic.speed.SpeedProfile;
 
 import java.util.List;
@@ -14,4 +15,5 @@ public class ScheduleContext {
     private List<EngineerCrew> engineerCrews;
     private TravelMatrix travelMatrix;
     private SpeedProfile speedProfile;
+    private List<CrewLatestSlot> crewsLatestSlots;
 }

@@ -12,6 +12,7 @@ import java.time.LocalTime;
 @Setter(AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder(access = AccessLevel.PROTECTED)
 public class ScheduleSlot extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -37,6 +38,18 @@ public class ScheduleSlot extends BaseEntity {
 
     @Column(name = "finished_at")
     private LocalDateTime finishedAt;
+
+    public static ScheduleSlot createFrom(Schedule schedule, ScheduleSlot slot) {
+        return ScheduleSlot.builder()
+                .schedule(schedule)
+                .request(slot.getRequest())
+                .type(slot.getType())
+                .arrivalTime(slot.getArrivalTime())
+                .startTimeWindow(slot.getStartTimeWindow())
+                .endTimeWindow(slot.getEndTimeWindow())
+                .finishedAt(slot.getFinishedAt())
+                .build();
+    }
 
     public ScheduleSlot(Schedule schedule, Request request, SlotType type, LocalTime arrivalTime, LocalTime startTimeWindow, LocalTime endTimeWindow) {
         setSchedule(schedule);

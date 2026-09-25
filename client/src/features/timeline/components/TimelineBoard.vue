@@ -23,6 +23,7 @@
 
     <VisitTooltip />
     <ScheduleEditMenu />
+    <VisitStatusMenu />
   </BoardLayout>
 </template>
 
@@ -37,6 +38,7 @@ import ScheduleEditBar from "./ScheduleEditBar.vue";
 import ScheduleEditMenu from "./ScheduleEditMenu.vue";
 import TimelinePanel from "./TimelinePanel.vue";
 import UnassignedRequestsPanel from "./UnassignedRequestsPanel.vue";
+import VisitStatusMenu from "./VisitStatusMenu.vue";
 import VisitTooltip from "./VisitTooltip.vue";
 
 defineProps<{

@@ -54,4 +54,11 @@ public interface RequestRepository extends JpaRepository<Request, Integer>, JpaS
             ORDER BY r.assignedAt DESC, r.id DESC
             """)
     List<Request> findAllByAssignedCrewId(@Param("crewId") int crewId);
+
+    @Query("""
+            SELECT r FROM Request r
+            WHERE r.region.id = :regionId
+            AND r.status.keyword IN ('IDLE', 'ASSIGNED')
+            """)
+    List<Request> findAllForRescheduleByRegionId(int regionId);
 }

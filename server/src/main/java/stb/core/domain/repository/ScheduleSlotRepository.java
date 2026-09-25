@@ -5,9 +5,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import stb.core.domain.model.ScheduleSlot;
+import stb.core.domain.repository.projection.CrewLatestSlot;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ScheduleSlotRepository extends JpaRepository<ScheduleSlot, Integer> {
@@ -34,4 +36,52 @@ public interface ScheduleSlotRepository extends JpaRepository<ScheduleSlot, Inte
     List<ScheduleSlot> findAllByTargetDateAndCrewIdAndType(@Param("targetDate") LocalDate targetDate,
                                                            @Param("crewId") int crewId,
                                                            @Param("type") ScheduleSlot.SlotType type);
+
+    @Query(value = """
+            SELECT slot.* FROM schedule_slots slot
+            JOIN schedules schedule ON slot.schedule_id = schedule.id
+            JOIN requests request ON request.id = slot.request_id
+            WHERE request.id = :requestId
+            AND request.status_id IN (SELECT id FROM request_statuses WHERE keyword = 'CANCELED')
+            AND NOT EXISTS (
+                SELECT 1 FROM schedules sc
+                WHERE sc.previous_schedule_id = schedule.id
+            )
+            LIMIT 1
+            """, nativeQuery = true)
+    Optional<ScheduleSlot> findCanceledSlotByRequestId(int requestId);
+
+    @Query(value = """
+            WITH slots AS (
+                SELECT
+                    ss.*,
+                    r.assigned_crew_id,
+                    r.latitude,
+                    r.longitude,
+                    r.region_id,
+                    row_number() OVER (PARTITION BY r.assigned_crew_id ORDER BY ss.start_time_window DESC) rn FROM schedule_slots ss
+                JOIN requests r ON r.id = ss.request_id
+                JOIN request_statuses rs ON rs.id = r.status_id
+                JOIN schedules s ON s.id = ss.schedule_id
+                WHERE rs.keyword IN ('IN_PROGRESS', 'COMPLETED')
+                AND NOT EXISTS (
+                    SELECT 1 FROM schedules s2 WHERE s2.previous_schedule_id = s.id
+                )
+                ORDER BY ss.start_time_window
+            ),
+            latest_slots AS (
+                SELECT * FROM slots WHERE rn = 1
+            )
+            SELECT
+                ls.id "slotId",
+                ls.request_id "requestId",
+                ls.start_time_window "startTimeWindow",
+                ls.end_time_window "endTimeWindow",
+                ls.assigned_crew_id "crewId",
+                ls.latitude,
+                ls.longitude
+            FROM latest_slots ls
+            WHERE ls.region_id = :regionId
+            """, nativeQuery = true)
+    List<CrewLatestSlot> findLatestSlotsForCrewsByRegionId(int regionId);
 }

@@ -126,7 +126,7 @@ public class ScheduleEditUseCase {
             throw new DomainException.ValidationException("Не переданы маршруты бригад");
         }
 
-        Map<Integer, EngineerCrew> regionCrews = engineerCrewRepository.findAllByRegionId(regionId).stream()
+        Map<Integer, EngineerCrew> regionCrews = engineerCrewRepository.findAllActiveByRegionIdAndTargetDate(regionId, today).stream()
                 .collect(Collectors.toMap(EngineerCrew::getId, Function.identity()));
 
         Map<Integer, EngineerCrew> editedCrews = new LinkedHashMap<>();

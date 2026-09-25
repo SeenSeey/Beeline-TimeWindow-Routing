@@ -9,9 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import stb.core.api.rest.v1.dto.PageResponseDto;
 import stb.core.api.rest.v1.dto.ServerResponse;
 import stb.core.api.utils.PaginationUtils;
-import stb.core.application.request.RequestFindByIdUseCase;
-import stb.core.application.request.RequestMapPointsFindByRegionUseCase;
-import stb.core.application.request.RequestSearchUseCase;
+import stb.core.application.request.*;
 import stb.core.domain.dto.RequestDetailedDto;
 import stb.core.domain.dto.RequestDto;
 import stb.core.domain.dto.RequestMapPointDto;
@@ -23,7 +21,10 @@ import stb.core.domain.dto.RequestSearchDto;
 public class RequestController {
 
     private final RequestSearchUseCase requestSearchUseCase;
+    private final RequestCancelUseCase requestCancelUseCase;
     private final RequestFindByIdUseCase requestFindByIdUseCase;
+    private final RequestCompleteUseCase requestCompleteUseCase;
+    private final RequestMarkInProgressUseCase requestMarkInProgressUseCase;
     private final RequestMapPointsFindByRegionUseCase requestMapPointsFindByRegionUseCase;
 
     @GetMapping("/map")
@@ -38,6 +39,24 @@ public class RequestController {
         return ResponseEntity.ok(ServerResponse.ok(HttpStatus.OK.value(), requestFindByIdUseCase.execute(id)));
     }
 
+    @PatchMapping("/{id}/in_progress")
+    public ResponseEntity<?> markInProgressRequestById(@PathVariable int id) {
+        requestMarkInProgressUseCase.execute(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/complete")
+    public ResponseEntity<?> completeRequestById(@PathVariable int id) {
+        requestCompleteUseCase.execute(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<?> cancelRequestById(@PathVariable int id) {
+        requestCancelUseCase.execute(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping
     public ResponseEntity<ServerResponse<PageResponseDto<RequestDto>>> search(
         @ModelAttribute RequestSearchDto searchDto,
@@ -47,7 +66,6 @@ public class RequestController {
         Pageable pageable = PaginationUtils.create(page, limit);
 
         PageResponseDto<RequestDto> payload = requestSearchUseCase.execute(searchDto, pageable);
-
         return ResponseEntity.ok(ServerResponse.ok(HttpStatus.OK.value(), payload));
     }
 }

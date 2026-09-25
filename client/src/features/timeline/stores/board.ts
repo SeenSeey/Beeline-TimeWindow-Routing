@@ -63,8 +63,8 @@ export const useBoardStore = defineStore("timeline/board", () => {
     ),
   );
 
-  // Rows are ordered by each crew's first job — except while editing: then they keep the order they had
-  // when editing started, so a change never makes rows jump
+  // Rows are ordered by crew name (buildCrewRows). While editing they keep the order they had when editing
+  // started, so a change never makes rows jump
   const crews = computed(() => {
     if (!schedule.value) return [];
     const rows = buildCrewRows(schedule.value, axis.value);

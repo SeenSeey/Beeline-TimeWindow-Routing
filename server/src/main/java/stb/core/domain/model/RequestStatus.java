@@ -19,12 +19,10 @@ public class RequestStatus extends BaseEntity {
     private Keyword keyword;
 
     public enum Keyword {
+
         IDLE,
         ASSIGNED,
-
-        // FIXME: делаем ли подтверждение, что бригада на адресе?
         IN_PROGRESS,
-
         COMPLETED,
         CANCELED
     }

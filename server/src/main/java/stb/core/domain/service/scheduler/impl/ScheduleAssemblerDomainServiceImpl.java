@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import stb.core.domain.model.EngineerCrew;
 import stb.core.domain.model.Request;
+import stb.core.domain.repository.projection.CrewLatestSlot;
 import stb.core.domain.service.scheduler.ScheduleAssemblerDomainService;
 import stb.core.domain.service.scheduler.dto.EngineerCrewDto;
 import stb.core.domain.service.scheduler.dto.RequestDto;
@@ -14,17 +15,15 @@ import stb.core.domain.service.scheduler.dto.ScheduleCalculationResult;
 import stb.core.domain.service.scheduler.dto.ScheduleContext;
 import stb.core.domain.service.scheduler.impl.logic.planning.EngineerRoutingPlan;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ScheduleAssemblerDomainServiceImpl implements ScheduleAssemblerDomainService {
-
-    // Без зависимостей на репозитории
 
     private final SchedulerMapper schedulerMapper;
     private final SolverManager<EngineerRoutingPlan> solverManager;
@@ -32,9 +31,12 @@ public class ScheduleAssemblerDomainServiceImpl implements ScheduleAssemblerDoma
     @Override
     public ScheduleCalculationResult createSchedule(ScheduleContext context) {
         List<EngineerCrewDto> engineerCrewDtoList = new ArrayList<>();
+        Map<Integer, CrewLatestSlot> crewLatestSlots = context.getCrewsLatestSlots() != null
+                ? context.getCrewsLatestSlots().stream().collect(Collectors.toMap(CrewLatestSlot::getCrewId, Function.identity()))
+                : new HashMap<>();
 
         for (EngineerCrew engineerCrew : context.getEngineerCrews()){
-            engineerCrewDtoList.add(schedulerMapper.toEngineerCrewDto(engineerCrew));
+            engineerCrewDtoList.add(schedulerMapper.toEngineerCrewDto(engineerCrew, crewLatestSlots));
         }
 
         List<RequestDto> requestDtoList = new ArrayList<>();

@@ -1,5 +1,11 @@
 <template>
-  <RequestDetails v-if="state.kind === 'ready'" :request="state.data" />
+  <RequestDetails
+    v-if="state.kind === 'ready'"
+    :request="state.data"
+    :pending-action="store.pendingAction"
+    :action-error="store.actionError"
+    @change-status="store.changeStatus(id, $event)"
+  />
 
   <RequestDetailsMessage v-else-if="state.kind === 'loading'" :id="id" kind="loading" />
 

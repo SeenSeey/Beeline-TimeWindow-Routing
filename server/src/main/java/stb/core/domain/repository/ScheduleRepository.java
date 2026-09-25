@@ -2,6 +2,7 @@ package stb.core.domain.repository;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import stb.core.domain.model.Schedule;
 
@@ -12,13 +13,29 @@ import java.util.Optional;
 @Repository
 public interface ScheduleRepository extends JpaRepository<Schedule, Integer> {
 
-    List<Schedule> findAllByTargetDate(LocalDate targetDate);
+    @Query("""
+            SELECT count(s.id) FROM Schedule s
+            WHERE s.targetDate = :targetDate
+            AND NOT EXISTS (
+                SELECT s1 FROM Schedule s1
+                WHERE s1.previousSchedule.id = s.id
+            )
+            """)
     int countAllByTargetDate(LocalDate targetDate);
 
     long deleteAllByStatus(Schedule.Status status);
 
     List<Schedule> findAllByTargetDateAndStatus(LocalDate targetDate, Schedule.Status status);
 
+    @Query("""
+            SELECT s FROM Schedule s
+            WHERE s.region.id = :regionId
+            AND s.targetDate = :targetDate
+            AND NOT EXISTS (
+                SELECT s1 FROM Schedule s1
+                WHERE s1.previousSchedule.id = s.id
+            )
+            """)
     @EntityGraph(attributePaths = {
             "region",
             "slots",

@@ -119,10 +119,11 @@ export function buildCrewRows(schedule: ScheduleData, axis: TimeAxis): CrewRow[]
     return { ...e, shift: [norm(e.shiftStartTime), norm(e.shiftEndTime)], requests, segments };
   });
 
-  // Crews ordered by their first job; idle crews last
-  const firstStart = (c: CrewRow) => c.segments.find((s) => s.kind === "work")?.from ?? Infinity;
-  return rows.sort((a, b) => firstStart(a) - firstStart(b));
+  // Crews ordered by name, A→Я; numbers in names compare as numbers ("Бригада 2" before "Бригада 10")
+  return rows.sort((a, b) => crewNameCollator.compare(a.name, b.name) || a.id - b.id);
 }
+
+const crewNameCollator = new Intl.Collator("ru", { numeric: true, sensitivity: "base" });
 
 // ── On-screen geometry ───────────────────────────────────────────────────────
 

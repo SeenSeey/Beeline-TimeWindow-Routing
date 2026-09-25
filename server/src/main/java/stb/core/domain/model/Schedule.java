@@ -15,6 +15,7 @@ import java.util.List;
 @Setter(AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder(access = AccessLevel.PROTECTED)
 public class Schedule extends BaseEntity {
 
     @Column(name = "target_date", nullable = false)
@@ -41,6 +42,18 @@ public class Schedule extends BaseEntity {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "schedule", cascade = CascadeType.ALL)
     private List<ScheduleSlot> slots;
 
+    public static Schedule createFrom(Schedule schedule) {
+        return Schedule.builder()
+                .targetDate(schedule.getTargetDate())
+                .createdAt(LocalDateTime.now())
+                .status(Status.CREATED)
+                .previousSchedule(schedule)
+                .region(schedule.getRegion())
+                .slots(new ArrayList<>())
+                .finishedAt(schedule.getFinishedAt())
+                .build();
+    }
+
     public Schedule(LocalDate targetDate, Region region) {
         setTargetDate(targetDate);
         setRegion(region);
@@ -52,6 +65,10 @@ public class Schedule extends BaseEntity {
 
     public void addSlot(Request request, ScheduleSlot.SlotType type, LocalTime arrivalTime, LocalTime startTimeWindow, LocalTime endTimeWindow) {
         slots.add(new ScheduleSlot(this, request, type, arrivalTime, startTimeWindow, endTimeWindow));
+    }
+
+    public void addSlot(ScheduleSlot slot) {
+        slots.add(ScheduleSlot.createFrom(this, slot));
     }
 
     public void markAsCreated() {

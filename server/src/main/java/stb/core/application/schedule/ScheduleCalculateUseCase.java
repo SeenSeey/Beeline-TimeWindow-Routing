@@ -54,7 +54,7 @@ public class ScheduleCalculateUseCase {
                 continue;
             }
 
-            List<EngineerCrew> engineerCrews = engineerCrewRepository.findAllByRegionId(region.getId());
+            List<EngineerCrew> engineerCrews = engineerCrewRepository.findAllActiveByRegionIdAndTargetDate(region.getId(), targetDate);
 
             List<Location> points = Stream.concat(
                     Stream.of(Location.from(region)),

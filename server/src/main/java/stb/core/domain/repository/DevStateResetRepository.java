@@ -31,6 +31,7 @@ public class DevStateResetRepository {
                 set request.status = :status,
                     request.assignedCrew = null,
                     request.assignedAt = null,
+                    request.arrivedAt = null,
                     request.completedAt = null,
                     request.canceledAt = null
                 """)

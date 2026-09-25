@@ -9,6 +9,22 @@
     <span class="inline-flex items-center">
       <i :class="[SWATCH, 'h-2.5 outline-2 -outline-offset-2 outline-urgent outline-dashed']"></i>срок сегодня
     </span>
+    <!-- the same looks as the work bars: in progress (inner ring), completed (faded), canceled (light grey) -->
+    <span class="inline-flex items-center">
+      <i
+        :class="[
+          SWATCH,
+          'h-2.5 bg-accent ring-1 ring-white ring-inset',
+        ]"
+      ></i
+      >в работе
+    </span>
+    <span class="inline-flex items-center">
+      <i :class="[SWATCH, 'h-2.5 bg-accent opacity-55 saturate-50']"></i>выполнена
+    </span>
+    <span class="inline-flex items-center">
+      <i :class="[SWATCH, 'h-2.5 border border-line-strong bg-slot-canceled']"></i>отменена
+    </span>
   </div>
 </template>
 

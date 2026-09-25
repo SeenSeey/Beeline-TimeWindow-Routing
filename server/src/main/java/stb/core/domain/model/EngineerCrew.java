@@ -2,6 +2,7 @@ package stb.core.domain.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import stb.core.domain.common.GeopositionProvider;
 
 import java.time.LocalTime;
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.List;
 @Setter(AccessLevel.PROTECTED)
 @AllArgsConstructor()
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class EngineerCrew extends BaseEntity {
+public class EngineerCrew extends BaseEntity implements GeopositionProvider {
 
     @Column(name = "name", nullable = false)
     private String name;
@@ -48,4 +49,14 @@ public class EngineerCrew extends BaseEntity {
             joinColumns = @JoinColumn(name = "crew_id"),
             inverseJoinColumns = @JoinColumn(name = "equipment_id"))
     private List<Equipment> equipment;
+
+    @Override
+    public double getLatitude() {
+        return region.getOfficeLatitude();
+    }
+
+    @Override
+    public double getLongitude() {
+        return region.getOfficeLongitude();
+    }
 }

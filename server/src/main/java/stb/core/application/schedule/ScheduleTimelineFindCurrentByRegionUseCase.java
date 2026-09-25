@@ -53,7 +53,7 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
         return ScheduleTimelineDto.from(
             schedule,
             findUnassignedRequests(schedule, regionId),
-            engineerCrewRepository.findAllByRegionId(regionId)
+            engineerCrewRepository.findAllActiveByRegionIdAndTargetDate(regionId, targetDate)
         );
     }
 

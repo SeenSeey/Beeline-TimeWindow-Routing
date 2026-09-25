@@ -4,23 +4,39 @@ import org.springframework.stereotype.Component;
 import stb.core.domain.model.EngineerCrew;
 import stb.core.domain.model.Request;
 import stb.core.domain.port.route.dto.Location;
+import stb.core.domain.repository.projection.CrewLatestSlot;
 import stb.core.domain.service.scheduler.dto.EngineerCrewDto;
 import stb.core.domain.service.scheduler.dto.RequestDto;
 import stb.core.domain.service.scheduler.dto.ScheduleCalculationResult;
 import stb.core.domain.service.scheduler.dto.output.OutputSlotDto;
 import stb.core.domain.service.scheduler.impl.logic.planning.EngineerRoutingPlan;
 
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class SchedulerMapper {
 
-    public EngineerCrewDto toEngineerCrewDto(EngineerCrew engineerCrew){
+    public EngineerCrewDto toEngineerCrewDto(EngineerCrew engineerCrew, Map<Integer, CrewLatestSlot> crewLatestSlots) {
+        Location location;
+        LocalTime shiftStartTime;
+
+        if (crewLatestSlots != null && crewLatestSlots.containsKey(engineerCrew.getId())) {
+            CrewLatestSlot latestSlot = crewLatestSlots.get(engineerCrew.getId());
+
+            location = Location.from(latestSlot);
+            shiftStartTime = latestSlot.getEndTimeWindow();
+        } else {
+            location = Location.from(engineerCrew);
+            shiftStartTime = engineerCrew.getShiftStartTime();
+        }
+
         return new EngineerCrewDto(engineerCrew.getId(),
                 engineerCrew.getName(),
-                Location.from(engineerCrew),
-                engineerCrew.getShiftStartTime(),
+                location,
+                shiftStartTime,
                 engineerCrew.getShiftEndTime(),
                 engineerCrew.getSkills(),
                 engineerCrew.getVehicle().getKeyword(),

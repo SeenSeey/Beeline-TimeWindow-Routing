@@ -2,6 +2,8 @@ package stb.core.domain.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import stb.core.domain.common.GeopositionProvider;
+import stb.core.domain.exception.DomainException;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -14,7 +16,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Request extends BaseEntity {
+public class Request extends BaseEntity implements GeopositionProvider {
 
     @Column(name = "full_address", nullable = false)
     private String fullAddress;
@@ -63,6 +65,9 @@ public class Request extends BaseEntity {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "arrived_at")
+    private LocalDateTime arrivedAt;
+
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
@@ -72,32 +77,55 @@ public class Request extends BaseEntity {
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "request_equipment",
-            joinColumns =@JoinColumn(name = "request_id"),
+            joinColumns = @JoinColumn(name = "request_id"),
             inverseJoinColumns = @JoinColumn(name = "equipment_id"))
     private List<Equipment> equipment;
 
     public void assignCrew(EngineerCrew engineerCrew, List<RequestStatus> statuses) {
         setAssignedCrew(engineerCrew);
         setAssignedAt(LocalDateTime.now());
-        setStatus(statuses
-                .stream()
-                .filter(status -> RequestStatus.Keyword.ASSIGNED.equals(status.getKeyword()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Статус %s не найден".formatted(RequestStatus.Keyword.ASSIGNED))));
+        updateStatus(statuses, RequestStatus.Keyword.ASSIGNED);
     }
 
     public void unassign(List<RequestStatus> statuses) {
         setAssignedCrew(null);
         setAssignedAt(null);
-        setStatus(statuses
-                .stream()
-                .filter(status -> RequestStatus.Keyword.IDLE.equals(status.getKeyword()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Статус %s не найден".formatted(RequestStatus.Keyword.IDLE))));
+        updateStatus(statuses, RequestStatus.Keyword.IDLE);
+    }
+
+    public void markInProgress(List<RequestStatus> statuses) {
+        if (isCompleted() || isCanceled() || isInProgress()) {
+            throw new DomainException.ConflictException("Невозможно начать выполнение заявки в статусе \"%s\"".formatted(status.getDisplayName()));
+        }
+
+        setArrivedAt(LocalDateTime.now());
+        updateStatus(statuses, RequestStatus.Keyword.IN_PROGRESS);
+    }
+
+    public void complete(List<RequestStatus> statuses) {
+        if (isCompleted() || isCanceled()) {
+            throw new DomainException.ConflictException("Невозможно завершить заявку в статусе \"%s\"".formatted(status.getDisplayName()));
+        }
+
+        setCompletedAt(LocalDateTime.now());
+        updateStatus(statuses, RequestStatus.Keyword.COMPLETED);
+    }
+
+    public void cancel(List<RequestStatus> statuses) {
+        if (isInProgress() || isCompleted()) {
+            throw new DomainException.ConflictException("Невозможно отменить заявку в статусе \"%s\"".formatted(status.getDisplayName()));
+        }
+
+        setCanceledAt(LocalDateTime.now());
+        updateStatus(statuses, RequestStatus.Keyword.CANCELED);
     }
 
     public boolean isAssigned() {
         return assignedAt != null;
+    }
+
+    public boolean isInProgress() {
+        return arrivedAt != null && !isCompleted();
     }
 
     public boolean isCompleted() {
@@ -106,5 +134,13 @@ public class Request extends BaseEntity {
 
     public boolean isCanceled() {
         return canceledAt != null;
+    }
+
+    private void updateStatus(List<RequestStatus> statuses, RequestStatus.Keyword keyword) {
+        setStatus(statuses
+                .stream()
+                .filter(status -> keyword.equals(status.getKeyword()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Статус %s не найден".formatted(keyword))));
     }
 }

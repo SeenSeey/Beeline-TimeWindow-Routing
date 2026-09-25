@@ -13,21 +13,33 @@
         Все заявки
       </RouterLink>
 
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h1 class="m-0 text-2xl font-semibold text-balance text-ink">
-          Заявка <span class="mono">№{{ request.id }}</span>
-        </h1>
-        <UiBadge v-if="request.status" size="md" :color="statusColor(request.status.keyword)" dot>
-          {{ request.status.displayName }}
-        </UiBadge>
-        <UiBadge v-if="request.urgent" size="md" color="var(--urgent)">Срочная</UiBadge>
-      </div>
+      <div class="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+        <div class="grid gap-2">
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h1 class="m-0 text-2xl font-semibold text-balance text-ink">
+              Заявка <span class="mono">№{{ request.id }}</span>
+            </h1>
+            <UiBadge v-if="request.status" size="md" :color="statusColor(request.status.keyword)" dot>
+              {{ request.status.displayName }}
+            </UiBadge>
+            <UiBadge v-if="request.urgent" size="md" color="var(--urgent)">Срочная</UiBadge>
+          </div>
 
-      <p class="m-0 text-sm text-muted">
-        {{ request.fullAddress }}
-        <span class="text-faint"> · </span>
-        {{ request.region.displayName }}
-      </p>
+          <p class="m-0 text-sm text-muted">
+            {{ request.fullAddress }}
+            <span class="text-faint"> · </span>
+            {{ request.region.displayName }}
+          </p>
+        </div>
+
+        <!-- start work / complete / cancel, as the request's status allows -->
+        <RequestStatusActions
+          :request="request"
+          :pending-action="pendingAction"
+          :error="actionError"
+          @change="emit('changeStatus', $event)"
+        />
+      </div>
     </header>
 
     <!-- 2. at a glance -->
@@ -57,15 +69,28 @@ import UiBadge from "@/components/ui/UiBadge.vue";
 import UiDetailList, { type UiDetailRow } from "@/components/ui/UiDetailList.vue";
 import UiPanel from "@/components/ui/UiPanel.vue";
 import { statusColor } from "../model/colors";
+import type { RequestStatusAction } from "../api/requestsApi";
 import type { RequestDetailed } from "../types";
 import RequestCrewPanel from "./RequestCrewPanel.vue";
 import RequestKeyFacts from "./RequestKeyFacts.vue";
 import RequestLifecyclePanel from "./RequestLifecyclePanel.vue";
 import RequestRequirementsPanel from "./RequestRequirementsPanel.vue";
+import RequestStatusActions from "./RequestStatusActions.vue";
 import RequestVisitsPanel from "./RequestVisitsPanel.vue";
 
-const props = defineProps<{
-  request: RequestDetailed;
+const props = withDefaults(
+  defineProps<{
+    request: RequestDetailed;
+    /** the status change in flight */
+    pendingAction?: RequestStatusAction | null;
+    /** why the last status change failed */
+    actionError?: string | null;
+  }>(),
+  { pendingAction: null, actionError: null },
+);
+
+const emit = defineEmits<{
+  changeStatus: [action: RequestStatusAction];
 }>();
 
 const placeRows = computed<UiDetailRow[]>(() => {
