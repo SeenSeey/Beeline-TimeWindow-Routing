@@ -4,9 +4,13 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
-@Table(name = "request_actions_audit")
+@Table(name = "request_actions_audit", indexes = @Index(
+        name = "idx_request_actions_audit_timeline",
+        columnList = "request_id, occurred_at DESC, id DESC"
+))
 @Getter
 @Setter(AccessLevel.PROTECTED)
 @Builder
@@ -19,7 +23,7 @@ public class RequestActionAudit extends BaseEntity {
     private Request request;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "schedule_id", nullable = false)
+    @JoinColumn(name = "schedule_id")
     private Schedule schedule;
 
     @Column(name = "action", nullable = false)
@@ -27,17 +31,26 @@ public class RequestActionAudit extends BaseEntity {
     private Action action;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_crew_id", nullable = false)
+    @JoinColumn(name = "assigned_crew_id")
     private EngineerCrew assignedCrew;
 
-    @Column(name = "timestamp", nullable = false)
-    private LocalDateTime timestamp;
+    @Column(name = "description", nullable = false, columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "operation_id", nullable = false)
+    private UUID operationId;
+
+    @Column(name = "occurred_at", nullable = false)
+    private LocalDateTime occurredAt;
 
     public enum Action {
 
-        INITIAL_ASSIGNATION,
+        REQUEST_CREATED,
+        REQUEST_UPDATED,
+        INITIAL_ASSIGNMENT,
         ASSIGNED_CREW_CHANGE,
         REMOVE_FROM_SCHEDULE,
+        SCHEDULE_CHANGE,
         COMPLETE_REQUEST,
         CANCEL_REQUEST
     }

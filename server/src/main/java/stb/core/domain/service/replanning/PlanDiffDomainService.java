@@ -1,5 +1,6 @@
 package stb.core.domain.service.replanning;
 
+import org.springframework.stereotype.Component;
 import stb.core.domain.dto.replanning.CrewRouteChange;
 import stb.core.domain.dto.replanning.PlanDiff;
 import stb.core.domain.dto.replanning.PlanDiffSummary;
@@ -21,6 +22,7 @@ import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+@Component
 public class PlanDiffDomainService {
 
     public PlanDiff compare(PlanSnapshot previousPlan, PlanSnapshot newPlan) {
