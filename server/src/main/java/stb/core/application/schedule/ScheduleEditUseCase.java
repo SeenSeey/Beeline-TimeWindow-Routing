@@ -3,7 +3,7 @@ package stb.core.application.schedule;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import stb.core.application.audit.RequestActionAuditService;
+import stb.core.application.support.audit.RequestActionAuditWriter;
 import stb.core.domain.dto.ScheduleEditDto;
 import stb.core.domain.dto.SchedulePreviewDto;
 import stb.core.domain.dto.ScheduleTimelineDto;
@@ -11,15 +11,15 @@ import stb.core.domain.dto.UnassignedRequestDto;
 import stb.core.domain.exception.DomainException;
 import stb.core.domain.exception.RequestNotFoundException;
 import stb.core.domain.exception.ScheduleNotFoundException;
-import stb.core.domain.dto.replanning.PlanDiff;
-import stb.core.domain.dto.replanning.PlanSnapshot;
-import stb.core.domain.dto.replanning.RequestChange;
+import stb.core.domain.dto.explanation.PlanDiff;
+import stb.core.domain.dto.explanation.PlanSnapshot;
+import stb.core.domain.dto.explanation.RequestChange;
 import stb.core.domain.model.*;
 import stb.core.domain.repository.*;
 import stb.core.domain.service.CrewRouteTimingDomainService;
 import stb.core.domain.service.CrewRouteTimingDomainService.PlannedVisit;
-import stb.core.domain.service.replanning.PlanDiffDomainService;
-import stb.core.domain.service.replanning.RequestActionAuditFormatter;
+import stb.core.domain.service.explanation.PlanDiffDomainService;
+import stb.core.domain.service.explanation.RequestActionAuditFormatter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -42,13 +42,14 @@ public class ScheduleEditUseCase {
     private final PlanDiffDomainService planDiffDomainService;
 
     private final RequestActionAuditFormatter auditFormatter;
-    private final RequestActionAuditService auditService;
+    private final RequestActionAuditWriter auditWriter;
     private record CrewPlan(EngineerCrew crew, List<PlannedVisit> visits) {
     }
 
     private record EditPlan(Schedule schedule,
                             List<CrewPlan> routes,
-                            List<Request> removedRequests) {
+                            List<Request> removedRequests
+    ) {
 
         List<SchedulePreviewDto.Violation> violations() {
             List<SchedulePreviewDto.Violation> violations = new ArrayList<>();
@@ -80,7 +81,7 @@ public class ScheduleEditUseCase {
     @Transactional
     public void apply(int regionId, ScheduleEditDto edit) {
         UUID operationId = UUID.randomUUID();
-        LocalDateTime occurredAt = LocalDateTime.now();
+        LocalDateTime timestamp = LocalDateTime.now();
         EditPlan plan = plan(regionId, edit);
 
         List<SchedulePreviewDto.Violation> violations = plan.violations();
@@ -136,21 +137,21 @@ public class ScheduleEditUseCase {
 
         scheduleRepository.save(schedule);
 
-        auditService.saveAll(diff.requestChanges().stream()
+        auditWriter.saveAll(diff.requestChanges().stream()
                 .map(change -> {
                     Request request = changedRequests.get(change.requestId());
                     if (request == null) {
                         throw new IllegalStateException(
                                 "Изменённая заявка №%d не найдена".formatted(change.requestId()));
                     }
-                    return new RequestActionAuditService.Entry(
+                    return new RequestActionAuditWriter.Entry(
                             request,
                             auditFormatter.primaryAction(change),
                             descriptions.get(change.requestId()),
                             request.getAssignedCrew(),
                             schedule,
                             operationId,
-                            occurredAt
+                            timestamp
                     );
                 })
                 .toList());

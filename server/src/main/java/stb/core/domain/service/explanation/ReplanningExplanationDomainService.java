@@ -1,12 +1,12 @@
-package stb.core.domain.service.replanning;
+package stb.core.domain.service.explanation;
 
-import stb.core.domain.dto.replanning.PlanDiff;
-import stb.core.domain.dto.replanning.PlanSnapshot;
-import stb.core.domain.dto.replanning.ReplanContext;
-import stb.core.domain.dto.replanning.ReplanContext.TriggerType;
-import stb.core.domain.dto.replanning.ReplanningExplanation;
-import stb.core.domain.dto.replanning.RequestChange;
-import stb.core.domain.dto.replanning.RequestChange.Type;
+import stb.core.domain.dto.explanation.PlanDiff;
+import stb.core.domain.dto.explanation.PlanSnapshot;
+import stb.core.domain.dto.explanation.ReplanContext;
+import stb.core.domain.dto.explanation.ReplanContext.TriggerType;
+import stb.core.domain.dto.explanation.ReplanningExplanation;
+import stb.core.domain.dto.explanation.RequestChange;
+import stb.core.domain.dto.explanation.RequestChange.Type;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -26,7 +26,8 @@ public final class ReplanningExplanationDomainService {
     public ReplanningExplanation explain(ReplanContext context,
                                          PlanDiff diff,
                                          PlanSnapshot previousPlan,
-                                         PlanSnapshot newPlan) {
+                                         PlanSnapshot newPlan
+    ) {
         validatePlanIdentity(context, diff, previousPlan, newPlan);
 
         CrewNames crewNames = CrewNames.from(previousPlan, newPlan);
@@ -66,7 +67,8 @@ public final class ReplanningExplanationDomainService {
 
     private static String summary(ReplanContext context,
                                   List<RequestChange> changes,
-                                  CrewNames crewNames) {
+                                  CrewNames crewNames
+    ) {
         return switch (context.triggerType()) {
             case EMERGENCY_REQUEST_CREATED -> emergencySummary(context, changes, crewNames);
             case REQUEST_CANCELLED -> cancellationSummary(context, changes);
@@ -76,7 +78,8 @@ public final class ReplanningExplanationDomainService {
 
     private static String emergencySummary(ReplanContext context,
                                            List<RequestChange> changes,
-                                           CrewNames crewNames) {
+                                           CrewNames crewNames
+    ) {
         Optional<RequestChange> trigger = changes.stream()
                 .filter(change -> change.requestId() == context.triggerSubjectId())
                 .findFirst();
@@ -114,7 +117,8 @@ public final class ReplanningExplanationDomainService {
 
     private static String crewUnavailableSummary(ReplanContext context,
                                                  List<RequestChange> changes,
-                                                 CrewNames crewNames) {
+                                                 CrewNames crewNames
+    ) {
         long affected = changes.stream()
                 .filter(change -> Objects.equals(change.previousCrewId(), context.triggerSubjectId()))
                 .count();
@@ -233,7 +237,8 @@ public final class ReplanningExplanationDomainService {
     private static void validatePlanIdentity(ReplanContext context,
                                              PlanDiff diff,
                                              PlanSnapshot previousPlan,
-                                             PlanSnapshot newPlan) {
+                                             PlanSnapshot newPlan
+    ) {
         if (context.previousPlanId() != previousPlan.planId()
                 || context.newPlanId() != newPlan.planId()
                 || diff.previousPlanId() != previousPlan.planId()

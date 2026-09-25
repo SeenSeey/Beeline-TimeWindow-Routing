@@ -9,5 +9,5 @@ import java.util.List;
 @Repository
 public interface RequestActionAuditRepository extends JpaRepository<RequestActionAudit, Integer> {
 
-    List<RequestActionAudit> findAllByRequestIdOrderByOccurredAtDescIdDesc(int requestId);
+    List<RequestActionAudit> findAllByRequestIdOrderByTimestampDescIdDesc(int requestId);
 }

@@ -1,12 +1,12 @@
-package stb.core.domain.service.replanning;
+package stb.core.domain.service.explanation;
 
 import org.springframework.stereotype.Component;
-import stb.core.domain.dto.replanning.CrewRouteChange;
-import stb.core.domain.dto.replanning.PlanDiff;
-import stb.core.domain.dto.replanning.PlanDiffSummary;
-import stb.core.domain.dto.replanning.PlanSnapshot;
-import stb.core.domain.dto.replanning.RequestChange;
-import stb.core.domain.dto.replanning.RequestChange.Type;
+import stb.core.domain.dto.explanation.CrewRouteChange;
+import stb.core.domain.dto.explanation.PlanDiff;
+import stb.core.domain.dto.explanation.PlanDiffSummary;
+import stb.core.domain.dto.explanation.PlanSnapshot;
+import stb.core.domain.dto.explanation.RequestChange;
+import stb.core.domain.dto.explanation.RequestChange.Type;
 
 import java.time.Duration;
 import java.time.LocalTime;
@@ -80,7 +80,8 @@ public class PlanDiffDomainService {
     }
 
     private static List<RequestChange> findRequestChanges(Map<Integer, RequestPlacement> previousPlacements,
-                                                           Map<Integer, RequestPlacement> newPlacements) {
+                                                           Map<Integer, RequestPlacement> newPlacements
+    ) {
         Set<Integer> requestIds = new TreeSet<>(previousPlacements.keySet());
         requestIds.addAll(newPlacements.keySet());
 
@@ -134,7 +135,8 @@ public class PlanDiffDomainService {
     private static RequestChange change(int requestId,
                                         Set<Type> types,
                                         RequestPlacement previous,
-                                        RequestPlacement current) {
+                                        RequestPlacement current
+    ) {
         ChangeValues previousValues = ChangeValues.from(previous);
         ChangeValues currentValues = ChangeValues.from(current);
         LocalTime previousStart = previousValues.startTime();
@@ -162,7 +164,8 @@ public class PlanDiffDomainService {
                                                                PlanSnapshot newPlan,
                                                                Map<Integer, RequestPlacement> previousPlacements,
                                                                Map<Integer, RequestPlacement> newPlacements,
-                                                               List<RequestChange> requestChanges) {
+                                                               List<RequestChange> requestChanges
+    ) {
         Map<Integer, Integer> previousCounts = requestCountsByCrew(previousPlan);
         Map<Integer, Integer> newCounts = requestCountsByCrew(newPlan);
         Map<Integer, MutableCrewRouteChange> changesByCrew = new LinkedHashMap<>();
@@ -221,7 +224,8 @@ public class PlanDiffDomainService {
     }
 
     private static PlanDiffSummary summarize(List<RequestChange> requestChanges,
-                                             List<CrewRouteChange> crewRouteChanges) {
+                                             List<CrewRouteChange> crewRouteChanges
+    ) {
         return new PlanDiffSummary(
                 requestChanges.size(),
                 crewRouteChanges.size(),
@@ -270,7 +274,8 @@ public class PlanDiffDomainService {
     private record ChangeValues(Integer crewId,
                                 Integer position,
                                 Integer previousRequestId,
-                                LocalTime startTime) {
+                                LocalTime startTime
+    ) {
 
         private static final ChangeValues EMPTY = new ChangeValues(null, null, null, null);
 

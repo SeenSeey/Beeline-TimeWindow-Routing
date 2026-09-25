@@ -1,10 +1,10 @@
-package stb.core.domain.service.replanning;
+package stb.core.domain.service.explanation;
 
 import org.junit.jupiter.api.Test;
-import stb.core.domain.dto.replanning.PlanDiff;
-import stb.core.domain.dto.replanning.PlanDiffSummary;
-import stb.core.domain.dto.replanning.PlanSnapshot;
-import stb.core.domain.dto.replanning.RequestChange;
+import stb.core.domain.dto.explanation.PlanDiff;
+import stb.core.domain.dto.explanation.PlanDiffSummary;
+import stb.core.domain.dto.explanation.PlanSnapshot;
+import stb.core.domain.dto.explanation.RequestChange;
 
 import java.time.LocalDate;
 import java.time.LocalTime;

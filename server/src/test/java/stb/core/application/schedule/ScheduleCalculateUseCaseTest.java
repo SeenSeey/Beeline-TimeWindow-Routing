@@ -2,7 +2,7 @@ package stb.core.application.schedule;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import stb.core.application.audit.RequestActionAuditService;
+import stb.core.application.support.audit.RequestActionAuditWriter;
 import stb.core.domain.model.EngineerCrew;
 import stb.core.domain.model.Region;
 import stb.core.domain.model.Request;
@@ -15,7 +15,7 @@ import stb.core.domain.repository.RequestStatusRepository;
 import stb.core.domain.repository.ScheduleRepository;
 import stb.core.domain.service.RouteDomainService;
 import stb.core.domain.service.SpeedProfileDomainService;
-import stb.core.domain.service.replanning.RequestActionAuditFormatter;
+import stb.core.domain.service.explanation.RequestActionAuditFormatter;
 import stb.core.domain.service.scheduler.ScheduleAssemblerDomainService;
 import stb.core.domain.service.scheduler.dto.ScheduleCalculationResult;
 import stb.core.domain.service.scheduler.dto.output.OutputSlotDto;
@@ -45,7 +45,7 @@ class ScheduleCalculateUseCaseTest {
         ScheduleAssemblerDomainService assembler = mock(ScheduleAssemblerDomainService.class);
         RouteDomainService routeService = mock(RouteDomainService.class);
         SpeedProfileDomainService speedProfileService = mock(SpeedProfileDomainService.class);
-        RequestActionAuditService auditService = mock(RequestActionAuditService.class);
+        RequestActionAuditWriter auditWriter = mock(RequestActionAuditWriter.class);
 
         Region region = new Region("Регион", "Офис", 55.7, 37.6, null);
         EngineerCrew crew = new EngineerCrew(
@@ -75,12 +75,12 @@ class ScheduleCalculateUseCaseTest {
 
         ScheduleCalculateUseCase useCase = new ScheduleCalculateUseCase(
                 requestRepository, scheduleRepository, crewRepository, statusRepository,
-                assembler, routeService, speedProfileService, new RequestActionAuditFormatter(), auditService);
+                assembler, routeService, speedProfileService, new RequestActionAuditFormatter(), auditWriter);
         useCase.execute(LocalDate.of(2026, 9, 25));
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<RequestActionAuditService.Entry>> captor = ArgumentCaptor.forClass(List.class);
-        verify(auditService).saveAll(captor.capture());
+        ArgumentCaptor<List<RequestActionAuditWriter.Entry>> captor = ArgumentCaptor.forClass(List.class);
+        verify(auditWriter).saveAll(captor.capture());
         assertThat(captor.getValue()).singleElement().satisfies(entry -> {
             assertThat(entry.request()).isSameAs(request);
             assertThat(entry.action()).isEqualTo(RequestActionAudit.Action.INITIAL_ASSIGNMENT);

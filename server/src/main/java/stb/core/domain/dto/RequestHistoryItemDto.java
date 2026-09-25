@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 public record RequestHistoryItemDto(
         int id,
-        LocalDateTime occurredAt,
+        LocalDateTime timestamp,
         RequestActionAudit.Action action,
         String description,
         Integer crewId,
@@ -16,7 +16,7 @@ public record RequestHistoryItemDto(
     public static RequestHistoryItemDto from(RequestActionAudit audit) {
         return new RequestHistoryItemDto(
                 audit.getId(),
-                audit.getOccurredAt(),
+                audit.getTimestamp(),
                 audit.getAction(),
                 audit.getDescription(),
                 audit.getAssignedCrew() == null ? null : audit.getAssignedCrew().getId(),

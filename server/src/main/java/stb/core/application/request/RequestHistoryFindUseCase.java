@@ -22,7 +22,7 @@ public class RequestHistoryFindUseCase {
         if (!requestRepository.existsById(requestId)) {
             throw new RequestNotFoundException("Заявка №%d не найдена".formatted(requestId));
         }
-        return auditRepository.findAllByRequestIdOrderByOccurredAtDescIdDesc(requestId).stream()
+        return auditRepository.findAllByRequestIdOrderByTimestampDescIdDesc(requestId).stream()
                 .map(RequestHistoryItemDto::from)
                 .toList();
     }

@@ -1,4 +1,4 @@
-package stb.core.application.audit;
+package stb.core.application.support.audit;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
-public class RequestActionAuditService {
+public class RequestActionAuditWriter {
 
     private final RequestActionAuditRepository repository;
 
@@ -34,7 +34,7 @@ public class RequestActionAuditService {
                 .assignedCrew(entry.assignedCrew())
                 .description(entry.description())
                 .operationId(entry.operationId())
-                .occurredAt(entry.occurredAt())
+                .timestamp(entry.timestamp())
                 .build();
     }
 
@@ -45,14 +45,14 @@ public class RequestActionAuditService {
             EngineerCrew assignedCrew,
             Schedule schedule,
             UUID operationId,
-            LocalDateTime occurredAt
+            LocalDateTime timestamp
     ) {
 
         public Entry {
             Objects.requireNonNull(request, "request не должна быть null");
             Objects.requireNonNull(action, "action не должен быть null");
             Objects.requireNonNull(operationId, "operationId не должен быть null");
-            Objects.requireNonNull(occurredAt, "occurredAt не должен быть null");
+            Objects.requireNonNull(timestamp, "timestamp не должен быть null");
             if (description == null || description.isBlank()) {
                 throw new IllegalArgumentException("description не должно быть пустым");
             }

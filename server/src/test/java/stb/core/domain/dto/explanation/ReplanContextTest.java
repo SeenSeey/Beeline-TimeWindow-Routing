@@ -1,7 +1,7 @@
-package stb.core.domain.dto.replanning;
+package stb.core.domain.dto.explanation;
 
 import org.junit.jupiter.api.Test;
-import stb.core.domain.dto.replanning.ReplanContext.TriggerType;
+import stb.core.domain.dto.explanation.ReplanContext.TriggerType;
 
 import java.time.LocalTime;
 

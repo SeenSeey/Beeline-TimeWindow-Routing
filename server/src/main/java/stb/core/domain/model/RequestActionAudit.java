@@ -9,7 +9,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "request_actions_audit", indexes = @Index(
         name = "idx_request_actions_audit_timeline",
-        columnList = "request_id, occurred_at DESC, id DESC"
+        columnList = "request_id, timestamp DESC, id DESC"
 ))
 @Getter
 @Setter(AccessLevel.PROTECTED)
@@ -40,8 +40,8 @@ public class RequestActionAudit extends BaseEntity {
     @Column(name = "operation_id", nullable = false)
     private UUID operationId;
 
-    @Column(name = "occurred_at", nullable = false)
-    private LocalDateTime occurredAt;
+    @Column(name = "timestamp", nullable = false)
+    private LocalDateTime timestamp;
 
     public enum Action {
 

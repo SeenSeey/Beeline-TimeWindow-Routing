@@ -25,7 +25,7 @@ class RequestHistoryFindUseCaseTest {
         RequestActionAuditRepository auditRepository = mock(RequestActionAuditRepository.class);
         RequestHistoryFindUseCase useCase = new RequestHistoryFindUseCase(requestRepository, auditRepository);
         when(requestRepository.existsById(42)).thenReturn(true);
-        when(auditRepository.findAllByRequestIdOrderByOccurredAtDescIdDesc(42)).thenReturn(List.of(
+        when(auditRepository.findAllByRequestIdOrderByTimestampDescIdDesc(42)).thenReturn(List.of(
                 audit("Новое объяснение.", LocalDateTime.of(2026, 9, 25, 12, 0)),
                 audit("Старое объяснение.", LocalDateTime.of(2026, 9, 25, 10, 0))
         ));
@@ -34,7 +34,7 @@ class RequestHistoryFindUseCaseTest {
 
         assertThat(result).extracting(item -> item.description())
                 .containsExactly("Новое объяснение.", "Старое объяснение.");
-        verify(auditRepository).findAllByRequestIdOrderByOccurredAtDescIdDesc(42);
+        verify(auditRepository).findAllByRequestIdOrderByTimestampDescIdDesc(42);
     }
 
     @Test
@@ -49,12 +49,12 @@ class RequestHistoryFindUseCaseTest {
         verifyNoInteractions(auditRepository);
     }
 
-    private static RequestActionAudit audit(String description, LocalDateTime occurredAt) {
+    private static RequestActionAudit audit(String description, LocalDateTime timestamp) {
         return RequestActionAudit.builder()
                 .action(RequestActionAudit.Action.SCHEDULE_CHANGE)
                 .description(description)
                 .operationId(UUID.randomUUID())
-                .occurredAt(occurredAt)
+                .timestamp(timestamp)
                 .build();
     }
 }

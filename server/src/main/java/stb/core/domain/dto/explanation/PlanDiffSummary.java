@@ -1,4 +1,4 @@
-package stb.core.domain.dto.replanning;
+package stb.core.domain.dto.explanation;
 
 public record PlanDiffSummary(
         int changedRequestCount,

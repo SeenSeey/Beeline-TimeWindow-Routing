@@ -1,4 +1,4 @@
-package stb.core.application.audit;
+package stb.core.application.support.audit;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -15,18 +15,18 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class RequestActionAuditServiceTest {
+class RequestActionAuditWriterTest {
 
     @Test
     void writesBatchWithSharedOperationAndAllowsNullableScheduleAndCrew() {
         RequestActionAuditRepository repository = mock(RequestActionAuditRepository.class);
-        RequestActionAuditService service = new RequestActionAuditService(repository);
+        RequestActionAuditWriter writer = new RequestActionAuditWriter(repository);
         UUID operationId = UUID.randomUUID();
-        LocalDateTime occurredAt = LocalDateTime.of(2026, 9, 25, 12, 30);
+        LocalDateTime timestamp = LocalDateTime.of(2026, 9, 25, 12, 30);
 
-        service.saveAll(List.of(
-                entry(Request.builder().build(), "Первая заявка изменена.", operationId, occurredAt),
-                entry(Request.builder().build(), "Вторая заявка изменена.", operationId, occurredAt)
+        writer.saveAll(List.of(
+                entry(Request.builder().build(), "Первая заявка изменена.", operationId, timestamp),
+                entry(Request.builder().build(), "Вторая заявка изменена.", operationId, timestamp)
         ));
 
         @SuppressWarnings("unchecked")
@@ -34,7 +34,7 @@ class RequestActionAuditServiceTest {
         verify(repository).saveAll(captor.capture());
         assertThat(captor.getValue()).hasSize(2).allSatisfy(audit -> {
             assertThat(audit.getOperationId()).isEqualTo(operationId);
-            assertThat(audit.getOccurredAt()).isEqualTo(occurredAt);
+            assertThat(audit.getTimestamp()).isEqualTo(timestamp);
             assertThat(audit.getSchedule()).isNull();
             assertThat(audit.getAssignedCrew()).isNull();
             assertThat(audit.getDescription()).isNotBlank();
@@ -45,34 +45,34 @@ class RequestActionAuditServiceTest {
     void enforcesRequiredAuditInvariants() {
         Request request = Request.builder().build();
         UUID operationId = UUID.randomUUID();
-        LocalDateTime occurredAt = LocalDateTime.now();
+        LocalDateTime timestamp = LocalDateTime.now();
 
-        assertThatThrownBy(() -> new RequestActionAuditService.Entry(
+        assertThatThrownBy(() -> new RequestActionAuditWriter.Entry(
                 null, RequestActionAudit.Action.REQUEST_UPDATED, "Описание.",
-                null, null, operationId, occurredAt
+                null, null, operationId, timestamp
         )).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new RequestActionAuditService.Entry(
+        assertThatThrownBy(() -> new RequestActionAuditWriter.Entry(
                 request, RequestActionAudit.Action.REQUEST_UPDATED, " ",
-                null, null, operationId, occurredAt
+                null, null, operationId, timestamp
         )).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new RequestActionAuditService.Entry(
+        assertThatThrownBy(() -> new RequestActionAuditWriter.Entry(
                 request, RequestActionAudit.Action.REQUEST_UPDATED, "Описание.",
-                null, null, null, occurredAt
+                null, null, null, timestamp
         )).isInstanceOf(NullPointerException.class);
     }
 
-    private static RequestActionAuditService.Entry entry(Request request,
+    private static RequestActionAuditWriter.Entry entry(Request request,
                                                           String description,
                                                           UUID operationId,
-                                                          LocalDateTime occurredAt) {
-        return new RequestActionAuditService.Entry(
+                                                          LocalDateTime timestamp) {
+        return new RequestActionAuditWriter.Entry(
                 request,
                 RequestActionAudit.Action.SCHEDULE_CHANGE,
                 description,
                 null,
                 null,
                 operationId,
-                occurredAt
+                timestamp
         );
     }
 }
