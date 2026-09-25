@@ -1,12 +1,11 @@
 package stb.core.domain.service.replanning;
 
-import stb.core.domain.dto.replanning.CrewRouteChange;
-import stb.core.domain.dto.replanning.PlanDiff;
-import stb.core.domain.dto.replanning.PlanDiffSummary;
-import stb.core.domain.dto.replanning.PlanSnapshot;
-import stb.core.domain.dto.replanning.RequestChange;
-import stb.core.domain.dto.replanning.RequestChangeType;
-import stb.core.domain.dto.replanning.RequestPlacement;
+import stb.core.domain.model.replanning.CrewRouteChange;
+import stb.core.domain.model.replanning.PlanDiff;
+import stb.core.domain.model.replanning.PlanDiffSummary;
+import stb.core.domain.model.replanning.PlanSnapshot;
+import stb.core.domain.model.replanning.RequestChange;
+import stb.core.domain.model.replanning.RequestChange.Type;
 
 import java.time.Duration;
 import java.time.LocalTime;
@@ -21,15 +20,11 @@ import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-/**
- * Compares immutable plan snapshots and reports observable business changes.
- * The service is deliberately independent of persistence and the scheduling engine.
- */
 public class PlanDiffDomainService {
 
     public PlanDiff compare(PlanSnapshot previousPlan, PlanSnapshot newPlan) {
-        Objects.requireNonNull(previousPlan, "previousPlan must not be null");
-        Objects.requireNonNull(newPlan, "newPlan must not be null");
+        Objects.requireNonNull(previousPlan, "previousPlan не должент быть null");
+        Objects.requireNonNull(newPlan, "newPlan не должент быть null");
         validateComparable(previousPlan, newPlan);
 
         Map<Integer, RequestPlacement> previousPlacements = index(previousPlan);
@@ -49,13 +44,13 @@ public class PlanDiffDomainService {
 
     private static void validateComparable(PlanSnapshot previousPlan, PlanSnapshot newPlan) {
         if (!Objects.equals(newPlan.previousPlanId(), previousPlan.planId())) {
-            throw new IllegalArgumentException("New plan must reference the previous plan");
+            throw new IllegalArgumentException("New plan должен содержать ссылку на previous plan");
         }
         if (!previousPlan.targetDate().equals(newPlan.targetDate())) {
-            throw new IllegalArgumentException("Plan snapshots must have the same target date");
+            throw new IllegalArgumentException("Plan snapshots должны иметь одинаковую target date");
         }
         if (previousPlan.regionId() != newPlan.regionId()) {
-            throw new IllegalArgumentException("Plan snapshots must belong to the same region");
+            throw new IllegalArgumentException("Plan snapshots должны относиться к одному региону");
         }
     }
 
@@ -72,10 +67,7 @@ public class PlanDiffDomainService {
             }
         }
         for (Integer requestId : snapshot.unassignedRequestIds()) {
-            if (requestId == null) {
-                throw new IllegalArgumentException("Unassigned request id must not be null");
-            }
-            putUnique(placements, RequestPlacement.unassigned(requestId));
+            putUnique(placements, new UnassignedPlacement(requestId));
         }
         return placements;
     }
@@ -93,45 +85,53 @@ public class PlanDiffDomainService {
 
         List<RequestChange> changes = new ArrayList<>();
         for (int requestId : requestIds) {
-            RequestPlacement previous = previousPlacements.get(requestId);
-            RequestPlacement current = newPlacements.get(requestId);
+            RequestPlacement previous = placement(previousPlacements, requestId);
+            RequestPlacement current = placement(newPlacements, requestId);
 
-            if (previous == null) {
+            if (previous instanceof MissingPlacement) {
                 changes.add(change(requestId,
-                        current.assigned() ? RequestChangeType.ADDED_TO_PLAN : RequestChangeType.ADDED_AS_UNASSIGNED,
-                        null, current));
+                        current instanceof AssignedPlacement ? Type.ADDED_TO_PLAN : Type.ADDED_AS_UNASSIGNED,
+                        previous, current));
                 continue;
             }
-            if (current == null) {
-                changes.add(change(requestId, RequestChangeType.REMOVED_FROM_PLAN, previous, null));
+            if (current instanceof MissingPlacement) {
+                changes.add(change(requestId, Type.REMOVED_FROM_PLAN, previous, current));
                 continue;
             }
 
-            if (!previous.assigned() && current.assigned()) {
-                changes.add(change(requestId, RequestChangeType.ASSIGNED_FROM_UNASSIGNED, previous, current));
-            } else if (previous.assigned() && !current.assigned()) {
-                changes.add(change(requestId, RequestChangeType.BECAME_UNASSIGNED, previous, current));
-            } else if (previous.assigned() && !Objects.equals(previous.crewId(), current.crewId())) {
-                changes.add(change(requestId, RequestChangeType.REASSIGNED, previous, current));
-            } else if (previous.assigned()
-                    && !Objects.equals(previous.previousRequestId(), current.previousRequestId())) {
-                changes.add(change(requestId, RequestChangeType.ORDER_CHANGED, previous, current));
-            }
+            if (previous instanceof UnassignedPlacement && current instanceof AssignedPlacement) {
+                changes.add(change(requestId, Type.ASSIGNED_FROM_UNASSIGNED, previous, current));
+            } else if (previous instanceof AssignedPlacement && current instanceof UnassignedPlacement) {
+                changes.add(change(requestId, Type.BECAME_UNASSIGNED, previous, current));
+            } else if (previous instanceof AssignedPlacement previousAssigned
+                    && current instanceof AssignedPlacement currentAssigned) {
+                if (previousAssigned.crewId() != currentAssigned.crewId()) {
+                    changes.add(change(requestId, Type.REASSIGNED, previous, current));
+                } else if (!Objects.equals(
+                        previousAssigned.previousRequestId(), currentAssigned.previousRequestId())) {
+                    changes.add(change(requestId, Type.ORDER_CHANGED, previous, current));
+                }
 
-            if (previous.assigned() && current.assigned()
-                    && !Objects.equals(previous.startTime(), current.startTime())) {
-                changes.add(change(requestId, RequestChangeType.PLANNED_TIME_CHANGED, previous, current));
+                if (!Objects.equals(previousAssigned.startTime(), currentAssigned.startTime())) {
+                    changes.add(change(requestId, Type.PLANNED_TIME_CHANGED, previous, current));
+                }
             }
         }
         return List.copyOf(changes);
     }
 
+    private static RequestPlacement placement(Map<Integer, RequestPlacement> placements, int requestId) {
+        return placements.getOrDefault(requestId, new MissingPlacement(requestId));
+    }
+
     private static RequestChange change(int requestId,
-                                        RequestChangeType type,
+                                        Type type,
                                         RequestPlacement previous,
                                         RequestPlacement current) {
-        LocalTime previousStart = previous == null ? null : previous.startTime();
-        LocalTime newStart = current == null ? null : current.startTime();
+        ChangeValues previousValues = ChangeValues.from(previous);
+        ChangeValues currentValues = ChangeValues.from(current);
+        LocalTime previousStart = previousValues.startTime();
+        LocalTime newStart = currentValues.startTime();
         Long deltaMinutes = previousStart != null && newStart != null
                 ? Duration.between(previousStart, newStart).toMinutes()
                 : null;
@@ -139,12 +139,12 @@ public class PlanDiffDomainService {
         return new RequestChange(
                 requestId,
                 type,
-                previous == null ? null : previous.crewId(),
-                current == null ? null : current.crewId(),
-                previous == null ? null : previous.position(),
-                current == null ? null : current.position(),
-                previous == null ? null : previous.previousRequestId(),
-                current == null ? null : current.previousRequestId(),
+                previousValues.crewId(),
+                currentValues.crewId(),
+                previousValues.position(),
+                currentValues.position(),
+                previousValues.previousRequestId(),
+                currentValues.previousRequestId(),
                 previousStart,
                 newStart,
                 deltaMinutes
@@ -168,12 +168,12 @@ public class PlanDiffDomainService {
         }
 
         for (RequestChange change : requestChanges) {
-            RequestPlacement previous = previousPlacements.get(change.requestId());
-            RequestPlacement current = newPlacements.get(change.requestId());
+            RequestPlacement previous = placement(previousPlacements, change.requestId());
+            RequestPlacement current = placement(newPlacements, change.requestId());
             switch (change.type()) {
                 case ADDED_TO_PLAN, ASSIGNED_FROM_UNASSIGNED -> routeChange(changesByCrew, current).added.add(change.requestId());
                 case REMOVED_FROM_PLAN, BECAME_UNASSIGNED -> {
-                    if (previous != null && previous.assigned()) {
+                    if (previous instanceof AssignedPlacement) {
                         routeChange(changesByCrew, previous).removed.add(change.requestId());
                     }
                 }
@@ -197,7 +197,10 @@ public class PlanDiffDomainService {
 
     private static MutableCrewRouteChange routeChange(Map<Integer, MutableCrewRouteChange> changesByCrew,
                                                        RequestPlacement placement) {
-        return changesByCrew.get(Objects.requireNonNull(placement.crewId()));
+        if (!(placement instanceof AssignedPlacement assigned)) {
+            throw new IllegalArgumentException("Crew route change requires an assigned request");
+        }
+        return changesByCrew.get(assigned.crewId());
     }
 
     private static Map<Integer, Integer> requestCountsByCrew(PlanSnapshot snapshot) {
@@ -213,20 +216,67 @@ public class PlanDiffDomainService {
         return new PlanDiffSummary(
                 changedRequestCount,
                 crewRouteChanges.size(),
-                countDistinct(requestChanges, change -> change.type() == RequestChangeType.ADDED_TO_PLAN
-                        || change.type() == RequestChangeType.ADDED_AS_UNASSIGNED),
-                countDistinct(requestChanges, change -> change.type() == RequestChangeType.REMOVED_FROM_PLAN),
+                countDistinct(requestChanges, change -> change.type() == Type.ADDED_TO_PLAN
+                        || change.type() == Type.ADDED_AS_UNASSIGNED),
+                countDistinct(requestChanges, change -> change.type() == Type.REMOVED_FROM_PLAN),
                 countDistinct(requestChanges, change -> switch (change.type()) {
                     case ASSIGNED_FROM_UNASSIGNED, BECAME_UNASSIGNED, REASSIGNED -> true;
                     default -> false;
                 }),
-                countDistinct(requestChanges, change -> change.type() == RequestChangeType.ORDER_CHANGED),
-                countDistinct(requestChanges, change -> change.type() == RequestChangeType.PLANNED_TIME_CHANGED)
+                countDistinct(requestChanges, change -> change.type() == Type.ORDER_CHANGED),
+                countDistinct(requestChanges, change -> change.type() == Type.PLANNED_TIME_CHANGED)
         );
     }
 
     private static int countDistinct(List<RequestChange> changes, Predicate<RequestChange> predicate) {
         return (int) changes.stream().filter(predicate).map(RequestChange::requestId).distinct().count();
+    }
+
+    private sealed interface RequestPlacement permits AssignedPlacement, UnassignedPlacement, MissingPlacement {
+        int requestId();
+
+        static RequestPlacement assigned(int crewId, PlanSnapshot.Visit visit) {
+            return new AssignedPlacement(
+                    visit.requestId(),
+                    crewId,
+                    visit.position(),
+                    visit.previousRequestId(),
+                    visit.startTime()
+            );
+        }
+    }
+
+    private record AssignedPlacement(int requestId,
+                                     int crewId,
+                                     int position,
+                                     Integer previousRequestId,
+                                     LocalTime startTime) implements RequestPlacement {
+    }
+
+    private record UnassignedPlacement(int requestId) implements RequestPlacement {
+    }
+
+    private record MissingPlacement(int requestId) implements RequestPlacement {
+    }
+
+    private record ChangeValues(Integer crewId,
+                                Integer position,
+                                Integer previousRequestId,
+                                LocalTime startTime) {
+
+        private static final ChangeValues EMPTY = new ChangeValues(null, null, null, null);
+
+        private static ChangeValues from(RequestPlacement placement) {
+            if (placement instanceof AssignedPlacement assigned) {
+                return new ChangeValues(
+                        assigned.crewId(),
+                        assigned.position(),
+                        assigned.previousRequestId(),
+                        assigned.startTime()
+                );
+            }
+            return EMPTY;
+        }
     }
 
     private static final class MutableCrewRouteChange {
