@@ -1,4 +1,4 @@
-package stb.core.domain.model.replanning;
+package stb.core.domain.dto.replanning;
 
 import java.time.LocalDate;
 import java.time.LocalTime;

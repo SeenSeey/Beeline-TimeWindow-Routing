@@ -1,15 +1,16 @@
 package stb.core.domain.service.replanning;
 
-import stb.core.domain.model.replanning.CrewRouteChange;
-import stb.core.domain.model.replanning.PlanDiff;
-import stb.core.domain.model.replanning.PlanDiffSummary;
-import stb.core.domain.model.replanning.PlanSnapshot;
-import stb.core.domain.model.replanning.RequestChange;
-import stb.core.domain.model.replanning.RequestChange.Type;
+import stb.core.domain.dto.replanning.CrewRouteChange;
+import stb.core.domain.dto.replanning.PlanDiff;
+import stb.core.domain.dto.replanning.PlanDiffSummary;
+import stb.core.domain.dto.replanning.PlanSnapshot;
+import stb.core.domain.dto.replanning.RequestChange;
+import stb.core.domain.dto.replanning.RequestChange.Type;
 
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -90,34 +91,40 @@ public class PlanDiffDomainService {
 
             if (previous instanceof MissingPlacement) {
                 changes.add(change(requestId,
-                        current instanceof AssignedPlacement ? Type.ADDED_TO_PLAN : Type.ADDED_AS_UNASSIGNED,
+                        EnumSet.of(current instanceof AssignedPlacement
+                                ? Type.ADDED_TO_PLAN
+                                : Type.ADDED_AS_UNASSIGNED),
                         previous, current));
                 continue;
             }
             if (current instanceof MissingPlacement) {
-                changes.add(change(requestId, Type.REMOVED_FROM_PLAN, previous, current));
+                changes.add(change(requestId, EnumSet.of(Type.REMOVED_FROM_PLAN), previous, current));
                 continue;
             }
 
             if (previous instanceof UnassignedPlacement && current instanceof AssignedPlacement) {
-                changes.add(change(requestId, Type.ASSIGNED_FROM_UNASSIGNED, previous, current));
+                changes.add(change(requestId, EnumSet.of(Type.ASSIGNED_FROM_UNASSIGNED), previous, current));
             } else if (previous instanceof AssignedPlacement && current instanceof UnassignedPlacement) {
-                changes.add(change(requestId, Type.BECAME_UNASSIGNED, previous, current));
+                changes.add(change(requestId, EnumSet.of(Type.BECAME_UNASSIGNED), previous, current));
             } else if (previous instanceof AssignedPlacement previousAssigned
                     && current instanceof AssignedPlacement currentAssigned) {
+                EnumSet<Type> types = EnumSet.noneOf(Type.class);
                 if (previousAssigned.crewId() != currentAssigned.crewId()) {
-                    changes.add(change(requestId, Type.REASSIGNED, previous, current));
+                    types.add(Type.REASSIGNED);
                 } else if (!Objects.equals(
                         previousAssigned.previousRequestId(), currentAssigned.previousRequestId())) {
-                    changes.add(change(requestId, Type.ORDER_CHANGED, previous, current));
+                    types.add(Type.ORDER_CHANGED);
                 }
 
                 if (!Objects.equals(previousAssigned.startTime(), currentAssigned.startTime())) {
-                    changes.add(change(requestId, Type.PLANNED_TIME_CHANGED, previous, current));
+                    types.add(Type.PLANNED_TIME_CHANGED);
+                }
+                if (!types.isEmpty()) {
+                    changes.add(change(requestId, types, previous, current));
                 }
             }
         }
-        return List.copyOf(changes);
+        return changes;
     }
 
     private static RequestPlacement placement(Map<Integer, RequestPlacement> placements, int requestId) {
@@ -125,7 +132,7 @@ public class PlanDiffDomainService {
     }
 
     private static RequestChange change(int requestId,
-                                        Type type,
+                                        Set<Type> types,
                                         RequestPlacement previous,
                                         RequestPlacement current) {
         ChangeValues previousValues = ChangeValues.from(previous);
@@ -138,7 +145,7 @@ public class PlanDiffDomainService {
 
         return new RequestChange(
                 requestId,
-                type,
+                types,
                 previousValues.crewId(),
                 currentValues.crewId(),
                 previousValues.position(),
@@ -170,21 +177,24 @@ public class PlanDiffDomainService {
         for (RequestChange change : requestChanges) {
             RequestPlacement previous = placement(previousPlacements, change.requestId());
             RequestPlacement current = placement(newPlacements, change.requestId());
-            switch (change.type()) {
-                case ADDED_TO_PLAN, ASSIGNED_FROM_UNASSIGNED -> routeChange(changesByCrew, current).added.add(change.requestId());
-                case REMOVED_FROM_PLAN, BECAME_UNASSIGNED -> {
-                    if (previous instanceof AssignedPlacement) {
-                        routeChange(changesByCrew, previous).removed.add(change.requestId());
+            for (Type type : change.types()) {
+                switch (type) {
+                    case ADDED_TO_PLAN, ASSIGNED_FROM_UNASSIGNED ->
+                            routeChange(changesByCrew, current).added.add(change.requestId());
+                    case REMOVED_FROM_PLAN, BECAME_UNASSIGNED -> {
+                        if (previous instanceof AssignedPlacement) {
+                            routeChange(changesByCrew, previous).removed.add(change.requestId());
+                        }
                     }
-                }
-                case REASSIGNED -> {
-                    routeChange(changesByCrew, previous).removed.add(change.requestId());
-                    routeChange(changesByCrew, current).added.add(change.requestId());
-                }
-                case ORDER_CHANGED -> routeChange(changesByCrew, current).reordered.add(change.requestId());
-                case PLANNED_TIME_CHANGED -> routeChange(changesByCrew, current).shifted.add(change.requestId());
-                case ADDED_AS_UNASSIGNED -> {
-                    // No crew route is affected.
+                    case REASSIGNED -> {
+                        routeChange(changesByCrew, previous).removed.add(change.requestId());
+                        routeChange(changesByCrew, current).added.add(change.requestId());
+                    }
+                    case ORDER_CHANGED -> routeChange(changesByCrew, current).reordered.add(change.requestId());
+                    case PLANNED_TIME_CHANGED -> routeChange(changesByCrew, current).shifted.add(change.requestId());
+                    case ADDED_AS_UNASSIGNED -> {
+                        // No crew route is affected.
+                    }
                 }
             }
         }
@@ -212,24 +222,22 @@ public class PlanDiffDomainService {
 
     private static PlanDiffSummary summarize(List<RequestChange> requestChanges,
                                              List<CrewRouteChange> crewRouteChanges) {
-        int changedRequestCount = (int) requestChanges.stream().map(RequestChange::requestId).distinct().count();
         return new PlanDiffSummary(
-                changedRequestCount,
+                requestChanges.size(),
                 crewRouteChanges.size(),
-                countDistinct(requestChanges, change -> change.type() == Type.ADDED_TO_PLAN
-                        || change.type() == Type.ADDED_AS_UNASSIGNED),
-                countDistinct(requestChanges, change -> change.type() == Type.REMOVED_FROM_PLAN),
-                countDistinct(requestChanges, change -> switch (change.type()) {
-                    case ASSIGNED_FROM_UNASSIGNED, BECAME_UNASSIGNED, REASSIGNED -> true;
-                    default -> false;
-                }),
-                countDistinct(requestChanges, change -> change.type() == Type.ORDER_CHANGED),
-                countDistinct(requestChanges, change -> change.type() == Type.PLANNED_TIME_CHANGED)
+                count(requestChanges, change -> change.has(Type.ADDED_TO_PLAN)
+                        || change.has(Type.ADDED_AS_UNASSIGNED)),
+                count(requestChanges, change -> change.has(Type.REMOVED_FROM_PLAN)),
+                count(requestChanges, change -> change.has(Type.ASSIGNED_FROM_UNASSIGNED)
+                        || change.has(Type.BECAME_UNASSIGNED)
+                        || change.has(Type.REASSIGNED)),
+                count(requestChanges, change -> change.has(Type.ORDER_CHANGED)),
+                count(requestChanges, change -> change.has(Type.PLANNED_TIME_CHANGED))
         );
     }
 
-    private static int countDistinct(List<RequestChange> changes, Predicate<RequestChange> predicate) {
-        return (int) changes.stream().filter(predicate).map(RequestChange::requestId).distinct().count();
+    private static int count(List<RequestChange> changes, Predicate<RequestChange> predicate) {
+        return (int) changes.stream().filter(predicate).count();
     }
 
     private sealed interface RequestPlacement permits AssignedPlacement, UnassignedPlacement, MissingPlacement {
@@ -283,10 +291,10 @@ public class PlanDiffDomainService {
         private final int crewId;
         private final int previousRequestCount;
         private final int newRequestCount;
-        private final Set<Integer> added = new TreeSet<>();
-        private final Set<Integer> removed = new TreeSet<>();
-        private final Set<Integer> reordered = new TreeSet<>();
-        private final Set<Integer> shifted = new TreeSet<>();
+        private final List<Integer> added = new ArrayList<>();
+        private final List<Integer> removed = new ArrayList<>();
+        private final List<Integer> reordered = new ArrayList<>();
+        private final List<Integer> shifted = new ArrayList<>();
 
         private MutableCrewRouteChange(int crewId, int previousRequestCount, int newRequestCount) {
             this.crewId = crewId;
@@ -307,10 +315,10 @@ public class PlanDiffDomainService {
                     crewId,
                     previousRequestCount,
                     newRequestCount,
-                    List.copyOf(added),
-                    List.copyOf(removed),
-                    List.copyOf(reordered),
-                    List.copyOf(shifted)
+                    added,
+                    removed,
+                    reordered,
+                    shifted
             );
         }
     }

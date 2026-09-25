@@ -1,11 +1,13 @@
-package stb.core.domain.model.replanning;
+package stb.core.domain.dto.replanning;
 
 import java.time.LocalTime;
-import java.util.Objects;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Set;
 
 public record RequestChange(
         int requestId,
-        Type type,
+        Set<Type> types,
         Integer previousCrewId,
         Integer newCrewId,
         Integer previousPosition,
@@ -18,7 +20,14 @@ public record RequestChange(
 ) {
 
     public RequestChange {
-        Objects.requireNonNull(type, "type не должны быть null");
+        if (types.isEmpty()) {
+            throw new IllegalArgumentException("types не должны быть пустыми");
+        }
+        types = Collections.unmodifiableSet(EnumSet.copyOf(types));
+    }
+
+    public boolean has(Type type) {
+        return types.contains(type);
     }
 
     public enum Type {

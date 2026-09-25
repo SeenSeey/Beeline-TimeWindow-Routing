@@ -1,4 +1,4 @@
-package stb.core.domain.model.replanning;
+package stb.core.domain.dto.replanning;
 
 import java.util.List;
 
