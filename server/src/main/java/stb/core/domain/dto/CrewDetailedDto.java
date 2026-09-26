@@ -16,7 +16,7 @@ public record CrewDetailedDto(
         LocalTime shiftEndTime,
         VehicleDto vehicle,
         List<DictionaryDto> skills,
-        List<String> equipment,
+        List<EquipmentDto> equipment,
         LocalDate routeDate,
         List<RouteVisitDto> route,
         List<AssignedRequestDto> assignedRequests
@@ -34,7 +34,7 @@ public record CrewDetailedDto(
                 crew.getShiftEndTime(),
                 Optional.ofNullable(crew.getVehicle()).map(VehicleDto::from).orElse(null),
                 Optional.ofNullable(crew.getSkills()).orElse(List.of()).stream().map(DictionaryDto::from).toList(),
-                Optional.ofNullable(crew.getEquipment()).orElse(List.of()).stream().map(Equipment::getDisplayName).toList(),
+                EquipmentDto.listFrom(crew.getEquipment()),
                 routeDate,
                 routeSlots.stream().map(RouteVisitDto::from).toList(),
                 assignedRequests.stream().map(AssignedRequestDto::from).toList()

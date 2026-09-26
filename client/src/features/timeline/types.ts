@@ -47,6 +47,8 @@ export interface Slot {
   deadline: string | null;
   jobType: JobType;
   requiredVehicle: Vehicle | null;
+  /** display name of the equipment the request needs; null if none */
+  requiredEquipment: string | null;
   /** "HH:mm:ss" — when the crew arrives at the address; work may wait until startSlotTime */
   arrivalTime: string | null;
   /** "HH:mm:ss" */
@@ -68,7 +70,16 @@ export interface Engineer {
   vehicle: Vehicle | null;
   /** what the crew can do; shown in edit mode */
   skills: Skill[];
+  /** equipment the crew has on hand now; a request needing something missing here can't be moved to the crew */
+  equipment: EquipmentOnHand[];
   slots: Slot[];
+}
+
+/** EquipmentDto */
+export interface EquipmentOnHand {
+  id: number;
+  displayName: string;
+  quantity: number;
 }
 
 /** Active request of the region that did not get a place in the schedule */

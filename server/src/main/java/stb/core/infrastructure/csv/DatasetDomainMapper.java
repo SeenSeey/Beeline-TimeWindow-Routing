@@ -1,7 +1,7 @@
 package stb.core.infrastructure.csv;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 
 import org.springframework.stereotype.Component;
@@ -49,7 +49,7 @@ public class DatasetDomainMapper {
                 engineer.shiftStart(),
                 engineer.shiftEnd(),
                 engineer.skills().stream().map(skill -> skills.get(Skill.Keyword.valueOf(skill.name()))).toList(),
-                List.of());
+                new ArrayList<>());
     }
 
     public Request toRequest(RequestDto request, Region region, Map<JobType.Keyword, JobType> jobTypes,
@@ -67,7 +67,7 @@ public class DatasetDomainMapper {
                 .startTimeWindow(request.windowStart())
                 .endTimeWindow(request.windowEnd())
                 .requiredVehicle(request.requiredVehicle() == null ? null : vehicles.get(request.requiredVehicle()))
-                .equipment(request.requiredEquipment().stream().map(equipment::get).toList())
+                .requiredEquipment(request.requiredEquipment() == null ? null : equipment.get(request.requiredEquipment()))
                 .createdAt(createdAt)
                 .build();
     }

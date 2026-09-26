@@ -45,10 +45,9 @@ public record UnassignedRequestDto(
                 .stream()
                 .map(DictionaryDto::from)
                 .toList(),
-            Optional.ofNullable(request.getEquipment())
-                .orElse(List.of())
-                .stream()
+            Optional.ofNullable(request.getRequiredEquipment())
                 .map(Equipment::getDisplayName)
+                .stream()
                 .toList(),
             Optional.ofNullable(request.getRequiredVehicle()).map(DictionaryDto::from).orElse(null),
             request.getStartTimeWindow(),

@@ -87,6 +87,7 @@ public class ScheduleRecalculateOnRequestCancelUseCase {
         context.setTravelMatrix(new TravelMatrix(routeDomainService.calculateAllRoutes(points, Vehicle.Keyword.CAR)));
         context.setSpeedProfile(speedProfileDomainService.createSpeedProfile());
         context.setCrewsLatestSlots(crewLatestSlots);
+        context.setReplanning(true);
 
         ScheduleCalculationResult result = assemblerDomainService.createSchedule(context);
 

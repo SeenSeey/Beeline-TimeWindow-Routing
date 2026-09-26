@@ -19,6 +19,7 @@
     <div>{{ visit.crewName }}</div>
     <div v-if="visit.slot.status">Статус: {{ visit.slot.status.displayName }}</div>
     <div v-if="visit.slot.requiredVehicle">Нужен транспорт: {{ visit.slot.requiredVehicle.displayName }}</div>
+    <div v-if="visit.slot.requiredEquipment">Нужно оборудование: {{ visit.slot.requiredEquipment }}</div>
     <div v-if="visit.outOfWindow" class="font-medium text-red-400">Назначено вне запрошенного окна</div>
     <!-- edit mode: what the new position breaks -->
     <div v-for="message in violations" :key="message" class="font-medium text-red-400">⚠ {{ message }}</div>

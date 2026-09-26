@@ -16,4 +16,5 @@ public class ScheduleContext {
     private TravelMatrix travelMatrix;
     private SpeedProfile speedProfile;
     private List<CrewLatestSlot> crewsLatestSlots;
+    private boolean replanning;
 }

@@ -166,15 +166,11 @@ public final class DatasetGenerator {
         return CAR_HD_TYPES.contains(row.hdType()) || FAR_DISTRICTS.contains(row.district());
     }
 
-    private static List<CsvEquipment> equipment(JobType.Keyword jobType, int requestId) {
+    private static CsvEquipment equipment(JobType.Keyword jobType, int requestId) {
         return switch (jobType) {
-            case INSTALLATION -> requestId % 3 == 0
-                    ? List.of(CsvEquipment.ROUTER, CsvEquipment.SMART_SPEAKER)
-                    : List.of(CsvEquipment.ROUTER);
-            case ADDON -> requestId % 2 == 0
-                    ? List.of(CsvEquipment.SET_TOP_BOX, CsvEquipment.SMART_SPEAKER)
-                    : List.of(CsvEquipment.SET_TOP_BOX);
-            case LOCAL_WORK, EMERGENCY -> List.of();
+            case INSTALLATION -> CsvEquipment.ROUTER;
+            case ADDON -> requestId % 2 == 0 ? CsvEquipment.SMART_SPEAKER : CsvEquipment.SET_TOP_BOX;
+            case LOCAL_WORK, EMERGENCY -> null;
         };
     }
 
@@ -259,7 +255,7 @@ public final class DatasetGenerator {
         int urgentId = requests.stream().mapToInt(RequestDto::id).max().orElseThrow() + 1;
         RequestDto urgent = new RequestDto(urgentId, emergency.address(), emergency.location(),
                 ON_SITE_MINUTES.get(JobType.Keyword.EMERGENCY), URGENT_TIME, URGENT_TIME.plusHours(URGENT_WINDOW_HOURS),
-                null, JobType.Keyword.EMERGENCY, List.of());
+                null, JobType.Keyword.EMERGENCY, null);
 
         return List.of(
                 new ReplanEventDto.CancelRequest(CANCEL_TIME, canceled.id()),
@@ -323,9 +319,7 @@ public final class DatasetGenerator {
         row.put(prefix + RequestColumn.WINDOW_END.header(), request.windowEnd().format(TIME));
         row.put(prefix + RequestColumn.REQUIRED_VEHICLE.header(), request.requiredVehicle());
         row.put(prefix + RequestColumn.JOB_TYPE.header(), request.jobType());
-        row.put(prefix + RequestColumn.REQUIRED_EQUIPMENT.header(), request.requiredEquipment().stream()
-                .map(Enum::name)
-                .collect(Collectors.joining("|")));
+        row.put(prefix + RequestColumn.REQUIRED_EQUIPMENT.header(), request.requiredEquipment());
         return row;
     }
 

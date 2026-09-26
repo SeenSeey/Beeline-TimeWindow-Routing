@@ -12,6 +12,8 @@ import stb.core.domain.service.scheduler.dto.RequestDto;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class RoutingConstraintProvider implements ConstraintProvider {
@@ -25,6 +27,8 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                 hardEngineerCrewDtoMustFinishWorkDay(factory),
                 hardEngineerCrewDtoMustHaveRequiredSkill(factory),
                 hardEngineerCrewDtoMustHaveRequiredTransport(factory),
+                hardEngineerCrewDtoMustFitEquipmentCapacity(factory),
+                hardEngineerCrewDtoMustHaveRequiredEquipment(factory),
 
                 mediumMaximizeCompletedRequests(factory),
 
@@ -86,6 +90,47 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                                 .count()
                 )
                 .asConstraint("EngineerCrewDto must have required transport");
+    }
+
+    private Constraint hardEngineerCrewDtoMustFitEquipmentCapacity(ConstraintFactory factory) {
+        return factory
+                .forEach(EngineerCrewDto.class)
+                .filter(engineerCrewDto -> engineerCrewDto.getEquipmentStock() == null)
+                .penalize(
+                        HardMediumSoftScore.ONE_HARD,
+                        engineerCrewDto -> Math.max(0, (int) engineerCrewDto.getRoute().stream()
+                                .filter(request -> request.getRequiredEquipmentId() != null)
+                                .count() - engineerCrewDto.getEquipmentCapacity())
+                )
+                .asConstraint("EngineerCrewDto must fit equipment capacity");
+    }
+
+    private Constraint hardEngineerCrewDtoMustHaveRequiredEquipment(ConstraintFactory factory) {
+        return factory
+                .forEach(EngineerCrewDto.class)
+                .filter(engineerCrewDto -> engineerCrewDto.getEquipmentStock() != null)
+                .penalize(
+                        HardMediumSoftScore.ONE_HARD,
+                        RoutingConstraintProvider::missingEquipment
+                )
+                .asConstraint("EngineerCrewDto must have required equipment");
+    }
+
+    private static int missingEquipment(EngineerCrewDto engineerCrewDto) {
+        Map<Integer, Integer> stock = new HashMap<>(engineerCrewDto.getEquipmentStock());
+        int missing = 0;
+        for (RequestDto request : engineerCrewDto.getRoute()) {
+            Integer equipmentId = request.getRequiredEquipmentId();
+            if (equipmentId == null) {
+                continue;
+            }
+            if (stock.getOrDefault(equipmentId, 0) > 0) {
+                stock.merge(equipmentId, -1, Integer::sum);
+            } else {
+                missing++;
+            }
+        }
+        return missing;
     }
 
     private Constraint hardEngineerCrewDtoMustHaveRequiredSkill(

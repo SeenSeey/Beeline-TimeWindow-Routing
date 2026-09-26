@@ -21,6 +21,10 @@ public class Vehicle extends BaseEntity {
     @Column(name = "average_speed_kmh", nullable = false)
     private double averageSpeedKmh;
 
+    // Сколько единиц оборудования помещается с собой на день
+    @Column(name = "equipment_capacity", nullable = false)
+    private int equipmentCapacity;
+
     public enum Keyword {
 
         PEDESTRIAN,

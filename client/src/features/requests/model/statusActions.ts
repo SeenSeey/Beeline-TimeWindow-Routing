@@ -18,7 +18,8 @@ export function availableStatusActions(request: RequestProgress): Record<Request
   return {
     // work starts once
     in_progress: !canceled && !completed && !inProgress,
-    complete: !canceled && !completed,
+    // only a request in work
+    complete: inProgress,
     // only a request that hasn't started yet
     cancel: !canceled && !completed && !inProgress,
   };

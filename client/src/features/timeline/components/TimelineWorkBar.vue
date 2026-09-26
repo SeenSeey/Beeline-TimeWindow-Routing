@@ -157,12 +157,13 @@ const progress = computed<Progress | null>(() => {
 const violations = computed(() => (editing.value ? (edit.violationsByRequest.get(props.visit.slot.requestId) ?? []) : []));
 
 const ariaLabel = computed(() => {
-  const { requestId, fullAddress, requiredVehicle } = props.visit.slot;
+  const { requestId, fullAddress, requiredVehicle, requiredEquipment } = props.visit.slot;
   const vehicle = requiredVehicle ? `, нужен транспорт: ${requiredVehicle.displayName}` : "";
+  const equipment = requiredEquipment ? `, нужно оборудование: ${requiredEquipment}` : "";
   const problems = violations.value.length ? `. Ошибки: ${violations.value.join("; ")}` : "";
   const state = progress.value ? `, ${PROGRESS_LABELS[progress.value]}` : "";
   const action = editing.value ? ". Перетащите на строку бригады или откройте меню действий" : "";
-  return `Заявка #${requestId}${state}, ${fullAddress}${vehicle}${problems}${action}`;
+  return `Заявка #${requestId}${state}, ${fullAddress}${vehicle}${equipment}${problems}${action}`;
 });
 
 function openMenuAt(x: number, y: number): void {

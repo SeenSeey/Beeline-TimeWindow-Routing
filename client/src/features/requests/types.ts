@@ -50,8 +50,6 @@ export interface CrewDetails {
   shiftEndTime: string;
   vehicle: Vehicle | null;
   skills: Skill[];
-  /** equipment display names */
-  equipment: string[];
 }
 
 /** RequestDetailedDto.ScheduledVisitDto — the request's work slot in one schedule */

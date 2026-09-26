@@ -34,7 +34,6 @@ const rows = computed<UiDetailRow[]>(() => {
     { label: "Смена", value: `${formatTime(crew.shiftStartTime)}–${formatTime(crew.shiftEndTime)}`, mono: true },
     { label: "Транспорт", value: crew.vehicle?.displayName ?? null },
     { label: "Навыки", value: crew.skills.length ? crew.skills.map((skill) => skill.displayName).join(", ") : null },
-    { label: "Оборудование", value: crew.equipment.length ? crew.equipment.join(", ") : null },
   ];
 });
 </script>

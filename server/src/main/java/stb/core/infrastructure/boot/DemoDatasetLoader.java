@@ -50,6 +50,11 @@ public class DemoDatasetLoader implements CommandLineRunner {
     private static final double PUBLIC_TRANSPORT_SPEED_KMH = 38;
     private static final double CAR_SPEED_KMH = 60;
 
+    private static final int PEDESTRIAN_EQUIPMENT_CAPACITY = 2;
+    private static final int BICYCLE_EQUIPMENT_CAPACITY = 3;
+    private static final int PUBLIC_TRANSPORT_EQUIPMENT_CAPACITY = 2;
+    private static final int CAR_EQUIPMENT_CAPACITY = 100;
+
     private static final List<String> REGION_DIRS = List.of("vostok", "yugo-vostok", "yugo-centr");
 
     private final CsvDatasetParser parser = new CsvDatasetParser();
@@ -127,10 +132,13 @@ public class DemoDatasetLoader implements CommandLineRunner {
 
     private Map<Vehicle.Keyword, Vehicle> vehicles() {
         Map<Vehicle.Keyword, Vehicle> vehicles = new EnumMap<>(Vehicle.Keyword.class);
-        vehicles.put(Vehicle.Keyword.PEDESTRIAN, new Vehicle("Пешком", Vehicle.Keyword.PEDESTRIAN, PEDESTRIAN_SPEED_KMH));
-        vehicles.put(Vehicle.Keyword.BICYCLE, new Vehicle("Велосипед", Vehicle.Keyword.BICYCLE, BICYCLE_SPEED_KMH));
-        vehicles.put(Vehicle.Keyword.PUBLIC_TRANSPORT, new Vehicle("Общественный транспорт", Vehicle.Keyword.PUBLIC_TRANSPORT, PUBLIC_TRANSPORT_SPEED_KMH));
-        vehicles.put(Vehicle.Keyword.CAR, new Vehicle("Автомобиль", Vehicle.Keyword.CAR, CAR_SPEED_KMH));
+        vehicles.put(Vehicle.Keyword.PEDESTRIAN, new Vehicle("Пешком", Vehicle.Keyword.PEDESTRIAN,
+                PEDESTRIAN_SPEED_KMH, PEDESTRIAN_EQUIPMENT_CAPACITY));
+        vehicles.put(Vehicle.Keyword.BICYCLE, new Vehicle("Велосипед", Vehicle.Keyword.BICYCLE,
+                BICYCLE_SPEED_KMH, BICYCLE_EQUIPMENT_CAPACITY));
+        vehicles.put(Vehicle.Keyword.PUBLIC_TRANSPORT, new Vehicle("Общественный транспорт", Vehicle.Keyword.PUBLIC_TRANSPORT,
+                PUBLIC_TRANSPORT_SPEED_KMH, PUBLIC_TRANSPORT_EQUIPMENT_CAPACITY));
+        vehicles.put(Vehicle.Keyword.CAR, new Vehicle("Автомобиль", Vehicle.Keyword.CAR, CAR_SPEED_KMH, CAR_EQUIPMENT_CAPACITY));
         vehicleRepository.saveAll(vehicles.values());
         return vehicles;
     }

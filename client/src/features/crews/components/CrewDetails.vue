@@ -76,7 +76,10 @@ const capabilityGroups = computed(() => [
   },
   {
     label: "Оборудование",
-    items: props.crew.equipment.map((name) => ({ label: name, color: "var(--muted)" })),
+    items: props.crew.equipment.map((item) => ({
+      label: `${item.displayName} × ${item.quantity}`,
+      color: "var(--muted)",
+    })),
   },
   {
     label: "Транспорт",

@@ -74,12 +74,9 @@ public class Request extends BaseEntity implements GeopositionProvider {
     @Column(name = "canceled_at")
     private LocalDateTime canceledAt;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "request_equipment",
-            joinColumns = @JoinColumn(name = "request_id"),
-            inverseJoinColumns = @JoinColumn(name = "equipment_id"))
-    private List<Equipment> equipment;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "required_equipment_id")
+    private Equipment requiredEquipment;
 
     public void assignCrew(EngineerCrew engineerCrew, List<RequestStatus> statuses) {
         setAssignedCrew(engineerCrew);
@@ -98,12 +95,20 @@ public class Request extends BaseEntity implements GeopositionProvider {
             throw new DomainException.ConflictException("Невозможно начать выполнение заявки в статусе \"%s\"".formatted(status.getDisplayName()));
         }
 
+        if (requiredEquipment != null && assignedCrew == null) {
+            throw new DomainException.ConflictException("Невозможно начать выполнение заявки без назначенной бригады");
+        }
+
+        if (requiredEquipment != null) {
+            assignedCrew.takeEquipment(requiredEquipment);
+        }
+
         setArrivedAt(LocalDateTime.now());
         updateStatus(statuses, RequestStatus.Keyword.IN_PROGRESS);
     }
 
     public void complete(List<RequestStatus> statuses) {
-        if (isCompleted() || isCanceled()) {
+        if (!isInProgress()) {
             throw new DomainException.ConflictException("Невозможно завершить заявку в статусе \"%s\"".formatted(status.getDisplayName()));
         }
 

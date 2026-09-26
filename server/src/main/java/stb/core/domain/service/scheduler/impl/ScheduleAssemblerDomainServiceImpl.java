@@ -36,7 +36,7 @@ public class ScheduleAssemblerDomainServiceImpl implements ScheduleAssemblerDoma
                 : new HashMap<>();
 
         for (EngineerCrew engineerCrew : context.getEngineerCrews()){
-            engineerCrewDtoList.add(schedulerMapper.toEngineerCrewDto(engineerCrew, crewLatestSlots));
+            engineerCrewDtoList.add(schedulerMapper.toEngineerCrewDto(engineerCrew, crewLatestSlots, context.isReplanning()));
         }
 
         List<RequestDto> requestDtoList = new ArrayList<>();

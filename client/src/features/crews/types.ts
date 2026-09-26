@@ -11,6 +11,13 @@ import type {
   VehicleKeyword,
 } from "@/features/timeline/types";
 
+/** EquipmentDto */
+export interface CrewEquipment {
+  id: number;
+  displayName: string;
+  quantity: number;
+}
+
 /** CrewDetailedDto.VehicleDto */
 export interface CrewVehicle {
   keyword: VehicleKeyword;
@@ -63,8 +70,8 @@ export interface CrewDetailed {
   shiftEndTime: string;
   vehicle: CrewVehicle | null;
   skills: Skill[];
-  /** equipment display names */
-  equipment: string[];
+  /** what the crew has on hand now: issued with the day's schedule, minus requests taken into work */
+  equipment: CrewEquipment[];
   /** "YYYY-MM-DD" — the date of the route below */
   routeDate: string;
   /** the crew's work slots in that date's schedule, in visit order */

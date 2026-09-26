@@ -55,6 +55,7 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                                   LocalTime shiftEndTime,
                                   DictionaryDto vehicle,
                                   List<DictionaryDto> skills,
+                                  List<EquipmentDto> equipment,
                                   List<TimelineSlotDto> slots) {
 
         public static List<EngineerCrewRow> listFrom(List<ScheduleSlot> slots) {
@@ -89,6 +90,7 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                     crew.getShiftEndTime(),
                     Optional.ofNullable(crew.getVehicle()).map(DictionaryDto::from).orElse(null),
                     Optional.ofNullable(crew.getSkills()).orElse(List.of()).stream().map(DictionaryDto::from).toList(),
+                    EquipmentDto.listFrom(crew.getEquipment()),
                     slots
             );
         }
@@ -103,6 +105,7 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                                   LocalDateTime deadline,
                                   DictionaryDto jobType,
                                   DictionaryDto requiredVehicle,
+                                  String requiredEquipment,
                                   LocalTime arrivalTime,
                                   LocalTime startSlotTime,
                                   LocalTime endSlotTime,
@@ -131,6 +134,7 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                     request.getDeadline(),
                     DictionaryDto.from(request.getJobType()),
                     Optional.ofNullable(request.getRequiredVehicle()).map(DictionaryDto::from).orElse(null),
+                    Optional.ofNullable(request.getRequiredEquipment()).map(Equipment::getDisplayName).orElse(null),
                     arrivalTime,
                     startTime,
                     endTime,

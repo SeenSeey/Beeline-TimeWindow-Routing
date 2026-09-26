@@ -24,6 +24,7 @@ public class DevStateResetRepository {
                 .getSingleResult();
 
         entityManager.createQuery("delete from RequestActionAudit").executeUpdate();
+        entityManager.createQuery("delete from EngineerCrewEquipment").executeUpdate();
         entityManager.createQuery("delete from ScheduleSlot").executeUpdate();
         entityManager.createQuery("delete from Schedule").executeUpdate();
         entityManager.createQuery("""
@@ -43,7 +44,7 @@ public class DevStateResetRepository {
 
     private void lockTables() {
         entityManager.createNativeQuery("""
-                lock table requests, schedules, schedule_slots, request_actions_audit
+                lock table requests, schedules, schedule_slots, request_actions_audit, engineer_crew_equipment
                 in share row exclusive mode
                 """)
                 .executeUpdate();

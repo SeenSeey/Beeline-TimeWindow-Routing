@@ -3,6 +3,7 @@ package stb.core.application.request;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import stb.core.domain.exception.RequestNotFoundException;
 import stb.core.domain.model.Request;
 import stb.core.domain.repository.RequestRepository;
@@ -16,6 +17,7 @@ public class RequestMarkInProgressUseCase {
     private final RequestRepository requestRepository;
     private final RequestStatusRepository requestStatusRepository;
 
+    @Transactional
     public void execute(int requestId) {
         Request request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new RequestNotFoundException("Заявка не существует"));

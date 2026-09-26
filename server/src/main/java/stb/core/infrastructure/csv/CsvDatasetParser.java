@@ -87,7 +87,7 @@ public class CsvDatasetParser {
                 row.time(RequestColumn.WINDOW_END),
                 row.optionalEnum(RequestColumn.REQUIRED_VEHICLE, Vehicle.Keyword.class),
                 row.enumValue(RequestColumn.JOB_TYPE, JobType.Keyword.class),
-                row.optionalEnumList(RequestColumn.REQUIRED_EQUIPMENT, CsvEquipment.class));
+                row.optionalEnum(RequestColumn.REQUIRED_EQUIPMENT, CsvEquipment.class));
     }
 
     private static EngineerDto toEngineer(CsvRow row) {

@@ -1,7 +1,6 @@
 package stb.core.infrastructure.csv.dto;
 
 import java.time.LocalTime;
-import java.util.List;
 
 import stb.core.domain.model.JobType;
 import stb.core.domain.model.Vehicle;
@@ -9,6 +8,7 @@ import stb.core.infrastructure.csv.CsvEquipment;
 
 /**
  * @param requiredVehicle {@code null}, если ограничения по транспорту нет
+ * @param requiredEquipment {@code null}, если оборудование не нужно
  */
 public record RequestDto(
         int id,
@@ -19,5 +19,5 @@ public record RequestDto(
         LocalTime windowEnd,
         Vehicle.Keyword requiredVehicle,
         JobType.Keyword jobType,
-        List<CsvEquipment> requiredEquipment) {
+        CsvEquipment requiredEquipment) {
 }

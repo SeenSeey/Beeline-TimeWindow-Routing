@@ -12,6 +12,7 @@ import stb.core.domain.repository.RequestRepository;
 import stb.core.domain.repository.ScheduleSlotRepository;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -28,11 +29,13 @@ public class CrewFindByIdUseCase {
                 .orElseThrow(() -> new CrewNotFoundException("Бригада №%d не найдена".formatted(crewId)));
 
         LocalDate today = LocalDate.now();
+        List<ScheduleSlot> routeSlots =
+                scheduleSlotRepository.findAllByTargetDateAndCrewIdAndType(today, crewId, ScheduleSlot.SlotType.REQUEST);
 
         return CrewDetailedDto.from(
                 crew,
                 today,
-                scheduleSlotRepository.findAllByTargetDateAndCrewIdAndType(today, crewId, ScheduleSlot.SlotType.REQUEST),
+                routeSlots,
                 requestRepository.findAllByAssignedCrewId(crewId)
         );
     }

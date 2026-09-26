@@ -23,9 +23,9 @@ export type RequestStatusAction = "in_progress" | "complete" | "cancel";
 
 /**
  * Changes the request's status (204, no body). The server answers 409 when the request's current status
- * doesn't allow it: work can't start once in progress, completed or canceled; a completed or canceled
- * request can't be completed; only a request that hasn't started (not in progress, completed or canceled)
- * can be canceled.
+ * doesn't allow it: work can't start once in progress, completed or canceled, nor when the assigned crew
+ * lacks the request's equipment; only a request in progress can be completed; only a request that hasn't
+ * started (not in progress, completed or canceled) can be canceled.
  */
 export async function changeRequestStatus(id: number, action: RequestStatusAction): Promise<void> {
   await axios.patch(`/api/v1/requests/${id}/${action}`);

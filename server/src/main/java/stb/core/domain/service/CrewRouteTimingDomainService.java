@@ -3,6 +3,7 @@ package stb.core.domain.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import stb.core.domain.model.EngineerCrew;
+import stb.core.domain.model.Equipment;
 import stb.core.domain.model.Request;
 import stb.core.domain.model.Vehicle;
 import stb.core.domain.port.route.RouteBuilder;
@@ -13,7 +14,9 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 @Service
@@ -73,6 +76,7 @@ public class CrewRouteTimingDomainService {
         }
 
         addOverlaps(requests, starts, ends, violations);
+        addMissingEquipment(crew, requests, violations);
 
         return IntStream.range(0, requests.size())
                 .mapToObj(i -> new PlannedVisit(requests.get(i), arrivals.get(i), starts.get(i), ends.get(i), violations.get(i)))
@@ -120,6 +124,23 @@ public class CrewRouteTimingDomainService {
                 }
                 violations.get(first).add(overlapMessage(requests.get(second), starts.get(second), ends.get(second)));
                 violations.get(second).add(overlapMessage(requests.get(first), starts.get(first), ends.get(first)));
+            }
+        }
+    }
+
+    private static void addMissingEquipment(EngineerCrew crew, List<Request> requests, List<List<String>> violations) {
+        Map<Integer, Integer> left = new HashMap<>();
+        crew.getEquipment().forEach(item -> left.put(item.getEquipment().getId(), item.getQuantity()));
+
+        for (int i = 0; i < requests.size(); i++) {
+            Request request = requests.get(i);
+            Equipment required = request.getRequiredEquipment();
+            if (required == null || request.isInProgress() || request.isCompleted()) {
+                continue;
+            }
+            int onHand = left.merge(required.getId(), -1, Integer::sum);
+            if (onHand < 0) {
+                violations.get(i).add("у бригады не хватает оборудования «%s»".formatted(required.getDisplayName()));
             }
         }
     }

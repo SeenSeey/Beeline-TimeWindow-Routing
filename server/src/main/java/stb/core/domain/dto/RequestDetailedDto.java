@@ -42,10 +42,9 @@ public record RequestDetailedDto(
                 RegionDto.from(request.getRegion()),
                 JobTypeDto.from(request.getJobType()),
                 Optional.ofNullable(request.getRequiredVehicle()).map(DictionaryDto::from).orElse(null),
-                Optional.ofNullable(request.getEquipment())
-                        .orElse(List.of())
-                        .stream()
+                Optional.ofNullable(request.getRequiredEquipment())
                         .map(Equipment::getDisplayName)
+                        .stream()
                         .toList(),
                 request.getStartTimeWindow(),
                 request.getEndTimeWindow(),
@@ -89,8 +88,7 @@ public record RequestDetailedDto(
             LocalTime shiftStartTime,
             LocalTime shiftEndTime,
             DictionaryDto vehicle,
-            List<DictionaryDto> skills,
-            List<String> equipment
+            List<DictionaryDto> skills
     ) {
 
         public static CrewDto from(EngineerCrew crew) {
@@ -104,11 +102,6 @@ public record RequestDetailedDto(
                             .orElse(List.of())
                             .stream()
                             .map(DictionaryDto::from)
-                            .toList(),
-                    Optional.ofNullable(crew.getEquipment())
-                            .orElse(List.of())
-                            .stream()
-                            .map(Equipment::getDisplayName)
                             .toList()
             );
         }

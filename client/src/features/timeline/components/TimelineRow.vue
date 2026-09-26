@@ -31,6 +31,10 @@
       <div class="mono text-xs whitespace-nowrap text-muted">
         {{ formatTime(crew.shiftStartTime) }}–{{ formatTime(crew.shiftEndTime) }} · {{ crew.requests.length }} заявок
       </div>
+      <!-- equipment on hand now: issued with the schedule, minus requests taken into work -->
+      <div v-if="equipmentText" class="truncate text-xs text-muted" :title="`Оборудование: ${equipmentText}`">
+        {{ equipmentText }}
+      </div>
       <!-- edit mode: what the crew can do, to pick where a request fits -->
       <div v-if="edit.active" class="mt-1 flex flex-wrap gap-1" :aria-label="`Навыки: ${skillNames || 'нет'}`">
         <UiBadge v-for="skill in skills" :key="skill.keyword" :color="skillColor(skill.keyword)">
@@ -135,6 +139,11 @@ const edit = useScheduleEditStore();
 // `?? []`: a server from before skills were added to the schedule doesn't send them
 const skills = computed(() => props.crew.skills ?? []);
 const skillNames = computed(() => skills.value.map((skill) => skill.displayName).join(", "));
+
+// `?? []`: a server from before equipment was added to the schedule doesn't send it
+const equipmentText = computed(() =>
+  (props.crew.equipment ?? []).map((item) => `${item.displayName} × ${item.quantity}`).join(", "),
+);
 
 /** a request is being dragged over this row */
 const dropHover = ref(false);

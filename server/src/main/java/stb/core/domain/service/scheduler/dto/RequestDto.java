@@ -37,6 +37,7 @@ public class RequestDto {
     private final List<Skill> requiredSkills;
     private final Vehicle.Keyword requiredTransportTypeDto;
     private final boolean isUrgent;
+    private final Integer requiredEquipmentId;
     //Shadow vars
 
     private EngineerCrewDto engineerCrewDto;

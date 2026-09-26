@@ -10,6 +10,7 @@ import stb.core.domain.repository.EngineerCrewRepository;
 import stb.core.domain.repository.RequestRepository;
 import stb.core.domain.repository.RequestStatusRepository;
 import stb.core.domain.repository.ScheduleRepository;
+import stb.core.domain.service.CrewEquipmentDomainService;
 import stb.core.domain.service.RouteDomainService;
 import stb.core.domain.service.SpeedProfileDomainService;
 import stb.core.domain.service.scheduler.ScheduleAssemblerDomainService;
@@ -19,6 +20,7 @@ import stb.core.domain.service.scheduler.dto.TravelMatrix;
 import stb.core.domain.service.scheduler.dto.output.OutputSlotDto;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -37,6 +39,7 @@ public class ScheduleCalculateUseCase {
     private final ScheduleAssemblerDomainService assemblerDomainService;
     private final RouteDomainService routeDomainService;
     private final SpeedProfileDomainService speedProfileDomainService;
+    private final CrewEquipmentDomainService crewEquipmentDomainService;
 
     @Transactional
     public void execute(LocalDate targetDate) {
@@ -48,13 +51,13 @@ public class ScheduleCalculateUseCase {
             log.info("Расчёт для региона: {}", region.getDisplayName());
 
             List<Request> requests = requestRepository.findAllForSchedulingByRegionId(region.getId());
+            List<EngineerCrew> engineerCrews = engineerCrewRepository.findAllActiveByRegionIdAndTargetDate(region.getId(), targetDate);
 
             if (requests.isEmpty()) {
+                crewEquipmentDomainService.issueInitialLoadout(engineerCrews, List.of());
                 schedule.markAsCreated();
                 continue;
             }
-
-            List<EngineerCrew> engineerCrews = engineerCrewRepository.findAllActiveByRegionIdAndTargetDate(region.getId(), targetDate);
 
             List<Location> points = Stream.concat(
                     Stream.of(Location.from(region)),
@@ -72,6 +75,8 @@ public class ScheduleCalculateUseCase {
             Map<Integer, Request> requestById = requests.stream().collect(Collectors.toMap(Request::getId, Function.identity()));
             Map<Integer, EngineerCrew> crewById = engineerCrews.stream().collect(Collectors.toMap(EngineerCrew::getId, Function.identity()));
 
+            List<Request> assignedRequests = new ArrayList<>();
+
             for (OutputSlotDto slotDto : result.requestDtoList()) {
                 if (slotDto.engineerId() == null || slotDto.serviceStartTime() == null || slotDto.departureTime() == null) {
                     log.warn("Не удалось распределить заявку {} в текущее расписание региона {}", slotDto.requestId(), region.getDisplayName());
@@ -81,6 +86,7 @@ public class ScheduleCalculateUseCase {
                 Request request = requestById.get(slotDto.requestId());
 
                 request.assignCrew(crewById.get(slotDto.engineerId()), statuses);
+                assignedRequests.add(request);
                 schedule.addSlot(
                         request,
                         ScheduleSlot.SlotType.REQUEST,
@@ -90,6 +96,7 @@ public class ScheduleCalculateUseCase {
                 );
             }
 
+            crewEquipmentDomainService.issueInitialLoadout(engineerCrews, assignedRequests);
             schedule.markAsCreated();
         }
     }

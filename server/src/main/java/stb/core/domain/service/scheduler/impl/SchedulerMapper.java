@@ -2,6 +2,7 @@ package stb.core.domain.service.scheduler.impl;
 
 import org.springframework.stereotype.Component;
 import stb.core.domain.model.EngineerCrew;
+import stb.core.domain.model.EngineerCrewEquipment;
 import stb.core.domain.model.Request;
 import stb.core.domain.port.route.dto.Location;
 import stb.core.domain.repository.projection.CrewLatestSlot;
@@ -15,11 +16,13 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 public class SchedulerMapper {
 
-    public EngineerCrewDto toEngineerCrewDto(EngineerCrew engineerCrew, Map<Integer, CrewLatestSlot> crewLatestSlots) {
+    public EngineerCrewDto toEngineerCrewDto(EngineerCrew engineerCrew, Map<Integer, CrewLatestSlot> crewLatestSlots,
+                                             boolean replanning) {
         Location location;
         LocalTime shiftStartTime;
 
@@ -40,8 +43,19 @@ public class SchedulerMapper {
                 engineerCrew.getShiftEndTime(),
                 engineerCrew.getSkills(),
                 engineerCrew.getVehicle().getKeyword(),
-                engineerCrew.getVehicle().getAverageSpeedKmh()
+                engineerCrew.getVehicle().getAverageSpeedKmh(),
+                engineerCrew.getVehicle().getEquipmentCapacity(),
+                replanning ? toEquipmentStock(engineerCrew.getEquipment()) : null
             );
+    }
+
+    private static Map<Integer, Integer> toEquipmentStock(List<EngineerCrewEquipment> stock) {
+        return stock
+                .stream()
+                .collect(Collectors.toMap(
+                        item -> item.getEquipment().getId(),
+                        EngineerCrewEquipment::getQuantity
+                ));
     }
 
     public RequestDto toRequestDto(Request request) {
@@ -55,7 +69,8 @@ public class SchedulerMapper {
                 request.getJobType().getKeyword(),
                 request.getJobType().getRequiredSkills(),
                 request.getRequiredVehicle()!=null ? request.getRequiredVehicle().getKeyword() : null,
-                request.isUrgent()
+                request.isUrgent(),
+                request.getRequiredEquipment() != null ? request.getRequiredEquipment().getId() : null
         );
     }
 

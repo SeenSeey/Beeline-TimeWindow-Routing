@@ -10,6 +10,7 @@ import stb.core.domain.port.route.dto.Location;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @PlanningEntity
 @NoArgsConstructor(access = AccessLevel.PROTECTED, force = true)
@@ -36,6 +37,8 @@ public class EngineerCrewDto {
 
     private final Vehicle.Keyword transportTypeDto;
     private final double transportSpeed;
+    private final int equipmentCapacity;
+    private final Map<Integer, Integer> equipmentStock;
 
     @PlanningListVariable(
             valueRangeProviderRefs = "requestRange",
