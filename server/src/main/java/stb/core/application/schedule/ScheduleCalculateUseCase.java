@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import stb.core.application.support.audit.RequestActionAuditWriter;
 import stb.core.domain.model.*;
 import stb.core.domain.port.route.dto.Location;
 import stb.core.domain.repository.EngineerCrewRepository;
@@ -20,6 +21,7 @@ import stb.core.domain.service.scheduler.dto.TravelMatrix;
 import stb.core.domain.service.scheduler.dto.output.OutputSlotDto;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -40,11 +42,14 @@ public class ScheduleCalculateUseCase {
     private final RouteDomainService routeDomainService;
     private final SpeedProfileDomainService speedProfileDomainService;
     private final CrewEquipmentDomainService crewEquipmentDomainService;
+    private final RequestActionAuditWriter auditWriter;
 
     @Transactional
     public void execute(LocalDate targetDate) {
         List<Schedule> schedules = scheduleRepository.findAllByTargetDateAndStatus(targetDate, Schedule.Status.CALCULATING);
         List<RequestStatus> statuses = requestStatusRepository.findAll();
+        LocalDateTime timestamp = LocalDateTime.now();
+        List<RequestActionAudit> audits = new ArrayList<>();
 
         for (Schedule schedule : schedules) {
             Region region = schedule.getRegion();
@@ -84,20 +89,25 @@ public class ScheduleCalculateUseCase {
                 }
 
                 Request request = requestById.get(slotDto.requestId());
+                EngineerCrew crew = crewById.get(slotDto.engineerId());
 
-                request.assignCrew(crewById.get(slotDto.engineerId()), statuses);
+                request.assignCrew(crew, statuses);
                 assignedRequests.add(request);
                 schedule.addSlot(
                         request,
+                        crew,
                         ScheduleSlot.SlotType.REQUEST,
                         slotDto.arrivalTime(),
                         slotDto.serviceStartTime(),
                         slotDto.departureTime()
                 );
+                audits.add(RequestActionAudit.assigned(request, crew,
+                        slotDto.serviceStartTime(), slotDto.departureTime(), timestamp));
             }
 
             crewEquipmentDomainService.issueInitialLoadout(engineerCrews, assignedRequests);
             schedule.markAsCreated();
         }
+        auditWriter.saveAll(audits);
     }
 }

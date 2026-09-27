@@ -29,8 +29,12 @@ public interface ScheduleSlotRepository extends JpaRepository<ScheduleSlot, Inte
             JOIN FETCH s.schedule sc
             JOIN FETCH s.request r
             WHERE sc.targetDate = :targetDate
-            AND r.assignedCrew.id = :crewId
+            AND s.engineerCrew.id = :crewId
             AND s.type = :type
+            AND NOT EXISTS (
+                SELECT nextSchedule FROM Schedule nextSchedule
+                WHERE nextSchedule.previousSchedule.id = sc.id
+            )
             ORDER BY s.startTimeWindow
             """)
     List<ScheduleSlot> findAllByTargetDateAndCrewIdAndType(@Param("targetDate") LocalDate targetDate,
@@ -63,11 +67,11 @@ public interface ScheduleSlotRepository extends JpaRepository<ScheduleSlot, Inte
             WITH slots AS (
                 SELECT
                     ss.*,
-                    r.assigned_crew_id,
+                    ss.engineer_crew_id,
                     r.latitude,
                     r.longitude,
                     r.region_id,
-                    row_number() OVER (PARTITION BY r.assigned_crew_id ORDER BY ss.start_time_window DESC) rn FROM schedule_slots ss
+                    row_number() OVER (PARTITION BY ss.engineer_crew_id ORDER BY ss.start_time_window DESC) rn FROM schedule_slots ss
                 JOIN requests r ON r.id = ss.request_id
                 JOIN request_statuses rs ON rs.id = r.status_id
                 JOIN schedules s ON s.id = ss.schedule_id
@@ -85,7 +89,7 @@ public interface ScheduleSlotRepository extends JpaRepository<ScheduleSlot, Inte
                 ls.request_id "requestId",
                 ls.start_time_window "startTimeWindow",
                 ls.end_time_window "endTimeWindow",
-                ls.assigned_crew_id "crewId",
+                ls.engineer_crew_id "crewId",
                 ls.latitude,
                 ls.longitude
             FROM latest_slots ls

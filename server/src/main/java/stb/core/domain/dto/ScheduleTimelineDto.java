@@ -13,7 +13,8 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                                   DictionaryDto status,
                                   RegionDto region,
                                   List<EngineerCrewRow> engineers,
-                                  List<UnassignedRequestDto> unassignedRequests) {
+                                  List<UnassignedRequestDto> unassignedRequests,
+                                  List<SlotAlterationReasonDto> alterationReasons) {
 
     public static ScheduleTimelineDto from(Schedule schedule) {
         return from(schedule, List.of());
@@ -26,24 +27,33 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                 DictionaryDto.from(schedule.getStatus()),
                 RegionDto.from(schedule.getRegion()),
                 EngineerCrewRow.listFrom(schedule.getSlots()),
-                unassignedRequests
+                unassignedRequests,
+                List.of()
         );
     }
 
     public static ScheduleTimelineDto from(Schedule schedule,
                                            List<UnassignedRequestDto> unassignedRequests,
                                            List<EngineerCrew> regionCrews) {
-        return from(schedule, unassignedRequests, regionCrews, Set.of());
+        return from(schedule, unassignedRequests, regionCrews, Set.of(), List.of());
     }
 
-    /**
-     * The schedule's rows plus a row without slots for every other crew of the region;
-     * crews in {@code offShiftCrewIds} are marked as taken off shift for the schedule's date
-     */
     public static ScheduleTimelineDto from(Schedule schedule,
                                            List<UnassignedRequestDto> unassignedRequests,
                                            List<EngineerCrew> regionCrews,
                                            Set<Integer> offShiftCrewIds) {
+        return from(schedule, unassignedRequests, regionCrews, offShiftCrewIds, List.of());
+    }
+
+    /**
+     * The schedule's rows plus a row without slots for every other crew of the region;
+     * crews in {@code offShiftCrewIds} are marked as taken off shift for the schedule's date.
+     */
+    public static ScheduleTimelineDto from(Schedule schedule,
+                                           List<UnassignedRequestDto> unassignedRequests,
+                                           List<EngineerCrew> regionCrews,
+                                           Set<Integer> offShiftCrewIds,
+                                           List<SlotAlterationReasonDto> alterationReasons) {
         List<EngineerCrewRow> rows = new ArrayList<>(EngineerCrewRow.listFrom(schedule.getSlots())
                 .stream()
                 .map(row -> row.withOffShift(offShiftCrewIds.contains(row.id())))
@@ -59,7 +69,8 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                 DictionaryDto.from(schedule.getStatus()),
                 RegionDto.from(schedule.getRegion()),
                 rows,
-                unassignedRequests
+                unassignedRequests,
+                alterationReasons
         );
     }
 
@@ -95,16 +106,16 @@ public record ScheduleTimelineDto(LocalDate targetDate,
 
             Map<Integer, List<ScheduleSlot>> slotsByEngineerId = slots
                     .stream()
-                    .filter(slot -> slot.getRequest().getAssignedCrew() != null)
+                    .filter(slot -> slot.getEngineerCrew() != null)
                     .collect(Collectors.groupingBy(
-                            slot -> slot.getRequest().getAssignedCrew().getId(),
+                            slot -> slot.getEngineerCrew().getId(),
                             LinkedHashMap::new,
                             Collectors.toList()
                     ));
 
             return slotsByEngineerId.values()
                     .stream()
-                    .map(engineerSlots -> EngineerCrewRow.from(engineerSlots.getFirst().getRequest().getAssignedCrew(), engineerSlots))
+                    .map(engineerSlots -> EngineerCrewRow.from(engineerSlots.getFirst().getEngineerCrew(), engineerSlots))
                     .toList();
         }
 

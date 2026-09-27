@@ -3,6 +3,7 @@ package stb.core.application.schedule;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import stb.core.application.support.audit.RequestActionAuditFactory;
 import stb.core.application.support.audit.RequestActionAuditWriter;
 import stb.core.domain.dto.ScheduleEditDto;
 import stb.core.domain.dto.SchedulePreviewDto;
@@ -11,37 +12,31 @@ import stb.core.domain.dto.UnassignedRequestDto;
 import stb.core.domain.exception.DomainException;
 import stb.core.domain.exception.RequestNotFoundException;
 import stb.core.domain.exception.ScheduleNotFoundException;
-import stb.core.domain.dto.explanation.PlanDiff;
-import stb.core.domain.dto.explanation.PlanSnapshot;
-import stb.core.domain.dto.explanation.RequestChange;
 import stb.core.domain.model.*;
 import stb.core.domain.repository.*;
 import stb.core.domain.service.CrewRouteTimingDomainService;
 import stb.core.domain.service.CrewRouteTimingDomainService.PlannedVisit;
-import stb.core.domain.service.explanation.PlanDiffDomainService;
-import stb.core.domain.service.explanation.RequestActionAuditFormatter;
+import stb.core.domain.replanning.ScheduleVersionDiff;
+import stb.core.domain.replanning.ScheduleVersionDiffDomainService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Component
 @RequiredArgsConstructor
 public class ScheduleEditUseCase {
 
     private final ScheduleRepository scheduleRepository;
-    private final ScheduleSlotRepository scheduleSlotRepository;
     private final EngineerCrewRepository engineerCrewRepository;
     private final RequestRepository requestRepository;
     private final RequestStatusRepository requestStatusRepository;
     private final CrewRouteTimingDomainService crewRouteTimingDomainService;
 
-    private final PlanDiffDomainService planDiffDomainService;
-
-    private final RequestActionAuditFormatter auditFormatter;
+    private final ScheduleVersionDiffDomainService scheduleVersionDiffDomainService;
+    private final RequestActionAuditFactory auditFactory;
     private final RequestActionAuditWriter auditWriter;
     private record CrewPlan(EngineerCrew crew, List<PlannedVisit> visits) {
     }
@@ -80,7 +75,6 @@ public class ScheduleEditUseCase {
 
     @Transactional
     public void apply(int regionId, ScheduleEditDto edit) {
-        UUID operationId = UUID.randomUUID();
         LocalDateTime timestamp = LocalDateTime.now();
         EditPlan plan = plan(regionId, edit);
 
@@ -91,70 +85,29 @@ public class ScheduleEditUseCase {
                     .collect(Collectors.joining("; ", "Изменения нельзя сохранить — ", "")));
         }
 
-        Schedule schedule = plan.schedule();
-        List<Request> unassignedBefore = requestRepository
-                .findAllUnassignedByRegionIdAndStatus(regionId, RequestStatus.Keyword.IDLE);
-        PlanSnapshot previousSnapshot = currentSnapshot(schedule, unassignedBefore);
-        PlanSnapshot nextSnapshot = nextSnapshot(plan, unassignedBefore);
-        PlanDiff diff = planDiffDomainService.compare(previousSnapshot, nextSnapshot);
-
-        Map<Integer, Request> changedRequests = Stream.concat(
-                        plan.routes().stream().flatMap(route -> route.visits().stream()).map(PlannedVisit::request),
-                        plan.removedRequests().stream())
-                .distinct()
-                .collect(Collectors.toMap(Request::getId, Function.identity()));
-        Map<Integer, String> descriptions = diff.requestChanges().stream().collect(Collectors.toMap(
-                RequestChange::requestId,
-                change -> auditFormatter.manual(change, previousSnapshot, nextSnapshot)
-        ));
-
-        List<RequestStatus> statuses = requestStatusRepository.findAll();
+        Schedule previousSchedule = plan.schedule();
+        Schedule currentSchedule = Schedule.createFrom(previousSchedule);
         Set<Integer> editedCrewIds = plan.editedCrewIds();
-
-        List<ScheduleSlot> replacedSlots = schedule.getSlots().stream()
-                .filter(slot -> slot.getRequest().getAssignedCrew() != null
-                        && editedCrewIds.contains(slot.getRequest().getAssignedCrew().getId()))
-                .toList();
-        schedule.getSlots().removeAll(replacedSlots);
-        scheduleSlotRepository.deleteAll(replacedSlots);
-
-        for (Request request : plan.removedRequests()) {
-            request.unassign(statuses);
-        }
+        previousSchedule.getSlots().stream()
+                .filter(slot -> slot.getEngineerCrew() == null
+                        || !editedCrewIds.contains(slot.getEngineerCrew().getId()))
+                .forEach(currentSchedule::addSlot);
 
         plan.routes().forEach(route -> {
             EngineerCrew crew = route.crew();
             for (PlannedVisit visit : route.visits()) {
-                Request request = visit.request();
-                EngineerCrew previousCrew = request.getAssignedCrew();
-                if (previousCrew == null || previousCrew.getId() != crew.getId()) {
-                    request.assignCrew(crew, statuses);
-                }
-                schedule.addSlot(request, ScheduleSlot.SlotType.REQUEST,
+                currentSchedule.addSlot(visit.request(), crew, ScheduleSlot.SlotType.REQUEST,
                         visit.arrivalTime(), visit.startTime(), visit.endTime());
             }
         });
 
-        scheduleRepository.save(schedule);
-
-        auditWriter.saveAll(diff.requestChanges().stream()
-                .map(change -> {
-                    Request request = changedRequests.get(change.requestId());
-                    if (request == null) {
-                        throw new IllegalStateException(
-                                "Изменённая заявка №%d не найдена".formatted(change.requestId()));
-                    }
-                    return new RequestActionAuditWriter.Entry(
-                            request,
-                            auditFormatter.primaryAction(change),
-                            descriptions.get(change.requestId()),
-                            request.getAssignedCrew(),
-                            schedule,
-                            operationId,
-                            timestamp
-                    );
-                })
-                .toList());
+        ScheduleVersionDiff diff = scheduleVersionDiffDomainService.compare(previousSchedule, currentSchedule);
+        if (diff.isEmpty()) {
+            return;
+        }
+        applyAssignments(diff, requestStatusRepository.findAll());
+        scheduleRepository.save(currentSchedule);
+        auditWriter.saveAll(auditFactory.from(diff, timestamp));
     }
 
     private EditPlan plan(int regionId, ScheduleEditDto edit) {
@@ -214,10 +167,10 @@ public class ScheduleEditUseCase {
         }
 
         List<Request> removedRequests = schedule.getSlots().stream()
+                .filter(slot -> slot.getEngineerCrew() != null
+                        && editedCrews.containsKey(slot.getEngineerCrew().getId())
+                        && !plannedRequestIds.contains(slot.getRequest().getId()))
                 .map(ScheduleSlot::getRequest)
-                .filter(request -> request.getAssignedCrew() != null
-                        && editedCrews.containsKey(request.getAssignedCrew().getId())
-                        && !plannedRequestIds.contains(request.getId()))
                 .distinct()
                 .toList();
 
@@ -261,91 +214,15 @@ public class ScheduleEditUseCase {
         return unassigned;
     }
 
-    private static PlanSnapshot currentSnapshot(Schedule schedule, List<Request> unassignedRequests) {
-        return new PlanSnapshot(
-                schedule.getId(),
-                schedule.getPreviousSchedule() == null ? null : schedule.getPreviousSchedule().getId(),
-                schedule.getTargetDate(),
-                schedule.getRegion().getId(),
-                currentRoutes(schedule, Set.of()),
-                sortedRequestIds(unassignedRequests)
-        );
-    }
-
-    private static PlanSnapshot nextSnapshot(EditPlan plan, List<Request> unassignedBefore) {
-        Schedule schedule = plan.schedule();
-        Set<Integer> editedCrewIds = plan.editedCrewIds();
-        List<PlanSnapshot.CrewRoute> routes = new ArrayList<>(currentRoutes(schedule, editedCrewIds));
-        plan.routes().stream().map(ScheduleEditUseCase::routeOf).forEach(routes::add);
-
-        Set<Integer> nextUnassignedIds = unassignedBefore.stream()
-                .map(Request::getId)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-        plan.routes().stream()
-                .flatMap(route -> route.visits().stream())
-                .map(visit -> visit.request().getId())
-                .forEach(nextUnassignedIds::remove);
-        plan.removedRequests().stream().map(Request::getId).forEach(nextUnassignedIds::add);
-
-        return new PlanSnapshot(
-                schedule.getId(),
-                schedule.getId(),
-                schedule.getTargetDate(),
-                schedule.getRegion().getId(),
-                routes,
-                nextUnassignedIds.stream().sorted().toList()
-        );
-    }
-
-    private static List<PlanSnapshot.CrewRoute> currentRoutes(Schedule schedule, Set<Integer> excludedCrewIds) {
-        Map<EngineerCrew, List<ScheduleSlot>> slotsByCrew = schedule.getSlots().stream()
-                .filter(slot -> slot.getType() == ScheduleSlot.SlotType.REQUEST)
-                .filter(slot -> slot.getRequest().getAssignedCrew() != null)
-                .filter(slot -> !excludedCrewIds.contains(slot.getRequest().getAssignedCrew().getId()))
-                .collect(Collectors.groupingBy(
-                        slot -> slot.getRequest().getAssignedCrew(),
-                        LinkedHashMap::new,
-                        Collectors.toList()
-                ));
-
-        return slotsByCrew.entrySet().stream()
-                .map(entry -> routeOf(entry.getKey(), entry.getValue()))
-                .toList();
-    }
-
-    private static PlanSnapshot.CrewRoute routeOf(EngineerCrew crew, List<ScheduleSlot> slots) {
-        List<PlanSnapshot.Visit> visits = new ArrayList<>();
-        for (int position = 0; position < slots.size(); position++) {
-            ScheduleSlot slot = slots.get(position);
-            visits.add(new PlanSnapshot.Visit(
-                    slot.getRequest().getId(),
-                    position,
-                    position == 0 ? null : slots.get(position - 1).getRequest().getId(),
-                    slot.getArrivalTime(),
-                    slot.getStartTimeWindow(),
-                    slot.getEndTimeWindow()
-            ));
-        }
-        return new PlanSnapshot.CrewRoute(crew.getId(), crew.getName(), visits);
-    }
-
-    private static PlanSnapshot.CrewRoute routeOf(CrewPlan route) {
-        List<PlanSnapshot.Visit> visits = new ArrayList<>();
-        for (int position = 0; position < route.visits().size(); position++) {
-            PlannedVisit visit = route.visits().get(position);
-            visits.add(new PlanSnapshot.Visit(
-                    visit.request().getId(),
-                    position,
-                    position == 0 ? null : route.visits().get(position - 1).request().getId(),
-                    visit.arrivalTime(),
-                    visit.startTime(),
-                    visit.endTime()
-            ));
-        }
-        return new PlanSnapshot.CrewRoute(route.crew().getId(), route.crew().getName(), visits);
-    }
-
-    private static List<Integer> sortedRequestIds(List<Request> requests) {
-        return requests.stream().map(Request::getId).sorted().toList();
+    private static void applyAssignments(ScheduleVersionDiff diff, List<RequestStatus> statuses) {
+        diff.removed().forEach(slot -> slot.getRequest().unassign(statuses));
+        diff.added().forEach(slot -> slot.getRequest().assignCrew(slot.getEngineerCrew(), statuses));
+        diff.moved().forEach(change -> {
+            EngineerCrew previousCrew = change.previousSlot().getEngineerCrew();
+            EngineerCrew currentCrew = change.currentSlot().getEngineerCrew();
+            if (previousCrew.getId() != currentCrew.getId()) {
+                change.currentSlot().getRequest().assignCrew(currentCrew, statuses);
+            }
+        });
     }
 }

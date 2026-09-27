@@ -3,6 +3,7 @@ package stb.core.domain.dto;
 import stb.core.domain.model.RequestActionAudit;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 public record RequestHistoryItemDto(
         int id,
@@ -10,7 +11,9 @@ public record RequestHistoryItemDto(
         RequestActionAudit.Action action,
         String description,
         Integer crewId,
-        Integer scheduleId
+        String crewName,
+        LocalTime plannedStart,
+        LocalTime plannedEnd
 ) {
 
     public static RequestHistoryItemDto from(RequestActionAudit audit) {
@@ -18,9 +21,11 @@ public record RequestHistoryItemDto(
                 audit.getId(),
                 audit.getTimestamp(),
                 audit.getAction(),
-                audit.getDescription(),
+                audit.getAction().getDisplayName(),
                 audit.getAssignedCrew() == null ? null : audit.getAssignedCrew().getId(),
-                audit.getSchedule() == null ? null : audit.getSchedule().getId()
+                audit.getAssignedCrew() == null ? null : audit.getAssignedCrew().getName(),
+                audit.getPlannedStart(),
+                audit.getPlannedEnd()
         );
     }
 }

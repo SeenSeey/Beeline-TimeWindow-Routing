@@ -4,12 +4,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import stb.core.application.support.audit.RequestActionAuditFactory;
+import stb.core.application.support.audit.RequestActionAuditWriter;
+import stb.core.application.support.reason.SlotAlterationReasonFactory;
 import stb.core.domain.exception.RequestNotFoundException;
 import stb.core.domain.model.*;
+import stb.core.domain.replanning.AutomaticReplanContext;
+import stb.core.domain.replanning.ScheduleVersionDiff;
 import stb.core.domain.repository.*;
 import stb.core.domain.service.ScheduleRecalculationService;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
@@ -19,10 +25,15 @@ public class ScheduleRecalculateOnRequestCancelUseCase {
     private final RequestRepository requestRepository;
     private final ScheduleSlotRepository scheduleSlotRepository;
     private final ScheduleRecalculationService scheduleRecalculationService;
+    private final RequestActionAuditFactory auditFactory;
+    private final RequestActionAuditWriter auditWriter;
+    private final SlotAlterationReasonFactory reasonFactory;
+    private final SlotAlterationReasonRepository reasonRepository;
 
     @Transactional
     public void execute(int requestId) {
         LocalDate targetDate = LocalDate.now();
+        LocalDateTime timestamp = LocalDateTime.now();
 
         log.info("Пересчёт расписания на {} в связи с отменой заявки {}", targetDate, requestId);
 
@@ -38,7 +49,9 @@ public class ScheduleRecalculateOnRequestCancelUseCase {
             return;
         }
 
-        scheduleRecalculationService.recalculateSchedule(region, targetDate);
+        ScheduleVersionDiff diff = scheduleRecalculationService.recalculateSchedule(region, targetDate);
+        auditWriter.saveAll(auditFactory.from(diff, timestamp));
+        reasonRepository.saveAll(reasonFactory.from(new AutomaticReplanContext.RequestCancellation(canceledRequest), diff, timestamp));
 
         log.info("Расписание для региона {} пересчитано в связи с отменой заявки {}", region.getDisplayName(), canceledRequest.getId());
     }

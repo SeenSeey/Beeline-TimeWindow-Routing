@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
+import stb.core.application.support.audit.RequestActionAuditFactory;
 import stb.core.application.support.audit.RequestActionAuditWriter;
 import stb.core.domain.dto.ScheduleEditDto;
 import stb.core.domain.exception.DomainException;
@@ -18,10 +19,8 @@ import stb.core.domain.repository.EngineerCrewRepository;
 import stb.core.domain.repository.RequestRepository;
 import stb.core.domain.repository.RequestStatusRepository;
 import stb.core.domain.repository.ScheduleRepository;
-import stb.core.domain.repository.ScheduleSlotRepository;
 import stb.core.domain.service.CrewRouteTimingDomainService;
-import stb.core.domain.service.explanation.PlanDiffDomainService;
-import stb.core.domain.service.explanation.RequestActionAuditFormatter;
+import stb.core.domain.replanning.ScheduleVersionDiffDomainService;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -31,7 +30,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -40,7 +38,6 @@ import static org.mockito.Mockito.when;
 class ScheduleEditUseCaseTest {
 
     private final ScheduleRepository scheduleRepository = mock(ScheduleRepository.class);
-    private final ScheduleSlotRepository slotRepository = mock(ScheduleSlotRepository.class);
     private final EngineerCrewRepository crewRepository = mock(EngineerCrewRepository.class);
     private final RequestRepository requestRepository = mock(RequestRepository.class);
     private final RequestStatusRepository statusRepository = mock(RequestStatusRepository.class);
@@ -66,7 +63,7 @@ class ScheduleEditUseCaseTest {
         schedule = new Schedule(LocalDate.now(), region);
         ReflectionTestUtils.setField(schedule, "id", 7);
         schedule.markAsCreated();
-        schedule.addSlot(request, ScheduleSlot.SlotType.REQUEST,
+        schedule.addSlot(request, crew, ScheduleSlot.SlotType.REQUEST,
                 LocalTime.of(8, 50), LocalTime.of(9, 0), LocalTime.of(10, 0));
         edit = new ScheduleEditDto(List.of(
                 new ScheduleEditDto.CrewRoute(10, List.of(
@@ -75,15 +72,15 @@ class ScheduleEditUseCaseTest {
 
         when(scheduleRepository.findByTargetDateAndRegionId(LocalDate.now(), 1))
                 .thenReturn(Optional.of(schedule));
-        when(crewRepository.findAllByRegionId(1)).thenReturn(List.of(crew));
+        when(crewRepository.findAllActiveByRegionIdAndTargetDate(1, LocalDate.now())).thenReturn(List.of(crew));
         when(requestRepository.findAllById(List.of(42))).thenReturn(List.of(request));
         when(requestRepository.findAllUnassignedByRegionIdAndStatus(1, RequestStatus.Keyword.IDLE))
                 .thenReturn(List.of());
         when(statusRepository.findAll()).thenReturn(List.of(assigned));
 
         useCase = new ScheduleEditUseCase(
-                scheduleRepository, slotRepository, crewRepository, requestRepository, statusRepository,
-                timingService, new PlanDiffDomainService(), new RequestActionAuditFormatter(), auditWriter);
+                scheduleRepository, crewRepository, requestRepository, statusRepository,
+                timingService, new ScheduleVersionDiffDomainService(), new RequestActionAuditFactory(), auditWriter);
     }
 
     @Test
@@ -96,17 +93,41 @@ class ScheduleEditUseCaseTest {
         useCase.apply(1, edit);
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<RequestActionAuditWriter.Entry>> captor = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<List<RequestActionAudit>> captor = ArgumentCaptor.forClass(List.class);
         verify(auditWriter).saveAll(captor.capture());
-        assertThat(captor.getValue()).singleElement().satisfies(entry -> {
-            assertThat(entry.request()).isSameAs(request);
-            assertThat(entry.action()).isEqualTo(RequestActionAudit.Action.SCHEDULE_CHANGE);
-            assertThat(entry.description()).contains("с 09:00 на 10:30");
-            assertThat(entry.operationId()).isNotNull();
-            assertThat(entry.timestamp()).isNotNull();
+        assertThat(captor.getValue()).singleElement().satisfies(audit -> {
+            assertThat(audit.getRequest()).isSameAs(request);
+            assertThat(audit.getAction()).isEqualTo(RequestActionAudit.Action.RESCHEDULED);
+            assertThat(audit.getAssignedCrew()).isNull();
+            assertThat(audit.getPlannedStart()).isEqualTo(LocalTime.of(10, 30));
+            assertThat(audit.getPlannedEnd()).isEqualTo(LocalTime.of(11, 30));
+            assertThat(audit.getTimestamp()).isNotNull();
         });
         assertThat(schedule.getSlots()).singleElement().satisfies(slot ->
+                assertThat(slot.getStartTimeWindow()).isEqualTo(LocalTime.of(9, 0)));
+        ArgumentCaptor<Schedule> scheduleCaptor = ArgumentCaptor.forClass(Schedule.class);
+        verify(scheduleRepository).save(scheduleCaptor.capture());
+        assertThat(scheduleCaptor.getValue().getPreviousSchedule()).isSameAs(schedule);
+        assertThat(scheduleCaptor.getValue().getSlots()).singleElement().satisfies(slot ->
                 assertThat(slot.getStartTimeWindow()).isEqualTo(LocalTime.of(10, 30)));
+    }
+
+    @Test
+    void identicalEditDoesNotCreateScheduleVersionOrAudit() {
+        when(timingService.planRoute(any(), any())).thenReturn(List.of(
+                new CrewRouteTimingDomainService.PlannedVisit(
+                        request, LocalTime.of(8, 50), LocalTime.of(9, 0), LocalTime.of(10, 0), List.of())
+        ));
+        ScheduleEditDto identicalEdit = new ScheduleEditDto(List.of(
+                new ScheduleEditDto.CrewRoute(10, List.of(
+                        new ScheduleEditDto.Stop(42, LocalTime.of(9, 0))))
+        ));
+
+        useCase.apply(1, identicalEdit);
+
+        verify(scheduleRepository, never()).save(any());
+        verify(auditWriter, never()).saveAll(any());
+        verify(statusRepository, never()).findAll();
     }
 
     @Test
@@ -121,7 +142,7 @@ class ScheduleEditUseCaseTest {
                 .isInstanceOf(DomainException.ValidationException.class);
 
         verify(auditWriter, never()).saveAll(any());
-        verify(slotRepository, never()).deleteAll(any());
+        verify(scheduleRepository, never()).save(any());
         assertThat(schedule.getSlots()).singleElement().satisfies(slot ->
                 assertThat(slot.getStartTimeWindow()).isEqualTo(LocalTime.of(9, 0)));
     }

@@ -48,7 +48,7 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Integer> {
             "slots.request",
             "slots.request.jobType",
             "slots.request.requiredVehicle",
-            "slots.request.assignedCrew"
+            "slots.engineerCrew"
     })
     Optional<Schedule> findByTargetDateAndRegionId(LocalDate targetDate, int regionId);
 }

@@ -15,7 +15,7 @@ import stb.core.domain.repository.RequestStatusRepository;
 import stb.core.domain.repository.ScheduleRepository;
 import stb.core.domain.service.RouteDomainService;
 import stb.core.domain.service.SpeedProfileDomainService;
-import stb.core.domain.service.explanation.RequestActionAuditFormatter;
+import stb.core.domain.service.CrewEquipmentDomainService;
 import stb.core.domain.service.scheduler.ScheduleAssemblerDomainService;
 import stb.core.domain.service.scheduler.dto.ScheduleCalculationResult;
 import stb.core.domain.service.scheduler.dto.output.OutputSlotDto;
@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 class ScheduleCalculateUseCaseTest {
 
     @Test
-    void auditsEveryActualInitialAssignmentWithOneOperationId() {
+    void auditsEveryActualInitialAssignment() {
         RequestRepository requestRepository = mock(RequestRepository.class);
         ScheduleRepository scheduleRepository = mock(ScheduleRepository.class);
         EngineerCrewRepository crewRepository = mock(EngineerCrewRepository.class);
@@ -65,7 +65,7 @@ class ScheduleCalculateUseCaseTest {
                 .thenReturn(List.of(schedule));
         when(statusRepository.findAll()).thenReturn(List.of(assigned));
         when(requestRepository.findAllForSchedulingByRegionId(0)).thenReturn(List.of(request));
-        when(crewRepository.findAllByRegionId(0)).thenReturn(List.of(crew));
+        when(crewRepository.findAllActiveByRegionIdAndTargetDate(0, LocalDate.of(2026, 9, 25))).thenReturn(List.of(crew));
         when(routeService.calculateAllRoutes(anyList(), any())).thenReturn(List.of());
         when(speedProfileService.createSpeedProfile()).thenReturn(mock(SpeedProfile.class));
         when(assembler.createSchedule(any())).thenReturn(new ScheduleCalculationResult(List.of(
@@ -75,19 +75,18 @@ class ScheduleCalculateUseCaseTest {
 
         ScheduleCalculateUseCase useCase = new ScheduleCalculateUseCase(
                 requestRepository, scheduleRepository, crewRepository, statusRepository,
-                assembler, routeService, speedProfileService, new RequestActionAuditFormatter(), auditWriter);
+                assembler, routeService, speedProfileService, mock(CrewEquipmentDomainService.class), auditWriter);
         useCase.execute(LocalDate.of(2026, 9, 25));
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<RequestActionAuditWriter.Entry>> captor = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<List<RequestActionAudit>> captor = ArgumentCaptor.forClass(List.class);
         verify(auditWriter).saveAll(captor.capture());
-        assertThat(captor.getValue()).singleElement().satisfies(entry -> {
-            assertThat(entry.request()).isSameAs(request);
-            assertThat(entry.action()).isEqualTo(RequestActionAudit.Action.INITIAL_ASSIGNMENT);
-            assertThat(entry.assignedCrew()).isSameAs(crew);
-            assertThat(entry.schedule()).isSameAs(schedule);
-            assertThat(entry.operationId()).isNotNull();
-            assertThat(entry.description()).contains("Бригада 1", "10:30");
+        assertThat(captor.getValue()).singleElement().satisfies(audit -> {
+            assertThat(audit.getRequest()).isSameAs(request);
+            assertThat(audit.getAction()).isEqualTo(RequestActionAudit.Action.ASSIGNED);
+            assertThat(audit.getAssignedCrew()).isSameAs(crew);
+            assertThat(audit.getPlannedStart()).isEqualTo(start);
+            assertThat(audit.getPlannedEnd()).isEqualTo(LocalTime.of(11, 30));
         });
         assertThat(request.getAssignedCrew()).isSameAs(crew);
         assertThat(schedule.getSlots()).hasSize(1);

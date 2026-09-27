@@ -2,38 +2,35 @@ package stb.core.application.request;
 
 import org.junit.jupiter.api.Test;
 import stb.core.domain.exception.RequestNotFoundException;
+import stb.core.domain.model.Request;
 import stb.core.domain.model.RequestActionAudit;
 import stb.core.domain.repository.RequestActionAuditRepository;
 import stb.core.domain.repository.RequestRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class RequestHistoryFindUseCaseTest {
 
     @Test
-    void returnsStoredDescriptionsInRepositoryTimelineOrder() {
+    void returnsFixedActionDescriptionsInRepositoryTimelineOrder() {
         RequestRepository requestRepository = mock(RequestRepository.class);
         RequestActionAuditRepository auditRepository = mock(RequestActionAuditRepository.class);
         RequestHistoryFindUseCase useCase = new RequestHistoryFindUseCase(requestRepository, auditRepository);
         when(requestRepository.existsById(42)).thenReturn(true);
         when(auditRepository.findAllByRequestIdOrderByTimestampDescIdDesc(42)).thenReturn(List.of(
-                audit("Новое объяснение.", LocalDateTime.of(2026, 9, 25, 12, 0)),
-                audit("Старое объяснение.", LocalDateTime.of(2026, 9, 25, 10, 0))
+                RequestActionAudit.completed(Request.builder().build(), LocalDateTime.of(2026, 9, 25, 12, 0)),
+                RequestActionAudit.started(Request.builder().build(), LocalDateTime.of(2026, 9, 25, 10, 0))
         ));
 
         var result = useCase.execute(42);
 
         assertThat(result).extracting(item -> item.description())
-                .containsExactly("Новое объяснение.", "Старое объяснение.");
+                .containsExactly("Выполнена", "Взята в работу");
         verify(auditRepository).findAllByRequestIdOrderByTimestampDescIdDesc(42);
     }
 
@@ -47,14 +44,5 @@ class RequestHistoryFindUseCaseTest {
         assertThatThrownBy(() -> useCase.execute(42)).isInstanceOf(RequestNotFoundException.class);
 
         verifyNoInteractions(auditRepository);
-    }
-
-    private static RequestActionAudit audit(String description, LocalDateTime timestamp) {
-        return RequestActionAudit.builder()
-                .action(RequestActionAudit.Action.SCHEDULE_CHANGE)
-                .description(description)
-                .operationId(UUID.randomUUID())
-                .timestamp(timestamp)
-                .build();
     }
 }
