@@ -58,6 +58,20 @@ public class RequestActionAudit extends BaseEntity {
         );
     }
 
+    public static RequestActionAudit reassigned(Request request,
+                                                EngineerCrew assignedCrew,
+                                                LocalTime plannedStart,
+                                                LocalTime plannedEnd) {
+
+        return create(
+                request,
+                Action.REASSIGNED,
+                Objects.requireNonNull(assignedCrew, "assignedCrew не должна быть null"),
+                plannedStart,
+                plannedEnd
+        );
+    }
+
     public static RequestActionAudit rescheduled(Request request,
                                                  LocalTime plannedStart,
                                                  LocalTime plannedEnd) {
@@ -113,6 +127,7 @@ public class RequestActionAudit extends BaseEntity {
 
         REQUEST_CREATED("Заявка создана"),
         ASSIGNED("Назначена бригаде"),
+        REASSIGNED("Бригада изменена"),
         RESCHEDULED("Перенесена"),
         REMOVED_FROM_SCHEDULE("Снята с расписания"),
         STARTED("Взята в работу"),

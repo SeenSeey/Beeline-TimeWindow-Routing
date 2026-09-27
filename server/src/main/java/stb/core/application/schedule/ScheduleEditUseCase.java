@@ -3,7 +3,6 @@ package stb.core.application.schedule;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import stb.core.domain.service.RequestActionAuditService;
 import stb.core.domain.dto.*;
 import stb.core.domain.exception.DomainException;
 import stb.core.domain.exception.RequestNotFoundException;
@@ -28,7 +27,6 @@ public class ScheduleEditUseCase {
     private final RequestStatusRepository requestStatusRepository;
     private final ScheduleSlotRepository scheduleSlotRepository;
     private final CrewRouteTimingDomainService crewRouteTimingDomainService;
-    private final RequestActionAuditService auditFactory;
     private final RequestActionAuditRepository requestActionAuditRepository;
 
     private record CrewPlan(EngineerCrew crew, List<PlannedVisit> visits) {
@@ -68,7 +66,9 @@ public class ScheduleEditUseCase {
     @Transactional
     public void apply(int regionId, ScheduleEditDto edit) {
         EditPlan plan = plan(regionId, edit);
+
         List<SchedulePreviewDto.Violation> violations = plan.violations();
+
         if (!violations.isEmpty()) {
             throw new DomainException.ValidationException(violations.stream()
                     .map(violation -> "заявка №%d: %s".formatted(violation.requestId(), violation.message()))
@@ -79,78 +79,52 @@ public class ScheduleEditUseCase {
 
         List<RequestStatus> statuses = requestStatusRepository.findAll();
         Set<Integer> editedCrewIds = plan.editedCrewIds();
+        Map<Integer, ScheduleSlot> slotsByRequestId = schedule.getSlots()
+                .stream()
+                .collect(Collectors.toMap(slot -> slot.getRequest().getId(), Function.identity()));
 
         List<ScheduleSlot> replacedSlots = schedule.getSlots().stream()
                 .filter(slot -> slot.getRequest().getAssignedCrew() != null
                         && editedCrewIds.contains(slot.getRequest().getAssignedCrew().getId()))
                 .toList();
+
         schedule.getSlots().removeAll(replacedSlots);
         scheduleSlotRepository.deleteAll(replacedSlots);
 
+        List<RequestActionAudit> audit = new ArrayList<>();
+
         for (Request request : plan.removedRequests()) {
-            audit(request, schedule, RequestActionAudit.Action.REMOVE_FROM_SCHEDULE, request.getAssignedCrew(), now);
+            audit.add(RequestActionAudit.removedFromSchedule(request));
             request.unassign(statuses);
         }
 
         plan.routes().forEach(route -> {
             EngineerCrew crew = route.crew();
+
             for (PlannedVisit visit : route.visits()) {
                 Request request = visit.request();
                 EngineerCrew previousCrew = request.getAssignedCrew();
+
                 if (previousCrew == null) {
                     request.assignCrew(crew, statuses);
-                    audit(request, schedule, RequestActionAudit.Action.INITIAL_ASSIGNATION, crew, now);
+                    audit.add(RequestActionAudit.assigned(request, crew, visit.startTime(), visit.endTime()));
                 } else if (previousCrew.getId() != crew.getId()) {
                     request.assignCrew(crew, statuses);
-                    audit(request, schedule, RequestActionAudit.Action.ASSIGNED_CREW_CHANGE, crew, now);
+                    audit.add(RequestActionAudit.reassigned(request, crew, visit.startTime(), visit.endTime()));
+                } else if (slotsByRequestId.containsKey(request.getId())) {
+                    ScheduleSlot previousSlot = slotsByRequestId.get(request.getId());
+
+                    if (previousSlot.getStartTimeWindow() != visit.startTime()) {
+                        audit.add(RequestActionAudit.rescheduled(request, visit.startTime(), visit.endTime()));
+                    }
                 }
+
                 schedule.addSlot(request, crew, ScheduleSlot.SlotType.REQUEST, visit.arrivalTime(), visit.startTime(), visit.endTime());
             }
         });
 
         scheduleRepository.save(schedule);
-
-//        // TODO: история
-//
-//        List<RequestStatus> statuses = requestStatusRepository.findAll();
-//
-//        Schedule previousSchedule = plan.schedule();
-//        Schedule currentSchedule = Schedule.createFrom(previousSchedule);
-//        Set<Integer> editedCrewIds = plan.editedCrewIds();
-//
-//        List<ScheduleSlot> replacedSlots = previousSchedule.getSlots().stream()
-//                .filter(slot -> slot.getRequest().getAssignedCrew() != null
-//                        && editedCrewIds.contains(slot.getRequest().getAssignedCrew().getId()))
-//                .toList();
-//
-//        previousSchedule.getSlots().removeAll(replacedSlots);
-//        scheduleSlotRepository.deleteAll(replacedSlots);
-//
-//        for (Request request : plan.removedRequests()) {
-//            request.unassign(statuses);
-//        }
-//
-//        plan.routes().forEach(route -> {
-//            EngineerCrew crew = route.crew();
-//            for (PlannedVisit visit : route.visits()) {
-//
-//                Request request = visit.request();
-//                EngineerCrew previousCrew = request.getAssignedCrew();
-//
-//                if (previousCrew == null) {
-//                    request.assignCrew(crew, statuses);
-//                } else if (previousCrew.getId() != crew.getId()) {
-//                    request.assignCrew(crew, statuses);
-//                }
-//
-//                currentSchedule.addSlot(request, crew, ScheduleSlot.SlotType.REQUEST, visit.arrivalTime(), visit.startTime(), visit.endTime());;
-//            }
-//        });
-//
-//        ScheduleHistoryResult result = ScheduleHistoryResult.createHistory(previousSchedule, currentSchedule);
-//
-//        scheduleRepository.save(currentSchedule);
-//        requestActionAuditRepository.saveAll(auditFactory.createFrom(result));
+        requestActionAuditRepository.saveAll(audit);
     }
 
     private EditPlan plan(int regionId, ScheduleEditDto edit) {
