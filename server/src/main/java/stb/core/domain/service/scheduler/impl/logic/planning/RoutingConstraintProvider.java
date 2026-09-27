@@ -4,12 +4,12 @@ import ai.timefold.solver.core.api.score.HardMediumSoftScore;
 import ai.timefold.solver.core.api.score.stream.Constraint;
 import ai.timefold.solver.core.api.score.stream.ConstraintFactory;
 import ai.timefold.solver.core.api.score.stream.ConstraintProvider;
-import lombok.RequiredArgsConstructor;
+// import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import stb.core.domain.model.JobType;
 import stb.core.domain.service.scheduler.dto.EngineerCrewDto;
 import stb.core.domain.service.scheduler.dto.RequestDto;
-import stb.core.domain.service.scheduler.dto.TravelMatrix;
+// import stb.core.domain.service.scheduler.dto.TravelMatrix;
 
 import java.time.Duration;
 import java.time.LocalTime;
@@ -18,11 +18,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
-@RequiredArgsConstructor
+// @RequiredArgsConstructor
 public class RoutingConstraintProvider implements ConstraintProvider {
     private static final int USED_ENGINEER_SOFT_WEIGHT = 1_000_000;
     private static final int URGENT_START_DELAY_SOFT_WEIGHT = 100;
-    private final TravelMatrix travelMatrix;
+    // private final TravelMatrix travelMatrix;
 
     @Override
     public Constraint[] defineConstraints(ConstraintFactory factory) {
@@ -39,7 +39,7 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                 mediumMinimizeUnusedEngineerCrews(factory),
 
                 softMinimizeUsedEngineerCrews(factory),
-                softMinimizeTravelDistance(factory),
+//                softMinimizeTravelDistance(factory),
 //                softMinimizeTravelTime(factory),
                 softStartUrgentRequestsAsEarlyAsPossible(factory),
 //                softMinimizeWaitingTime(factory)
@@ -296,29 +296,29 @@ public class RoutingConstraintProvider implements ConstraintProvider {
     }
 
 
-    private Constraint softMinimizeTravelDistance(
-            ConstraintFactory factory
-    ) {
-        return factory
-                .forEach(RequestDto.class)
-                .filter(request ->
-                        request.getEngineerCrewDto() != null
-                                && request.getArrivalTime() != null
-                )
-                .penalize(
-                        HardMediumSoftScore.ONE_SOFT,
-                        request -> {
-                            if (request.getPreviousRequest() == null) {
-                                return (long) Math.ceil(travelMatrix.distanceBetween(request.getLocation(),request.getEngineerCrewDto().getStartLocation()));
-                            } else {
-                                return (long) Math.ceil(travelMatrix.distanceBetween(request.getLocation(),request.getPreviousRequest().getLocation()));
-                            }
-                        }
-                )
-                .asConstraint(
-                        "Minimize travel distance"
-                );
-    }
+//    private Constraint softMinimizeTravelDistance(
+//            ConstraintFactory factory
+//    ) {
+//        return factory
+//                .forEach(RequestDto.class)
+//                .filter(request ->
+//                        request.getEngineerCrewDto() != null
+//                                && request.getArrivalTime() != null
+//                )
+//                .penalize(
+//                        HardMediumSoftScore.ONE_SOFT,
+//                        request -> {
+//                            if (request.getPreviousRequest() == null) {
+//                                return (long) Math.ceil(travelMatrix.distanceBetween(request.getLocation(),request.getEngineerCrewDto().getStartLocation()));
+//                            } else {
+//                                return (long) Math.ceil(travelMatrix.distanceBetween(request.getLocation(),request.getPreviousRequest().getLocation()));
+//                            }
+//                        }
+//                )
+//                .asConstraint(
+//                        "Minimize travel distance"
+//                );
+//    }
 
     private Constraint mediumMinimizeUnusedEngineerCrews(ConstraintFactory factory){
         return factory.forEach(EngineerCrewDto.class)

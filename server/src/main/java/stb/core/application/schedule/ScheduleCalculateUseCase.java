@@ -108,7 +108,7 @@ public class ScheduleCalculateUseCase {
         }
 
         scheduleRepository.saveAll(schedules);
-        reasonRepository.saveAll(reasons);
-        requestActionAuditRepository.saveAll(audits);
+        // reasonRepository.saveAll(reasons);
+        // requestActionAuditRepository.saveAll(audits);
     }
 }

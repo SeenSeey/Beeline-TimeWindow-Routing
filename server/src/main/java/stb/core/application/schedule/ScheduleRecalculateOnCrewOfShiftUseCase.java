@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import stb.core.domain.service.AlterationReasonAssmblerService;
 import stb.core.domain.service.RequestActionAuditService;
 import stb.core.domain.dto.ScheduleHistoryResult;
 import stb.core.domain.exception.CrewNotFoundException;
@@ -26,41 +27,37 @@ public class ScheduleRecalculateOnCrewOfShiftUseCase {
     private final RequestActionAuditService auditFactory;
     private final AlterationReasonRepository reasonRepository;
     private final RequestActionAuditRepository requestActionAuditRepository;
+    private final AlterationReasonAssmblerService alterationReasonAssmblerService;
+
 
     @Transactional
     public void execute(int crewId) {
-        LocalDate targetDate = LocalDate.now();
-
-        List<Request> crewRequests = requestRepository.findAllIncomingByAssignedCrewId(crewId);
-
         EngineerCrew crew = engineerCrewRepository.findById(crewId)
                 .orElseThrow(() -> new CrewNotFoundException("Бригда %s не найдена".formatted(crewId)));
 
+        List<Request> crewRequests = requestRepository.findAllIncomingByAssignedCrewId(crewId);
         if (crewRequests.isEmpty()) {
             log.info("У бригады {} нет назначенных заявок, пересчёт расписания не требуется", crewId);
             return;
         }
 
-        log.info("Пересчёт расписания на {} в связи со снятием бригады {} со смены", targetDate, crewId);
-
-        crewRequests.forEach(request -> request.unassign(requestStatusRepository.findAll()));
-        requestRepository.saveAllAndFlush(crewRequests);
-
         Region region = crew.getRegion();
+        LocalDate targetDate = LocalDate.now();
 
         ScheduleHistoryResult result = scheduleRecalculationService.recalculateSchedule(region, targetDate);
+        log.info("Пересчёт расписания на {} в связи со снятием бригады {} со смены", targetDate, crewId);
 
-        requestActionAuditRepository.saveAll(auditFactory.createFrom(result));
+        // requestActionAuditRepository.saveAll(auditFactory.createFrom(result));
 
-//        List<AlterationReason> reasons = Stream.of(
-//                        result.assigned().stream().map(slot -> AlterationReason.addedDueToEmergency(result.schedule(), slot.getRequest(), emergencyRequest)).toList(),
-//                        result.startTimeChanged().stream().map(slot -> AlterationReason.startTimeChangedDueToEmergency(result.schedule(), slot.getRequest(), emergencyRequest)).toList(),
-//                        result.unassigned().stream().map(request -> AlterationReason.removedDueToEmergency(result.schedule(), request, emergencyRequest)).toList()
-//                )
-//                .flatMap(Collection::stream)
-//                .toList();
+        List<AlterationReason> reasons = alterationReasonAssmblerService.assembleReasons(
+                result,
+                slot -> AlterationReason.addedDueToCrewOffShift(result.schedule(), slot.getRequest(), crew),
+                slot -> AlterationReason.reassignedDueToCrewOffShift(result.schedule(), slot.getRequest(), crew),
+                slot -> AlterationReason.startTimeChangedDueToCrewOffShift(result.schedule(), slot.getRequest(), crew),
+                request -> AlterationReason.removedDueToCrewOffShift(result.schedule(), request, crew)
+        );
 
-        reasonRepository.saveAll(reasons);
+        // reasonRepository.saveAll(reasons);
 
         log.info("Расписание для региона {} пересчитано в связи с выходом инженера со смены {}", region.getDisplayName(), crew.getName());
     }

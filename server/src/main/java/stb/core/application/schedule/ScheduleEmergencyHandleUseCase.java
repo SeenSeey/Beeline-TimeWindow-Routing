@@ -37,7 +37,7 @@ public class ScheduleEmergencyHandleUseCase {
 
         ScheduleHistoryResult result = scheduleRecalculationService.recalculateSchedule(region, targetDate);
 
-        requestActionAuditRepository.saveAll(auditFactory.createFrom(result));
+        // requestActionAuditRepository.saveAll(auditFactory.createFrom(result));
 
         List<AlterationReason> reasons = alterationReasonAssmblerService.assembleReasons(
                 result,
@@ -47,7 +47,7 @@ public class ScheduleEmergencyHandleUseCase {
                 request -> AlterationReason.removedDueToEmergency(result.schedule(), request, emergencyRequest)
         );
 
-        reasonRepository.saveAll(reasons);
+        // reasonRepository.saveAll(reasons);
 
         log.info("Расписание для региона {} пересчитано из-за появления срочной заявки {}", region.getDisplayName(), region.getId());
     }

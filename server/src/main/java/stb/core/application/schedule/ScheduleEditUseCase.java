@@ -124,7 +124,7 @@ public class ScheduleEditUseCase {
         });
 
         scheduleRepository.save(schedule);
-        requestActionAuditRepository.saveAll(audit);
+        // requestActionAuditRepository.saveAll(audit);
     }
 
     private EditPlan plan(int regionId, ScheduleEditDto edit) {

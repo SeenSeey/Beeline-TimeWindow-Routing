@@ -102,6 +102,46 @@ public class AlterationReason extends BaseEntity {
                 .build();
     }
 
+    public static AlterationReason addedDueToCrewOffShift(Schedule schedule, Request request, EngineerCrew causeCrew) {
+        return AlterationReason.builder()
+                .schedule(schedule)
+                .request(request)
+                .type(Type.ADDED_FOR_CREW_OFF_SHIFT)
+                .causeCrew(causeCrew)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    public static AlterationReason reassignedDueToCrewOffShift(Schedule schedule, Request request, EngineerCrew causeCrew) {
+        return AlterationReason.builder()
+                .schedule(schedule)
+                .request(request)
+                .type(Type.REASSIGNED_FOR_CREW_OFF_SHIFT)
+                .causeCrew(causeCrew)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    public static AlterationReason removedDueToCrewOffShift(Schedule schedule, Request request, EngineerCrew causeCrew) {
+        return AlterationReason.builder()
+                .schedule(schedule)
+                .request(request)
+                .type(Type.REMOVED_FOR_CREW_OFF_SHIFT)
+                .causeCrew(causeCrew)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    public static AlterationReason startTimeChangedDueToCrewOffShift(Schedule schedule, Request request, EngineerCrew causeCrew) {
+        return AlterationReason.builder()
+                .schedule(schedule)
+                .request(request)
+                .type(Type.TIME_CHANGED_FOR_CREW_OFF_SHIFT)
+                .causeCrew(causeCrew)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
     public String getDescription() {
         return getType().descriptionBuilder.apply(this);
     }
@@ -119,6 +159,7 @@ public class AlterationReason extends BaseEntity {
         ADDED_FOR_CREW_OFF_SHIFT(reason -> ""),
         REMOVED_FOR_CREW_OFF_SHIFT(reason -> ""),
         REASSIGNED_FOR_CREW_OFF_SHIFT(reason -> ""),
+        TIME_CHANGED_FOR_CREW_OFF_SHIFT(reason -> ""),
 
         // TODO: проверить нужно ли
         // перемещения, объяснимые без контекста пересчёта: хранят прежнюю позицию заявки

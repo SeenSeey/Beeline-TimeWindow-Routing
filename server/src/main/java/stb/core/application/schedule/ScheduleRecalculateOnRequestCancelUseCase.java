@@ -44,7 +44,7 @@ public class ScheduleRecalculateOnRequestCancelUseCase {
         }
 
         ScheduleHistoryResult result = scheduleRecalculationService.recalculateSchedule(region, targetDate);
-        requestActionAuditRepository.saveAll(auditFactory.createFrom(result));
+        // requestActionAuditRepository.saveAll(auditFactory.createFrom(result));
 
 //        List<AlterationReason> reasons = Stream.of(
 //                        result.assigned().stream().map(slot -> AlterationReason.addedDueToEmergency(result.schedule(), slot.getRequest(), emergencyRequest)).toList(),
@@ -54,7 +54,7 @@ public class ScheduleRecalculateOnRequestCancelUseCase {
 //                .flatMap(Collection::stream)
 //                .toList();
 
-        reasonRepository.saveAll(reasons);
+        // reasonRepository.saveAll(reasons);
 
         log.info("Расписание для региона {} пересчитано в связи с отменой заявки {}", region.getDisplayName(), canceledRequest.getId());
     }

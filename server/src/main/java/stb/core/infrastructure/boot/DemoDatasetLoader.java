@@ -13,13 +13,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
-import stb.core.application.support.audit.RequestActionAuditWriter;
+// import stb.core.application.support.audit.RequestActionAuditWriter;
 import stb.core.domain.model.EngineerCrew;
 import stb.core.domain.model.Equipment;
 import stb.core.domain.model.JobType;
 import stb.core.domain.model.Region;
 import stb.core.domain.model.Request;
-import stb.core.domain.model.RequestActionAudit;
+// import stb.core.domain.model.RequestActionAudit;
 import stb.core.domain.model.RequestStatus;
 import stb.core.domain.model.Skill;
 import stb.core.domain.model.Vehicle;
@@ -70,7 +70,7 @@ public class DemoDatasetLoader implements CommandLineRunner {
     private final EquipmentRepository equipmentRepository;
     private final EngineerCrewRepository engineerCrewRepository;
     private final RequestRepository requestRepository;
-    private final RequestActionAuditWriter auditWriter;
+    // private final RequestActionAuditWriter auditWriter;
 
     @Override
     @Transactional
@@ -98,9 +98,9 @@ public class DemoDatasetLoader implements CommandLineRunner {
         }
         engineerCrewRepository.saveAll(crews);
         requestRepository.saveAll(requests);
-        auditWriter.saveAll(requests.stream()
-                .map(request -> RequestActionAudit.requestCreated(request, createdAt))
-                .toList());
+        // auditWriter.saveAll(requests.stream()
+                // .map(request -> RequestActionAudit.requestCreated(request, createdAt))
+                // .toList());
 
         log.info("Демо-датасет загружен: регионов {}, бригад {}, заявок {}",
                 REGION_DIRS.size(), crews.size(), requests.size());
