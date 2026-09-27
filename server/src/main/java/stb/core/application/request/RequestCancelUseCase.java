@@ -37,7 +37,7 @@ public class RequestCancelUseCase {
 
         if (activeSlot != null) {
             Schedule schedule = activeSlot.getSchedule();
-            schedule.markAsCalculating();
+            schedule.markAsRecalculating();
 
             scheduleRepository.save(schedule);
         }

@@ -15,8 +15,7 @@
       </span>
     </template>
 
-    <UiEmptyState v-if="!ready">Список появится, когда расписание будет сформировано.</UiEmptyState>
-    <UiEmptyState v-else-if="!requests.length">Все активные заявки региона вошли в расписание.</UiEmptyState>
+    <UiEmptyState v-if="!requests.length">Все активные заявки региона вошли в расписание.</UiEmptyState>
 
     <ul v-else class="m-0 grid max-h-[640px] list-none gap-2 overflow-y-auto p-3">
       <!-- the server orders them urgent first, then by deadline -->
@@ -35,9 +34,8 @@ import type { UnassignedRequest } from "../types";
 import UnassignedRequestItem from "./UnassignedRequestItem.vue";
 
 const props = defineProps<{
+  /** shown only for a calculated schedule: while calculating the server sends none */
   requests: UnassignedRequest[];
-  /** the schedule has been calculated; before that the list is always empty */
-  ready: boolean;
   targetDate: string;
 }>();
 

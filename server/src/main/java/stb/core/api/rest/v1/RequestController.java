@@ -10,10 +10,7 @@ import stb.core.api.rest.v1.dto.PageResponseDto;
 import stb.core.api.rest.v1.dto.ServerResponse;
 import stb.core.api.utils.PaginationUtils;
 import stb.core.application.request.*;
-import stb.core.domain.dto.RequestDetailedDto;
-import stb.core.domain.dto.RequestDto;
-import stb.core.domain.dto.RequestMapPointDto;
-import stb.core.domain.dto.RequestSearchDto;
+import stb.core.domain.dto.*;
 
 @RestController
 @RequestMapping("/api/v1/requests")
@@ -26,6 +23,7 @@ public class RequestController {
     private final RequestCompleteUseCase requestCompleteUseCase;
     private final RequestMarkInProgressUseCase requestMarkInProgressUseCase;
     private final RequestMapPointsFindByRegionUseCase requestMapPointsFindByRegionUseCase;
+    private final RequestCreateUseCase requestCreateUseCase;
 
     @GetMapping("/map")
     public ResponseEntity<ServerResponse<List<RequestMapPointDto>>> findMapPoints(@RequestParam int regionId) {
@@ -37,6 +35,12 @@ public class RequestController {
     @GetMapping("/{id}")
     public ResponseEntity<ServerResponse<RequestDetailedDto>> findById(@PathVariable int id) {
         return ResponseEntity.ok(ServerResponse.ok(HttpStatus.OK.value(), requestFindByIdUseCase.execute(id)));
+    }
+
+    @PostMapping
+    public ResponseEntity<ServerResponse<RequestDto>> createRequest(@RequestBody RequestCreateDto createDto) {
+        var request = requestCreateUseCase.execute(createDto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ServerResponse.ok(HttpStatus.CREATED.value(), request));
     }
 
     @PatchMapping("/{id}/in_progress")

@@ -15,9 +15,12 @@
         </div>
       </div>
 
-      <slot name="region">
-        <span class="text-sm text-muted">Регион {{ schedule.region.displayName }}</span>
-      </slot>
+      <div class="flex flex-wrap items-center gap-3">
+        <slot name="actions" />
+        <slot name="region">
+          <span class="text-sm text-muted">Регион {{ schedule.region.displayName }}</span>
+        </slot>
+      </div>
     </div>
 
     <BoardStats />

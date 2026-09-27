@@ -37,6 +37,7 @@ export function collectJobTypes(jobTypes: JobType[]): JobTypeOption[] {
 const SCHEDULE_STATUS_COLORS: Record<ScheduleStatusKeyword, string> = {
   CREATED: "var(--job-local)",
   CALCULATING: "var(--job-addon)",
+  RECALCULATING: "var(--job-addon)",
 };
 
 export const scheduleStatusColor = (keyword: ScheduleStatusKeyword): string =>

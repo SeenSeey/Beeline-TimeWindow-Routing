@@ -119,13 +119,13 @@ public class DemoDatasetLoader implements CommandLineRunner {
     private Map<JobType.Keyword, JobType> jobTypes(Map<Skill.Keyword, Skill> skills) {
         Map<JobType.Keyword, JobType> jobTypes = new EnumMap<>(JobType.Keyword.class);
         jobTypes.put(JobType.Keyword.LOCAL_WORK, new JobType("Локальная заявка",
-                List.of(skills.get(Skill.Keyword.LOCAL_WORK)), 20, 30, 50, JobType.Keyword.LOCAL_WORK));
+                List.of(skills.get(Skill.Keyword.LOCAL_WORK)), 20, 30, 50, JobType.Keyword.LOCAL_WORK, 7));
         jobTypes.put(JobType.Keyword.INSTALLATION, new JobType("Подключение",
-                List.of(skills.get(Skill.Keyword.INSTALLATION_OR_ADDON)), 20, 60, 90, JobType.Keyword.INSTALLATION));
+                List.of(skills.get(Skill.Keyword.INSTALLATION_OR_ADDON)), 20, 60, 90, JobType.Keyword.INSTALLATION, 3));
         jobTypes.put(JobType.Keyword.ADDON, new JobType("Дозаказ оборудования",
-                List.of(skills.get(Skill.Keyword.INSTALLATION_OR_ADDON)), 20, 10, 40, JobType.Keyword.ADDON));
+                List.of(skills.get(Skill.Keyword.INSTALLATION_OR_ADDON)), 20, 10, 40, JobType.Keyword.ADDON, 7));
         jobTypes.put(JobType.Keyword.EMERGENCY, new JobType("Глобальная проблема",
-                List.of(skills.get(Skill.Keyword.EMERGENCY)), 20, 80, 100, JobType.Keyword.EMERGENCY));
+                List.of(skills.get(Skill.Keyword.EMERGENCY)), 20, 80, 100, JobType.Keyword.EMERGENCY, 1));
         jobTypeRepository.saveAll(jobTypes.values());
         return jobTypes;
     }

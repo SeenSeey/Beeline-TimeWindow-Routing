@@ -41,7 +41,7 @@ public class CrewOffShiftUseCase {
 
         if (!crewActiveSlots.isEmpty()) {
             Schedule schedule = crewActiveSlots.getFirst().getSchedule();
-            schedule.markAsCalculating();
+            schedule.markAsRecalculating();
 
             scheduleRepository.save(schedule);
         }

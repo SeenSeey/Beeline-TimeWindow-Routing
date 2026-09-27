@@ -71,8 +71,8 @@ public class Schedule extends BaseEntity {
         slots.add(ScheduleSlot.createFrom(this, slot));
     }
 
-    public void markAsCalculating() {
-        setStatus(Status.CALCULATING);
+    public void markAsRecalculating() {
+        setStatus(Status.RECALCULATING);
     }
 
     public void markAsCreated() {
@@ -81,6 +81,7 @@ public class Schedule extends BaseEntity {
 
     public enum Status {
         CALCULATING("Формируется"),
+        RECALCULATING("Переформирование"),
         CREATED("Готово");
 
         @Getter

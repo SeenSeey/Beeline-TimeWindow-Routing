@@ -36,6 +36,9 @@ public class JobType extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Keyword keyword;
 
+    @Column(name = "deadline_in_days", nullable = false)
+    private int deadlineInDays;
+
     public enum Keyword {
 
         LOCAL_WORK,

@@ -26,7 +26,7 @@ export type JobTypeKeyword = "LOCAL_WORK" | "INSTALLATION" | "ADDON" | "EMERGENC
 export type RequestStatusKeyword = "IDLE" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" | "CANCELED";
 export type VehicleKeyword = "PEDESTRIAN" | "BICYCLE" | "PUBLIC_TRANSPORT" | "CAR";
 export type SkillKeyword = "LOCAL_WORK" | "INSTALLATION_OR_ADDON" | "EMERGENCY";
-export type ScheduleStatusKeyword = "CALCULATING" | "CREATED";
+export type ScheduleStatusKeyword = "CALCULATING" | "RECALCULATING" | "CREATED";
 
 export type JobType = Dictionary<JobTypeKeyword>;
 export type RequestStatus = Dictionary<RequestStatusKeyword>;

@@ -1,6 +1,9 @@
 <template>
   <BoardLayout>
     <BoardHeader :schedule="schedule">
+      <template v-if="$slots.actions" #actions>
+        <slot name="actions" />
+      </template>
       <template v-if="$slots.region" #region>
         <slot name="region" />
       </template>
@@ -12,13 +15,14 @@
 
     <TimelinePanel :region-name="schedule.region.displayName" />
 
-    <div class="grid grid-cols-1 items-start gap-4 sm:gap-6 min-[901px]:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]">
+    <!-- the requests left out are only known once the schedule is calculated; until then the crew's
+         route takes the whole width -->
+    <div
+      class="grid grid-cols-1 items-start gap-4 sm:gap-6"
+      :class="{ 'min-[901px]:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]': !calculating }"
+    >
       <CrewRoutePanel :crew="board.selectedCrew" :region-name="schedule.region.displayName" />
-      <UnassignedRequestsPanel
-        :requests="board.unassigned"
-        :ready="schedule.status.keyword === 'CREATED'"
-        :target-date="schedule.targetDate"
-      />
+      <UnassignedRequestsPanel v-if="!calculating" :requests="board.unassigned" :target-date="schedule.targetDate" />
     </div>
 
     <VisitTooltip />
@@ -29,6 +33,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
+import { isScheduleCalculating } from "../model/scheduleStatus";
 import { useBoardStore } from "../stores/board";
 import type { ScheduleData } from "../types";
 import BoardControls from "./BoardControls.vue";
@@ -43,9 +49,11 @@ import UnassignedRequestsPanel from "./UnassignedRequestsPanel.vue";
 import VisitStatusMenu from "./VisitStatusMenu.vue";
 import VisitTooltip from "./VisitTooltip.vue";
 
-defineProps<{
+const props = defineProps<{
   schedule: ScheduleData;
 }>();
 
 const board = useBoardStore();
+
+const calculating = computed(() => isScheduleCalculating(props.schedule.status.keyword));
 </script>

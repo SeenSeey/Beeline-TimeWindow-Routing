@@ -1,6 +1,6 @@
 import axios from "axios";
 import { toApiParams, type RequestsQuery } from "../model/query";
-import type { ApiResponse, PageResponse, RegionInfo, RequestDetailed, RequestItem } from "../types";
+import type { ApiResponse, PageResponse, RegionInfo, RequestCreateBody, RequestDetailed, RequestItem } from "../types";
 
 export { toApiFailure, type ApiFailure } from "@/features/timeline/api/timelineApi";
 
@@ -15,6 +15,15 @@ export async function fetchRequests(query: RequestsQuery): Promise<PageResponse<
 /** null when the server answered without a request */
 export async function fetchRequest(id: number): Promise<RequestDetailed | null> {
   const response = await axios.get<ApiResponse<RequestDetailed>>(`/api/v1/requests/${id}`);
+  return response.data?.payload ?? null;
+}
+
+/**
+ * Creates a request (201). The server answers 400 when the address can't be geocoded or the time window
+ * has only one end, 404 for an unknown region, job type or vehicle. Null when it answered without a body.
+ */
+export async function createRequest(body: RequestCreateBody): Promise<RequestItem | null> {
+  const response = await axios.post<ApiResponse<RequestItem>>("/api/v1/requests", body);
   return response.data?.payload ?? null;
 }
 

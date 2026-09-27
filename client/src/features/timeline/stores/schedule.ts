@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { fetchSchedule, toApiFailure, type ApiFailure } from "../api/timelineApi";
+import { isScheduleCalculating } from "../model/scheduleStatus";
 import type { ScheduleData } from "../types";
 
 export type ScheduleLoadState = { kind: "loading" } | { kind: "ready"; data: ScheduleData } | ApiFailure;
@@ -62,7 +63,7 @@ export const useScheduleStore = defineStore("timeline/schedule", () => {
 
     if (seq !== requestSeq) return;
 
-    const stillCalculating = next.kind === "ready" && next.data.status.keyword === "CALCULATING";
+    const stillCalculating = next.kind === "ready" && isScheduleCalculating(next.data.status.keyword);
     const keepCurrentView = background && next.kind !== "ready";
     if (!keepCurrentView) state.value = next;
     switching.value = false;
@@ -81,7 +82,7 @@ export const useScheduleStore = defineStore("timeline/schedule", () => {
     switching.value = false;
     state.value = { kind: "ready", data };
     // the server may still be recalculating it: refetch until it is ready, as load() does
-    if (data.status.keyword === "CALCULATING") schedulePoll(data.region.id);
+    if (isScheduleCalculating(data.status.keyword)) schedulePoll(data.region.id);
   }
 
   return { state, switching, schedule, reset, fail, failWith, load, replace, stopPolling };

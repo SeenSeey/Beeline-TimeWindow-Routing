@@ -18,7 +18,10 @@
               </span>
             </span>
           </div>
-          <slot name="region" />
+          <div class="flex flex-wrap items-center gap-3">
+            <slot name="actions" />
+            <slot name="region" />
+          </div>
         </div>
         <!-- Preline toolbar card -->
         <div class="grid gap-3 rounded-lg border border-line bg-surface p-4 shadow-2xs">

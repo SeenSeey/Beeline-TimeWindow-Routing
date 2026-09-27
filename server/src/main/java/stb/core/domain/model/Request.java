@@ -5,6 +5,7 @@ import lombok.*;
 import stb.core.domain.common.GeopositionProvider;
 import stb.core.domain.exception.DomainException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
@@ -77,6 +78,46 @@ public class Request extends BaseEntity implements GeopositionProvider {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "required_equipment_id")
     private Equipment requiredEquipment;
+
+    public Request(String fullAddress,
+                   double latitude,
+                   double longitude,
+                   List<RequestStatus> statuses,
+                   JobType jobType,
+                   Region region,
+                   LocalTime startTimeWindow,
+                   LocalTime endTimeWindow) {
+
+        if ((startTimeWindow == null && endTimeWindow != null) || (startTimeWindow != null && endTimeWindow == null)) {
+            throw new DomainException.ValidationException("Необходимо указать обе границы временного окна одновременно");
+        }
+
+        setFullAddress(fullAddress);
+        setLatitude(latitude);
+        setLongitude(longitude);
+        updateStatus(statuses, RequestStatus.Keyword.IDLE);
+        setUrgent(JobType.Keyword.EMERGENCY.equals(jobType.getKeyword()));
+        setDeadline(LocalDateTime.now().plusDays(jobType.getDeadlineInDays()));
+        setJobType(jobType);
+        setRegion(region);
+        setCreatedAt(LocalDateTime.now());
+
+        if (startTimeWindow == null) {
+            startTimeWindow = LocalTime.of(0, 1);
+            endTimeWindow = LocalTime.of(23, 59);
+        }
+
+        setStartTimeWindow(startTimeWindow);
+        setEndTimeWindow(endTimeWindow);
+    }
+
+    public void addVehicle(Vehicle vehicle) {
+        setRequiredVehicle(vehicle);
+    }
+
+    public void addEquipment(Equipment equipment) {
+        setRequiredEquipment(equipment);
+    }
 
     public void assignCrew(EngineerCrew engineerCrew, List<RequestStatus> statuses) {
         setAssignedCrew(engineerCrew);

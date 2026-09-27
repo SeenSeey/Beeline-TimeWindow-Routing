@@ -1,6 +1,18 @@
 <template>
   <!-- keyed by region so scroll and tooltip start fresh for each schedule -->
   <TimelineBoard v-if="state.kind === 'ready'" :key="state.data.region.id" :schedule="state.data">
+    <template #actions>
+      <RequestCreateAction
+        :regions="regionsStore.regions"
+        :region-id="regionsStore.regionId"
+        :open="requestCreateStore.open"
+        :pending="requestCreateStore.pending"
+        :error="requestCreateStore.error"
+        @open="requestCreateStore.openDialog()"
+        @close="requestCreateStore.closeDialog()"
+        @submit="createRequest"
+      />
+    </template>
     <template #region>
       <RegionSelect
         :model-value="regionsStore.regionId"
@@ -27,6 +39,9 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted } from "vue";
+import RequestCreateAction from "@/features/requests/components/RequestCreateAction.vue";
+import { useRequestCreateStore } from "@/features/requests/stores/requestCreate";
+import type { RequestCreateBody } from "@/features/requests/types";
 import BoardMessage from "@/features/timeline/components/BoardMessage.vue";
 import RegionSelect from "@/features/timeline/components/RegionSelect.vue";
 import TimelineBoard from "@/features/timeline/components/TimelineBoard.vue";
@@ -37,6 +52,7 @@ import { useScheduleEditStore } from "@/features/timeline/stores/scheduleEdit";
 const regionsStore = useRegionsStore();
 const scheduleStore = useScheduleStore();
 const scheduleEditStore = useScheduleEditStore();
+const requestCreateStore = useRequestCreateStore();
 
 const state = computed(() => scheduleStore.state);
 
@@ -62,6 +78,12 @@ function changeRegion(id: number | null): void {
   void scheduleStore.load(id);
 }
 
+/** A new request of the shown region lands in its unassigned list; an urgent one makes the server recalculate */
+async function createRequest(body: RequestCreateBody): Promise<void> {
+  const created = await requestCreateStore.create(body);
+  if (created && body.regionId === regionsStore.regionId) void scheduleStore.load(body.regionId);
+}
+
 function retry(): void {
   if (regionsStore.regions.length && regionsStore.regionId != null) void scheduleStore.load(regionsStore.regionId);
   else void init();
@@ -74,5 +96,6 @@ onBeforeUnmount(() => {
   scheduleStore.stopPolling();
   scheduleEditStore.stop();
   scheduleEditStore.dismissNotice();
+  requestCreateStore.closeDialog();
 });
 </script>

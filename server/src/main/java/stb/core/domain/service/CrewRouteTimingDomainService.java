@@ -153,7 +153,9 @@ public class CrewRouteTimingDomainService {
         if (start == null) {
             return null;
         }
-        LocalTime end = start.plusMinutes(request.getJobType().getJobTimeSpanMinutes());
+        LocalTime end = start.plusMinutes(
+                request.getJobType().getTotalTimeSpanMinutes() - request.getJobType().getMaxTravelTimeSpanMinutes()
+        );
         return end.isBefore(start) ? null : end;
     }
 

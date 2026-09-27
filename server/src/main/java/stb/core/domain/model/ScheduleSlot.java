@@ -15,7 +15,7 @@ import java.time.LocalTime;
 @Builder(access = AccessLevel.PROTECTED)
 public class ScheduleSlot extends BaseEntity {
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "schedule_id", nullable = false)
     private Schedule schedule;
 

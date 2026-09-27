@@ -103,6 +103,21 @@ export interface PageResponse<T> {
   totalPages: number;
 }
 
+/**
+ * RequestCreateDto — body of POST /api/v1/requests. The server geocodes the address, sets the deadline
+ * by the job type and marks an EMERGENCY request urgent (which makes it recalculate today's schedule).
+ */
+export interface RequestCreateBody {
+  regionId: number;
+  address: string;
+  jobTypeId: number;
+  requiredVehicleId: number | null;
+  requiredEquipmentId: number | null;
+  /** "HH:mm:ss"; both or neither — without a window the request fits any time of day */
+  startTimeWindow: string | null;
+  endTimeWindow: string | null;
+}
+
 /** RequestSearchDto — query params of GET /api/v1/requests; null means "any" */
 export interface RequestFilters {
   statusId: number | null;
