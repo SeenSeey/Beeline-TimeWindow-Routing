@@ -1,6 +1,7 @@
 services:
   nginx:
     image: nginx:alpine
+    restart: always
     ports:
       - "3000:3000"
     environment:
@@ -39,6 +40,7 @@ services:
       APP_ROUTE_OSMFILE: map/central-fed.osm.pbf
       APP_ROUTE_GRAPHCACHE: map/graph-cache
       APP_GEO_GEOCODERAPIKEY: ${GEOCODER_API_KEY}
+      TZ: "Europe/Moscow"
     ports:
       - "8080:8080"
     networks:
@@ -51,6 +53,7 @@ services:
 
   client:
     build: ./client
+    restart: always
     ports:
       - "5173:5173"
     volumes:
