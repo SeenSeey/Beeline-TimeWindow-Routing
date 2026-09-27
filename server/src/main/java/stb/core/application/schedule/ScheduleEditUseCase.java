@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import stb.core.application.support.audit.RequestActionAuditFactory;
-import stb.core.application.support.audit.RequestActionAuditWriter;
 import stb.core.domain.dto.*;
 import stb.core.domain.exception.DomainException;
 import stb.core.domain.exception.RequestNotFoundException;
@@ -27,11 +26,10 @@ public class ScheduleEditUseCase {
     private final EngineerCrewRepository engineerCrewRepository;
     private final RequestRepository requestRepository;
     private final RequestStatusRepository requestStatusRepository;
-    private final CrewRouteTimingDomainService crewRouteTimingDomainService;
-
-    private final RequestActionAuditFactory auditFactory;
-    private final RequestActionAuditWriter auditWriter;
     private final ScheduleSlotRepository scheduleSlotRepository;
+    private final CrewRouteTimingDomainService crewRouteTimingDomainService;
+    private final RequestActionAuditFactory auditFactory;
+    private final RequestActionAuditRepository requestActionAuditRepository;
 
     private record CrewPlan(EngineerCrew crew, List<PlannedVisit> visits) {
     }
@@ -118,7 +116,7 @@ public class ScheduleEditUseCase {
         ScheduleHistoryResult result = ScheduleHistoryResult.createHistory(previousSchedule, currentSchedule);
 
         scheduleRepository.save(currentSchedule);
-        auditWriter.saveAll(auditFactory.from(result));
+        requestActionAuditRepository.saveAll(auditFactory.from(result));
     }
 
     private EditPlan plan(int regionId, ScheduleEditDto edit) {

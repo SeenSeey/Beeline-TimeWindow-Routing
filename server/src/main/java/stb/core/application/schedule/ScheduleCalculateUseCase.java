@@ -4,14 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import stb.core.application.support.audit.RequestActionAuditWriter;
 import stb.core.domain.model.*;
 import stb.core.domain.port.route.dto.Location;
-import stb.core.domain.repository.AlterationReasonRepository;
-import stb.core.domain.repository.EngineerCrewRepository;
-import stb.core.domain.repository.RequestRepository;
-import stb.core.domain.repository.RequestStatusRepository;
-import stb.core.domain.repository.ScheduleRepository;
+import stb.core.domain.repository.*;
 import stb.core.domain.service.CrewEquipmentDomainService;
 import stb.core.domain.service.RouteDomainService;
 import stb.core.domain.service.SpeedProfileDomainService;
@@ -42,8 +37,8 @@ public class ScheduleCalculateUseCase {
     private final RouteDomainService routeDomainService;
     private final SpeedProfileDomainService speedProfileDomainService;
     private final CrewEquipmentDomainService crewEquipmentDomainService;
-    private final RequestActionAuditWriter auditWriter;
     private final AlterationReasonRepository reasonRepository;
+    private final RequestActionAuditRepository requestActionAuditRepository;
 
     @Transactional
     public void execute(LocalDate targetDate) {
@@ -114,6 +109,6 @@ public class ScheduleCalculateUseCase {
 
         scheduleRepository.saveAll(schedules);
         reasonRepository.saveAll(reasons);
-        auditWriter.saveAll(audits);
+        requestActionAuditRepository.saveAll(audits);
     }
 }

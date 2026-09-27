@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import stb.core.application.support.audit.RequestActionAuditFactory;
-import stb.core.application.support.audit.RequestActionAuditWriter;
 import stb.core.domain.dto.ScheduleHistoryResult;
 import stb.core.domain.exception.RequestNotFoundException;
 import stb.core.domain.model.*;
@@ -26,7 +25,7 @@ public class ScheduleEmergencyHandleUseCase {
     private final ScheduleRecalculationService scheduleRecalculationService;
     private final AlterationReasonAssmblerService alterationReasonAssmblerService;
     private final RequestActionAuditFactory auditFactory;
-    private final RequestActionAuditWriter auditWriter;
+    private final RequestActionAuditRepository requestActionAuditRepository;
 
     @Transactional
     public void execute(int requestId) {
@@ -38,7 +37,7 @@ public class ScheduleEmergencyHandleUseCase {
 
         ScheduleHistoryResult result = scheduleRecalculationService.recalculateSchedule(region, targetDate);
 
-        auditWriter.saveAll(auditFactory.from(result));
+        requestActionAuditRepository.saveAll(auditFactory.from(result));
 
         List<AlterationReason> reasons = alterationReasonAssmblerService.assembleReasons(
                 result,

@@ -5,8 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import stb.core.application.support.audit.RequestActionAuditFactory;
-import stb.core.application.support.audit.RequestActionAuditWriter;
-import stb.core.application.support.reason.AlterationReasonFactory;
 import stb.core.domain.dto.ScheduleHistoryResult;
 import stb.core.domain.exception.CrewNotFoundException;
 import stb.core.domain.model.*;
@@ -26,8 +24,8 @@ public class ScheduleRecalculateOnCrewOfShiftUseCase {
     private final EngineerCrewRepository engineerCrewRepository;
     private final ScheduleRecalculationService scheduleRecalculationService;
     private final RequestActionAuditFactory auditFactory;
-    private final RequestActionAuditWriter auditWriter;
     private final AlterationReasonRepository reasonRepository;
+    private final RequestActionAuditRepository requestActionAuditRepository;
 
     @Transactional
     public void execute(int crewId) {
@@ -52,7 +50,7 @@ public class ScheduleRecalculateOnCrewOfShiftUseCase {
 
         ScheduleHistoryResult result = scheduleRecalculationService.recalculateSchedule(region, targetDate);
 
-        auditWriter.saveAll(auditFactory.from(result));
+        requestActionAuditRepository.saveAll(auditFactory.from(result));
 
 //        List<AlterationReason> reasons = Stream.of(
 //                        result.assigned().stream().map(slot -> AlterationReason.addedDueToEmergency(result.schedule(), slot.getRequest(), emergencyRequest)).toList(),
