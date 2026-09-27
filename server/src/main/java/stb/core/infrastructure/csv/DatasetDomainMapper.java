@@ -40,8 +40,11 @@ public class DatasetDomainMapper {
                 null);
     }
 
-    public EngineerCrew toCrew(EngineerDto engineer, Region region, Map<Vehicle.Keyword, Vehicle> vehicles,
-            Map<Skill.Keyword, Skill> skills) {
+    public EngineerCrew toCrew(EngineerDto engineer,
+                               Region region,
+                               Map<Vehicle.Keyword, Vehicle> vehicles,
+                               Map<Skill.Keyword, Skill> skills) {
+
         return new EngineerCrew(
                 engineer.name(),
                 region,

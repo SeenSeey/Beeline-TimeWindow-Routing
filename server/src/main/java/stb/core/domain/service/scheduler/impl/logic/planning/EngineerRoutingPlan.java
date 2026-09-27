@@ -3,6 +3,7 @@ package stb.core.domain.service.scheduler.impl.logic.planning;
 import ai.timefold.solver.core.api.domain.solution.PlanningEntityCollectionProperty;
 import ai.timefold.solver.core.api.domain.solution.PlanningScore;
 import ai.timefold.solver.core.api.domain.solution.PlanningSolution;
+import ai.timefold.solver.core.api.domain.solution.ProblemFactProperty;
 import ai.timefold.solver.core.api.domain.valuerange.ValueRangeProvider;
 import ai.timefold.solver.core.api.score.HardMediumSoftScore;
 import lombok.*;
@@ -19,8 +20,9 @@ import java.util.List;
 @RequiredArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED, force = true)
 public class EngineerRoutingPlan {
-
+    @ProblemFactProperty
     private final TravelMatrix travelMatrix;
+    @ProblemFactProperty
     private final SpeedProfile speedProfile;
 
     @PlanningEntityCollectionProperty

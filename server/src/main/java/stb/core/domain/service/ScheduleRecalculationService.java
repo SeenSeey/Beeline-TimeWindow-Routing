@@ -9,6 +9,7 @@ import stb.core.domain.port.route.dto.Location;
 import stb.core.domain.port.route.dto.RouteDto;
 import stb.core.domain.repository.*;
 import stb.core.domain.repository.projection.CrewLatestSlot;
+import stb.core.domain.repository.projection.EngineerCrewSlotsCount;
 import stb.core.domain.service.scheduler.ScheduleAssemblerDomainService;
 import stb.core.domain.service.scheduler.dto.ScheduleCalculationResult;
 import stb.core.domain.service.scheduler.dto.ScheduleContext;
@@ -48,6 +49,10 @@ public class ScheduleRecalculationService {
 
         Map<Integer, Request> requestById = requestsToReschedule.stream().collect(Collectors.toMap(Request::getId, Function.identity()));
         Map<Integer, EngineerCrew> crewById = engineerCrews.stream().collect(Collectors.toMap(EngineerCrew::getId, Function.identity()));
+        Map<Integer, Integer> slotsCountByCrewId = scheduleSlotRepository.countAllByScheduleAndEngineerCrewIdIn(
+                currentSchedule.getId(),
+                engineerCrews.stream().map(EngineerCrew::getId).toList()
+        ).stream().collect(Collectors.toMap(EngineerCrewSlotsCount::getEngineerCrewId, EngineerCrewSlotsCount::getActiveSlotsCount));
 
         List<ScheduleSlot> staticSlots = currentSchedule.getSlots()
                 .stream()
@@ -68,6 +73,7 @@ public class ScheduleRecalculationService {
                 .travelMatrix(new TravelMatrix(routes))
                 .speedProfile(speedProfileDomainService.createSpeedProfile())
                 .crewsLatestSlots(crewLatestSlots)
+                .crewsUsedInSchedule(slotsCountByCrewId)
                 .replanning(true)
                 .build();
 

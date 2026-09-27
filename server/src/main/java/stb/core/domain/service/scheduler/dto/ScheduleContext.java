@@ -10,6 +10,7 @@ import stb.core.domain.repository.projection.CrewLatestSlot;
 import stb.core.domain.service.scheduler.impl.logic.speed.SpeedProfile;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -22,5 +23,6 @@ public class ScheduleContext {
     private TravelMatrix travelMatrix;
     private SpeedProfile speedProfile;
     private List<CrewLatestSlot> crewsLatestSlots;
+    private Map<Integer, Integer> crewsUsedInSchedule;
     private boolean replanning;
 }

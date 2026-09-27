@@ -21,8 +21,11 @@ import java.util.stream.Collectors;
 @Component
 public class SchedulerMapper {
 
-    public EngineerCrewDto toEngineerCrewDto(EngineerCrew engineerCrew, Map<Integer, CrewLatestSlot> crewLatestSlots,
+    public EngineerCrewDto toEngineerCrewDto(EngineerCrew engineerCrew,
+                                             Map<Integer, CrewLatestSlot> crewLatestSlots,
+                                             Map<Integer, Integer> slotsCountByCrewId,
                                              boolean replanning) {
+
         Location location;
         LocalTime shiftStartTime;
 
@@ -46,7 +49,7 @@ public class SchedulerMapper {
                 engineerCrew.getVehicle().getAverageSpeedKmh(),
                 engineerCrew.getVehicle().getEquipmentCapacity(),
                 replanning ? toEquipmentStock(engineerCrew.getEquipment()) : null,
-                true//TODO: add field in domain
+                replanning && slotsCountByCrewId.containsKey(engineerCrew.getId())
             );
     }
 
@@ -72,6 +75,7 @@ public class SchedulerMapper {
                 request.getRequiredVehicle()!=null ? request.getRequiredVehicle().getKeyword() : null,
                 request.isUrgent(),
                 request.getRequiredEquipment() != null ? request.getRequiredEquipment().getId() : null,
+                request.getCreatedAt(),
                 request.getDeadline()
         );
     }

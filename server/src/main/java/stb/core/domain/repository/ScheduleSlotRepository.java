@@ -6,6 +6,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import stb.core.domain.model.ScheduleSlot;
 import stb.core.domain.repository.projection.CrewLatestSlot;
+import stb.core.domain.repository.projection.EngineerCrewSlotsCount;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -59,6 +60,17 @@ public interface ScheduleSlotRepository extends JpaRepository<ScheduleSlot, Inte
             """, nativeQuery = true)
     Optional<ScheduleSlot> findCanceledSlotByRequestId(int requestId);
 
+    @Query("""
+            SELECT
+                s.request.assignedCrew.id as engineerCrewId,
+                count(s.id) as activeSlotsCount
+            FROM ScheduleSlot s
+            WHERE s.schedule.id = :scheduleId
+            AND s.request.assignedCrew.id IN (:crewsIds)
+            GROUP BY s.request.assignedCrew.id
+            """)
+    List<EngineerCrewSlotsCount> countAllByScheduleAndEngineerCrewIdIn(int scheduleId, List<Integer> crewsIds);
+
     @Query(value = """
             WITH slots AS (
                 SELECT
@@ -100,6 +112,8 @@ public interface ScheduleSlotRepository extends JpaRepository<ScheduleSlot, Inte
                 SELECT 1 FROM Schedule sc
                 WHERE sc.previousSchedule.id = s.id
             )
+            ORDER BY s.id DESC
+            LIMIT 1
             """)
     ScheduleSlot findActiveSlotByRequestId(int requestId);
 }

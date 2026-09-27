@@ -22,7 +22,7 @@
     </scoreDirectorFactory>
 
     <termination>
-        <spentLimit>PT10s</spentLimit>
+        <spentLimit>PT15s</spentLimit>
     </termination>
 
 </solver>

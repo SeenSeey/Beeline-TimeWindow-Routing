@@ -4,7 +4,6 @@ import ai.timefold.solver.core.api.score.HardMediumSoftScore;
 import ai.timefold.solver.core.api.score.stream.Constraint;
 import ai.timefold.solver.core.api.score.stream.ConstraintFactory;
 import ai.timefold.solver.core.api.score.stream.ConstraintProvider;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import stb.core.domain.model.JobType;
 import stb.core.domain.service.scheduler.dto.EngineerCrewDto;
@@ -12,17 +11,17 @@ import stb.core.domain.service.scheduler.dto.RequestDto;
 import stb.core.domain.service.scheduler.dto.TravelMatrix;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 @Component
-@RequiredArgsConstructor
 public class RoutingConstraintProvider implements ConstraintProvider {
     private static final int USED_ENGINEER_SOFT_WEIGHT = 1_000_000;
     private static final int URGENT_START_DELAY_SOFT_WEIGHT = 100;
-    private final TravelMatrix travelMatrix;
+    private static final int DEADLINE_WEIGHT = 1_000;
 
     @Override
     public Constraint[] defineConstraints(ConstraintFactory factory) {
@@ -37,10 +36,11 @@ public class RoutingConstraintProvider implements ConstraintProvider {
 
                 mediumMaximizeCompletedRequests(factory),
                 mediumMinimizeUnusedEngineerCrews(factory),
+                mediumPrioritiseDeadlierRequests(factory),
 
                 softMinimizeUsedEngineerCrews(factory),
                 softMinimizeTravelDistance(factory),
-//                softMinimizeTravelTime(factory),
+                softMinimizeTravelTime(factory),
                 softStartUrgentRequestsAsEarlyAsPossible(factory),
 //                softMinimizeWaitingTime(factory)
         };
@@ -305,9 +305,10 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                         request.getEngineerCrewDto() != null
                                 && request.getArrivalTime() != null
                 )
+                .join(TravelMatrix.class)
                 .penalize(
                         HardMediumSoftScore.ONE_SOFT,
-                        request -> {
+                        (request, travelMatrix)  -> {
                             if (request.getPreviousRequest() == null) {
                                 return (long) Math.ceil(travelMatrix.distanceBetween(request.getLocation(),request.getEngineerCrewDto().getStartLocation()));
                             } else {
@@ -325,5 +326,21 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                 .penalize(HardMediumSoftScore.ONE_MEDIUM,
                 crew -> crew.isUsed()?0:5)
                 .asConstraint("Minimize unused engineer crews");
+    }
+
+    private Constraint mediumPrioritiseDeadlierRequests(ConstraintFactory factory){
+        return factory.forEach(RequestDto.class)
+                .filter(request ->
+                request.getEngineerCrewDto() != null
+                        && request.getArrivalTime() != null
+                )
+                .penalize(HardMediumSoftScore.ONE_SOFT,
+                        request -> (DEADLINE_WEIGHT *
+                                 Duration.between(request.getCreatedAt(), request.getDeadline()).toMinutes()
+                                / Duration.between(LocalDateTime.now(), request.getDeadline()).toMinutes()
+                        )
+                ).asConstraint(
+                        "Prioritise deadlier requests"
+                );
     }
 }

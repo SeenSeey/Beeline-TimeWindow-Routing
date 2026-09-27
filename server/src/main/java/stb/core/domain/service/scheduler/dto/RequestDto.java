@@ -14,6 +14,7 @@ import stb.core.domain.port.route.dto.Location;
 import stb.core.domain.service.scheduler.impl.logic.planning.EngineerRoutingPlan;
 import stb.core.domain.service.scheduler.impl.logic.planning.TravelTimeCalculator;
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -38,6 +39,8 @@ public class RequestDto {
     private final Vehicle.Keyword requiredTransportTypeDto;
     private final boolean isUrgent;
     private final Integer requiredEquipmentId;
+    private final LocalDateTime createdAt;
+    private final LocalDateTime deadline;
     //Shadow vars
 
     private EngineerCrewDto engineerCrewDto;
