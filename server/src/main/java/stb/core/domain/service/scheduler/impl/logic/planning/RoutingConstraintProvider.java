@@ -36,6 +36,7 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                 hardEngineerCrewDtoMustHaveRequiredEquipment(factory),
 
                 mediumMaximizeCompletedRequests(factory),
+                mediumMinimizeUnusedEngineerCrews(factory),
 
                 softMinimizeUsedEngineerCrews(factory),
                 softMinimizeTravelDistance(factory),
@@ -315,7 +316,14 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                         }
                 )
                 .asConstraint(
-                        "Minimize travel time"
+                        "Minimize travel distance"
                 );
+    }
+
+    private Constraint mediumMinimizeUnusedEngineerCrews(ConstraintFactory factory){
+        return factory.forEach(EngineerCrewDto.class)
+                .penalize(HardMediumSoftScore.ONE_MEDIUM,
+                crew -> crew.isUsed()?0:5)
+                .asConstraint("Minimize unused engineer crews");
     }
 }

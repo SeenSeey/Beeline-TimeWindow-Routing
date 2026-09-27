@@ -40,6 +40,8 @@ public class EngineerCrewDto {
     private final int equipmentCapacity;
     private final Map<Integer, Integer> equipmentStock;
 
+    private final boolean isUsed;
+
     @PlanningListVariable(
             valueRangeProviderRefs = "requestRange",
             allowsUnassignedValues = true
