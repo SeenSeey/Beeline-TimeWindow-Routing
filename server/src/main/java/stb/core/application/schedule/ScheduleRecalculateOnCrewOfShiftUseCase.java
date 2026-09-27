@@ -7,15 +7,13 @@ import org.springframework.transaction.annotation.Transactional;
 import stb.core.application.support.audit.RequestActionAuditFactory;
 import stb.core.application.support.audit.RequestActionAuditWriter;
 import stb.core.application.support.reason.AlterationReasonFactory;
+import stb.core.domain.dto.ScheduleHistoryResult;
 import stb.core.domain.exception.CrewNotFoundException;
 import stb.core.domain.model.*;
-import stb.core.domain.replanning.AutomaticReplanContext;
 import stb.core.domain.repository.*;
 import stb.core.domain.service.ScheduleRecalculationService;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -29,13 +27,11 @@ public class ScheduleRecalculateOnCrewOfShiftUseCase {
     private final ScheduleRecalculationService scheduleRecalculationService;
     private final RequestActionAuditFactory auditFactory;
     private final RequestActionAuditWriter auditWriter;
-    private final AlterationReasonFactory reasonFactory;
     private final AlterationReasonRepository reasonRepository;
 
     @Transactional
     public void execute(int crewId) {
         LocalDate targetDate = LocalDate.now();
-        LocalDateTime timestamp = LocalDateTime.now();
 
         List<Request> crewRequests = requestRepository.findAllIncomingByAssignedCrewId(crewId);
 
@@ -54,12 +50,18 @@ public class ScheduleRecalculateOnCrewOfShiftUseCase {
 
         Region region = crew.getRegion();
 
-        ScheduleRecalculationService.Recalculation recalculation =
-                scheduleRecalculationService.recalculateSchedule(region, targetDate, timestamp);
-        auditWriter.saveAll(auditFactory.from(recalculation.diff(), timestamp));
-        List<AlterationReason> reasons = new ArrayList<>(reasonFactory.from(
-                new AutomaticReplanContext.CrewOffShift(crew), recalculation.schedule(), recalculation.diff(), timestamp));
-        reasons.addAll(recalculation.unscheduledReasons());
+        ScheduleHistoryResult result = scheduleRecalculationService.recalculateSchedule(region, targetDate);
+
+        auditWriter.saveAll(auditFactory.from(result));
+
+//        List<AlterationReason> reasons = Stream.of(
+//                        result.assigned().stream().map(slot -> AlterationReason.addedDueToEmergency(result.schedule(), slot.getRequest(), emergencyRequest)).toList(),
+//                        result.startTimeChanged().stream().map(slot -> AlterationReason.startTimeChangedDueToEmergency(result.schedule(), slot.getRequest(), emergencyRequest)).toList(),
+//                        result.unassigned().stream().map(request -> AlterationReason.removedDueToEmergency(result.schedule(), request, emergencyRequest)).toList()
+//                )
+//                .flatMap(Collection::stream)
+//                .toList();
+
         reasonRepository.saveAll(reasons);
 
         log.info("Расписание для региона {} пересчитано в связи с выходом инженера со смены {}", region.getDisplayName(), crew.getName());

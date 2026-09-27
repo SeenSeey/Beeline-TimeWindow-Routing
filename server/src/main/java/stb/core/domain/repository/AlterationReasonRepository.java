@@ -10,18 +10,5 @@ import java.util.List;
 @Repository
 public interface AlterationReasonRepository extends JpaRepository<AlterationReason, Integer> {
 
-    @Query("""
-            SELECT DISTINCT reason FROM AlterationReason reason
-            JOIN FETCH reason.request request
-            JOIN FETCH request.jobType jobType
-            LEFT JOIN FETCH jobType.requiredSkills
-            LEFT JOIN FETCH request.requiredVehicle
-            LEFT JOIN FETCH request.requiredEquipment
-            LEFT JOIN FETCH reason.causeRequest
-            LEFT JOIN FETCH reason.causeCrew
-            LEFT JOIN FETCH reason.previousCrew
-            WHERE reason.schedule.id = :scheduleId
-            ORDER BY reason.id
-            """)
-    List<AlterationReason> findAllByScheduleId(int scheduleId);
+    List<AlterationReason> findAllDistinctByScheduleIdOrderById(int scheduleId);
 }

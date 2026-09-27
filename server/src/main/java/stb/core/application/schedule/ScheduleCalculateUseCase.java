@@ -15,7 +15,6 @@ import stb.core.domain.repository.ScheduleRepository;
 import stb.core.domain.service.CrewEquipmentDomainService;
 import stb.core.domain.service.RouteDomainService;
 import stb.core.domain.service.SpeedProfileDomainService;
-import stb.core.domain.service.UnscheduledRequestReasonDomainService;
 import stb.core.domain.service.scheduler.ScheduleAssemblerDomainService;
 import stb.core.domain.service.scheduler.dto.ScheduleCalculationResult;
 import stb.core.domain.service.scheduler.dto.ScheduleContext;
@@ -23,7 +22,6 @@ import stb.core.domain.service.scheduler.dto.TravelMatrix;
 import stb.core.domain.service.scheduler.dto.output.OutputSlotDto;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -45,14 +43,12 @@ public class ScheduleCalculateUseCase {
     private final SpeedProfileDomainService speedProfileDomainService;
     private final CrewEquipmentDomainService crewEquipmentDomainService;
     private final RequestActionAuditWriter auditWriter;
-    private final UnscheduledRequestReasonDomainService unscheduledReasonDomainService;
     private final AlterationReasonRepository reasonRepository;
 
     @Transactional
     public void execute(LocalDate targetDate) {
         List<Schedule> schedules = scheduleRepository.findAllByTargetDateAndStatus(targetDate, Schedule.Status.CALCULATING);
         List<RequestStatus> statuses = requestStatusRepository.findAll();
-        LocalDateTime timestamp = LocalDateTime.now();
         List<RequestActionAudit> audits = new ArrayList<>();
         List<AlterationReason> reasons = new ArrayList<>();
 
@@ -88,12 +84,14 @@ public class ScheduleCalculateUseCase {
             List<Request> assignedRequests = new ArrayList<>();
 
             for (OutputSlotDto slotDto : result.requestDtoList()) {
+                Request request = requestById.get(slotDto.requestId());
+
                 if (slotDto.engineerId() == null || slotDto.serviceStartTime() == null || slotDto.departureTime() == null) {
                     log.warn("Не удалось распределить заявку {} в текущее расписание региона {}", slotDto.requestId(), region.getDisplayName());
+                    reasons.add(AlterationReason.initialNoAvailableTimeSlots(schedule, request));
                     continue;
                 }
 
-                Request request = requestById.get(slotDto.requestId());
                 EngineerCrew crew = crewById.get(slotDto.engineerId());
 
                 request.assignCrew(crew, statuses);
@@ -106,14 +104,15 @@ public class ScheduleCalculateUseCase {
                         slotDto.serviceStartTime(),
                         slotDto.departureTime()
                 );
-                audits.add(RequestActionAudit.assigned(request, crew,
-                        slotDto.serviceStartTime(), slotDto.departureTime(), timestamp));
+
+                audits.add(RequestActionAudit.assigned(request, crew, slotDto.serviceStartTime(), slotDto.departureTime()));
             }
 
-            reasons.addAll(unscheduledReasonDomainService.analyze(schedule, requests, engineerCrews, false, timestamp));
             crewEquipmentDomainService.issueInitialLoadout(engineerCrews, assignedRequests);
             schedule.markAsCreated();
         }
+
+        scheduleRepository.saveAll(schedules);
         reasonRepository.saveAll(reasons);
         auditWriter.saveAll(audits);
     }

@@ -14,7 +14,9 @@ import java.util.Objects;
 ))
 @Getter
 @Setter(AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder
 public class RequestActionAudit extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -38,68 +40,73 @@ public class RequestActionAudit extends BaseEntity {
     @Column(name = "planned_end")
     private LocalTime plannedEnd;
 
-    public static RequestActionAudit requestCreated(Request request, LocalDateTime timestamp) {
-        return action(request, Action.REQUEST_CREATED, timestamp);
+    public static RequestActionAudit requestCreated(Request request) {
+        return action(request, Action.REQUEST_CREATED);
     }
 
     public static RequestActionAudit assigned(Request request,
                                               EngineerCrew assignedCrew,
                                               LocalTime plannedStart,
-                                              LocalTime plannedEnd,
-                                              LocalDateTime timestamp) {
-        return create(request, Action.ASSIGNED, Objects.requireNonNull(assignedCrew, "assignedCrew не должна быть null"),
-                plannedStart, plannedEnd, timestamp);
+                                              LocalTime plannedEnd) {
+
+        return create(
+                request,
+                Action.ASSIGNED,
+                Objects.requireNonNull(assignedCrew, "assignedCrew не должна быть null"),
+                plannedStart,
+                plannedEnd
+        );
     }
 
     public static RequestActionAudit rescheduled(Request request,
-                                                 EngineerCrew assignedCrew,
                                                  LocalTime plannedStart,
-                                                 LocalTime plannedEnd,
-                                                 LocalDateTime timestamp) {
-        return create(request, Action.RESCHEDULED, assignedCrew, plannedStart, plannedEnd, timestamp);
+                                                 LocalTime plannedEnd) {
+
+        return create(request, Action.RESCHEDULED, null, plannedStart, plannedEnd);
     }
 
-    public static RequestActionAudit removedFromSchedule(Request request, LocalDateTime timestamp) {
-        return action(request, Action.REMOVED_FROM_SCHEDULE, timestamp);
+    public static RequestActionAudit removedFromSchedule(Request request) {
+        return action(request, Action.REMOVED_FROM_SCHEDULE);
     }
 
-    public static RequestActionAudit started(Request request, LocalDateTime timestamp) {
-        return action(request, Action.STARTED, timestamp);
+    public static RequestActionAudit started(Request request) {
+        return action(request, Action.STARTED);
     }
 
-    public static RequestActionAudit completed(Request request, LocalDateTime timestamp) {
-        return action(request, Action.COMPLETED, timestamp);
+    public static RequestActionAudit completed(Request request) {
+        return action(request, Action.COMPLETED);
     }
 
-    public static RequestActionAudit canceled(Request request, LocalDateTime timestamp) {
-        return action(request, Action.CANCELED, timestamp);
+    public static RequestActionAudit canceled(Request request) {
+        return action(request, Action.CANCELED);
     }
 
-    private static RequestActionAudit action(Request request, Action action, LocalDateTime timestamp) {
-        return create(request, action, null, null, null, timestamp);
+    private static RequestActionAudit action(Request request, Action action) {
+        return create(request, action, null, null, null);
     }
 
     private static RequestActionAudit create(Request request,
                                              Action action,
                                              EngineerCrew assignedCrew,
                                              LocalTime plannedStart,
-                                             LocalTime plannedEnd,
-                                             LocalDateTime timestamp) {
+                                             LocalTime plannedEnd) {
+
         Objects.requireNonNull(request, "request не должна быть null");
         Objects.requireNonNull(action, "action не должен быть null");
-        Objects.requireNonNull(timestamp, "timestamp не должен быть null");
+
         if (action == Action.ASSIGNED || action == Action.RESCHEDULED) {
             Objects.requireNonNull(plannedStart, "plannedStart не должно быть null");
             Objects.requireNonNull(plannedEnd, "plannedEnd не должно быть null");
         }
-        RequestActionAudit audit = new RequestActionAudit();
-        audit.request = request;
-        audit.action = action;
-        audit.assignedCrew = assignedCrew;
-        audit.plannedStart = plannedStart;
-        audit.plannedEnd = plannedEnd;
-        audit.timestamp = timestamp;
-        return audit;
+
+        return RequestActionAudit.builder()
+                .request(request)
+                .action(action)
+                .assignedCrew(assignedCrew)
+                .plannedStart(plannedStart)
+                .plannedEnd(plannedEnd)
+                .timestamp(LocalDateTime.now())
+                .build();
     }
 
     public enum Action {

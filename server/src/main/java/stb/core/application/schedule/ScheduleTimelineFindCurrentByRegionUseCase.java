@@ -78,7 +78,7 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
     }
 
     private List<AlterationReasonDto> findAlterationReasons(Schedule schedule) {
-        return reasonRepository.findAllByScheduleId(schedule.getId()).stream()
+        return reasonRepository.findAllDistinctByScheduleIdOrderById(schedule.getId()).stream()
                 .map(reason -> AlterationReasonDto.from(reason, reasonFormatter.format(reason)))
                 .toList();
     }

@@ -3,23 +3,20 @@ package stb.core.domain.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import stb.core.domain.dto.ScheduleHistoryResult;
 import stb.core.domain.exception.ScheduleNotFoundException;
 import stb.core.domain.model.*;
 import stb.core.domain.port.route.dto.Location;
 import stb.core.domain.port.route.dto.RouteDto;
-import stb.core.domain.replanning.ScheduleVersionDiff;
-import stb.core.domain.replanning.ScheduleVersionDiffDomainService;
 import stb.core.domain.repository.*;
 import stb.core.domain.repository.projection.CrewLatestSlot;
 import stb.core.domain.service.scheduler.ScheduleAssemblerDomainService;
-import stb.core.domain.service.scheduler.dto.ScheduleCalculationResult;
 import stb.core.domain.service.scheduler.dto.ScheduleContext;
 import stb.core.domain.service.scheduler.dto.TravelMatrix;
 import stb.core.domain.service.scheduler.dto.output.OutputSlotDto;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -39,10 +36,8 @@ public class ScheduleRecalculationService {
     private final ScheduleAssemblerDomainService scheduleAssemblerDomainService;
     private final SpeedProfileDomainService speedProfileDomainService;
     private final RouteDomainService routeDomainService;
-    private final ScheduleVersionDiffDomainService scheduleVersionDiffDomainService;
-    private final UnscheduledRequestReasonDomainService unscheduledReasonDomainService;
 
-    public Recalculation recalculateSchedule(Region region, LocalDate targetDate, LocalDateTime timestamp) {
+    public ScheduleHistoryResult recalculateSchedule(Region region, LocalDate targetDate) {
         Schedule currentSchedule = scheduleRepository.findByTargetDateAndRegionId(targetDate, region.getId())
                 .orElseThrow(() -> new ScheduleNotFoundException("Расписание на %s для региона %s не найдено".formatted(targetDate, region.getId())));
 
@@ -58,6 +53,10 @@ public class ScheduleRecalculationService {
                 .stream()
                 .filter(slot -> slot.getRequest().isInProgress() || slot.getRequest().isCompleted())
                 .toList();
+
+        Map<Integer, ScheduleSlot> slotByRequestId = currentSchedule.getSlots()
+                .stream()
+                .collect(Collectors.toMap(slot -> slot.getRequest().getId(), Function.identity()));
 
         List<Location> points = Stream.concat(Stream.concat(
                         Stream.of(Location.from(region)),
@@ -76,58 +75,70 @@ public class ScheduleRecalculationService {
                 .replanning(true)
                 .build();
 
-        ScheduleCalculationResult result = scheduleAssemblerDomainService.createSchedule(context);
+        stb.core.domain.service.scheduler.dto.ScheduleCalculationResult result = scheduleAssemblerDomainService.createSchedule(context);
 
         Schedule schedule = Schedule.createFrom(currentSchedule);
         staticSlots.forEach(schedule::addSlot);
 
-        // TODO: отмечать историю
+        List<ScheduleSlot> assigned = new ArrayList<>();
+        List<ScheduleSlot> reassigned = new ArrayList<>();
+        List<Request> unassigned = new ArrayList<>();
+        List<ScheduleSlot> startTimeChanged = new ArrayList<>();
+
         for (OutputSlotDto slotDto : result.requestDtoList()) {
+            Request request = requestById.get(slotDto.requestId());
+
             if (slotDto.engineerId() == null || slotDto.serviceStartTime() == null || slotDto.departureTime() == null) {
                 log.warn("Не удалось распределить заявку {} в текущее расписание региона {}", slotDto.requestId(), region.getDisplayName());
+                request.unassign(statuses);
+                unassigned.add(request);
                 continue;
             }
 
-            schedule.addSlot(
-                    requestById.get(slotDto.requestId()),
+            request.assignCrew(crewById.get(slotDto.engineerId()), statuses);
+
+            ScheduleSlot slot = schedule.addSlot(
+                    request,
                     crewById.get(slotDto.engineerId()),
                     ScheduleSlot.SlotType.REQUEST,
                     slotDto.arrivalTime(),
                     slotDto.serviceStartTime(),
                     slotDto.departureTime()
             );
+
+            ScheduleSlot previousSlot = slotByRequestId.get(request.getId());
+
+            if (previousSlot != null) {
+                if (slotStartTimeChanged(previousSlot, slot)) {
+                    startTimeChanged.add(slot);
+                } else if (slotCrewChanged(previousSlot, slot)) {
+                    reassigned.add(slot);
+                }
+            } else {
+                assigned.add(slot);
+            }
         }
 
-        ScheduleVersionDiff diff = scheduleVersionDiffDomainService.compare(currentSchedule, schedule);
         scheduleRepository.save(schedule);
-        requestRepository.saveAll(applyAssignments(diff, statuses));
-        return new Recalculation(schedule, diff, unscheduledReasonDomainService.analyze(
-                schedule, requestsToReschedule, engineerCrews, true, timestamp));
+        requestRepository.saveAll(requestsToReschedule);
+
+        return new ScheduleHistoryResult(startTimeChanged, assigned, reassigned, unassigned, schedule);
     }
 
-    private static List<Request> applyAssignments(ScheduleVersionDiff diff, List<RequestStatus> statuses) {
-        Map<Integer, Request> updated = new LinkedHashMap<>();
-        diff.removed().forEach(slot -> {
-            slot.getRequest().unassign(statuses);
-            updated.put(slot.getRequest().getId(), slot.getRequest());
-        });
-        diff.added().forEach(slot -> {
-            slot.getRequest().assignCrew(slot.getEngineerCrew(), statuses);
-            updated.put(slot.getRequest().getId(), slot.getRequest());
-        });
-        diff.moved().forEach(change -> {
-            EngineerCrew previousCrew = change.previousSlot().getEngineerCrew();
-            EngineerCrew currentCrew = change.currentSlot().getEngineerCrew();
-            if (previousCrew.getId() != currentCrew.getId()) {
-                change.currentSlot().getRequest().assignCrew(currentCrew, statuses);
-                updated.put(change.currentSlot().getRequest().getId(), change.currentSlot().getRequest());
-            }
-        });
-        return List.copyOf(updated.values());
+    private boolean slotStartTimeChanged(ScheduleSlot previousSlot, ScheduleSlot currentSlot) {
+        if (previousSlot == null || currentSlot == null) {
+            return false;
+        }
+
+        return !(previousSlot.getStartTimeWindow().equals(currentSlot.getStartTimeWindow())
+                && previousSlot.getEndTimeWindow().equals(currentSlot.getEndTimeWindow()));
     }
 
-    public record Recalculation(Schedule schedule,
-                                ScheduleVersionDiff diff,
-                                List<AlterationReason> unscheduledReasons) {
+    private boolean slotCrewChanged(ScheduleSlot previousSlot, ScheduleSlot currentSlot) {
+        if (previousSlot == null || currentSlot == null) {
+            return false;
+        }
+
+        return previousSlot.getEngineerCrew().getId() != currentSlot.getEngineerCrew().getId();
     }
 }
