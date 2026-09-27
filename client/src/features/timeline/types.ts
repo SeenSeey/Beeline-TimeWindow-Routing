@@ -36,32 +36,6 @@ export type ScheduleStatus = Dictionary<ScheduleStatusKeyword>;
 
 export type SlotType = "REQUEST" | "TRAVEL" | "BREAK";
 
-export type SlotAlterationAction =
-  | "ADDED_FOR_HIGHER_PRIORITY_REQUEST"
-  | "MOVED_FOR_HIGHER_PRIORITY_REQUEST"
-  | "REMOVED_FOR_HIGHER_PRIORITY_REQUEST"
-  | "ADDED_AFTER_REQUEST_CANCELLATION"
-  | "MOVED_AFTER_REQUEST_CANCELLATION"
-  | "REMOVED_AFTER_REQUEST_CANCELLATION"
-  | "ADDED_FOR_CREW_OFF_SHIFT"
-  | "MOVED_FOR_CREW_OFF_SHIFT"
-  | "REMOVED_FOR_CREW_OFF_SHIFT";
-
-export interface SlotAlterationReason {
-  id: number;
-  action: SlotAlterationAction;
-  description: string;
-  affectedRequestId: number;
-  slotId: number;
-  slotScheduleId: number;
-  causeRequestId: number | null;
-  causeCrewId: number | null;
-  crewId: number | null;
-  crewName: string | null;
-  plannedStart: string | null;
-  plannedEnd: string | null;
-}
-
 export interface Slot {
   requestId: number;
   fullAddress: string;
@@ -175,6 +149,4 @@ export interface ScheduleData {
   engineers: Engineer[];
   /** empty while the schedule is still being calculated */
   unassignedRequests: UnassignedRequest[];
-  /** reasons produced only by the automatic transition to this schedule version */
-  alterationReasons: SlotAlterationReason[];
 }
