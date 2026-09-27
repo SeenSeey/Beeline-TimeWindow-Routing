@@ -33,11 +33,25 @@ public record ScheduleTimelineDto(LocalDate targetDate,
     public static ScheduleTimelineDto from(Schedule schedule,
                                            List<UnassignedRequestDto> unassignedRequests,
                                            List<EngineerCrew> regionCrews) {
-        List<EngineerCrewRow> rows = new ArrayList<>(EngineerCrewRow.listFrom(schedule.getSlots()));
+        return from(schedule, unassignedRequests, regionCrews, Set.of());
+    }
+
+    /**
+     * The schedule's rows plus a row without slots for every other crew of the region;
+     * crews in {@code offShiftCrewIds} are marked as taken off shift for the schedule's date
+     */
+    public static ScheduleTimelineDto from(Schedule schedule,
+                                           List<UnassignedRequestDto> unassignedRequests,
+                                           List<EngineerCrew> regionCrews,
+                                           Set<Integer> offShiftCrewIds) {
+        List<EngineerCrewRow> rows = new ArrayList<>(EngineerCrewRow.listFrom(schedule.getSlots())
+                .stream()
+                .map(row -> row.withOffShift(offShiftCrewIds.contains(row.id())))
+                .toList());
         Set<Integer> crewsWithSlots = rows.stream().map(EngineerCrewRow::id).collect(Collectors.toSet());
         regionCrews.stream()
                 .filter(crew -> !crewsWithSlots.contains(crew.getId()))
-                .forEach(crew -> rows.add(EngineerCrewRow.of(crew, List.of())));
+                .forEach(crew -> rows.add(EngineerCrewRow.of(crew, List.of(), offShiftCrewIds.contains(crew.getId()))));
 
         return new ScheduleTimelineDto(
                 schedule.getTargetDate(),
@@ -56,7 +70,23 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                                   DictionaryDto vehicle,
                                   List<DictionaryDto> skills,
                                   List<EquipmentDto> equipment,
-                                  List<TimelineSlotDto> slots) {
+                                  List<TimelineSlotDto> slots,
+                                  boolean offShift) {
+
+        public EngineerCrewRow(int id,
+                               String name,
+                               LocalTime shiftStartTime,
+                               LocalTime shiftEndTime,
+                               DictionaryDto vehicle,
+                               List<DictionaryDto> skills,
+                               List<EquipmentDto> equipment,
+                               List<TimelineSlotDto> slots) {
+            this(id, name, shiftStartTime, shiftEndTime, vehicle, skills, equipment, slots, false);
+        }
+
+        public EngineerCrewRow withOffShift(boolean offShift) {
+            return new EngineerCrewRow(id, name, shiftStartTime, shiftEndTime, vehicle, skills, equipment, slots, offShift);
+        }
 
         public static List<EngineerCrewRow> listFrom(List<ScheduleSlot> slots) {
             if (slots.isEmpty()) {
@@ -83,6 +113,10 @@ public record ScheduleTimelineDto(LocalDate targetDate,
         }
 
         public static EngineerCrewRow of(EngineerCrew crew, List<TimelineSlotDto> slots) {
+            return of(crew, slots, false);
+        }
+
+        public static EngineerCrewRow of(EngineerCrew crew, List<TimelineSlotDto> slots, boolean offShift) {
             return new EngineerCrewRow(
                     crew.getId(),
                     crew.getName(),
@@ -91,7 +125,8 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                     Optional.ofNullable(crew.getVehicle()).map(DictionaryDto::from).orElse(null),
                     Optional.ofNullable(crew.getSkills()).orElse(List.of()).stream().map(DictionaryDto::from).toList(),
                     EquipmentDto.listFrom(crew.getEquipment()),
-                    slots
+                    slots,
+                    offShift
             );
         }
     }

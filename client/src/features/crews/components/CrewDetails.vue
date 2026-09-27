@@ -13,9 +13,19 @@
         Все исполнители
       </RouterLink>
 
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <h1 class="m-0 text-2xl font-semibold text-balance text-ink">{{ crew.name }}</h1>
-        <span class="mono text-sm text-muted">№{{ crew.id }}</span>
+      <div class="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h1 class="m-0 text-2xl font-semibold text-balance text-ink">{{ crew.name }}</h1>
+          <span class="mono text-sm text-muted">№{{ crew.id }}</span>
+        </div>
+
+        <CrewOffShiftAction
+          :crew-name="crew.name"
+          :pending="offShiftPending"
+          :done="offShiftDone"
+          :error="offShiftError"
+          @take-off-shift="emit('takeOffShift')"
+        />
       </div>
     </header>
 
@@ -52,11 +62,25 @@ import UiBadge from "@/components/ui/UiBadge.vue";
 import UiPanel from "@/components/ui/UiPanel.vue";
 import type { CrewDetailed, SkillKeyword } from "../types";
 import CrewKeyFacts from "./CrewKeyFacts.vue";
+import CrewOffShiftAction from "./CrewOffShiftAction.vue";
 import CrewRequestsPanel from "./CrewRequestsPanel.vue";
 import CrewRoutePanel from "./CrewRoutePanel.vue";
 
-const props = defineProps<{
-  crew: CrewDetailed;
+const props = withDefaults(
+  defineProps<{
+    crew: CrewDetailed;
+    /** taking the crew off shift is in flight */
+    offShiftPending?: boolean;
+    /** the crew was taken off shift from this page */
+    offShiftDone?: boolean;
+    /** why the last off-shift attempt failed */
+    offShiftError?: string | null;
+  }>(),
+  { offShiftPending: false, offShiftDone: false, offShiftError: null },
+);
+
+const emit = defineEmits<{
+  takeOffShift: [];
 }>();
 
 /** each skill in the colour of the job types it covers (as in the crews table) */

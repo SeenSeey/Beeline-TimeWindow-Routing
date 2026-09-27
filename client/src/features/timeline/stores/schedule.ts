@@ -6,7 +6,7 @@ import type { ScheduleData } from "../types";
 export type ScheduleLoadState = { kind: "loading" } | { kind: "ready"; data: ScheduleData } | ApiFailure;
 
 /** how often a schedule that is still being calculated is refetched */
-const CALCULATION_POLL_MS = 3000;
+const CALCULATION_POLL_MS = 1000;
 
 export const useScheduleStore = defineStore("timeline/schedule", () => {
   const state = ref<ScheduleLoadState>({ kind: "loading" });
@@ -67,9 +67,11 @@ export const useScheduleStore = defineStore("timeline/schedule", () => {
     if (!keepCurrentView) state.value = next;
     switching.value = false;
 
-    if (stillCalculating || keepCurrentView) {
-      pollTimer = setTimeout(() => void load(regionId, { background: true }), CALCULATION_POLL_MS);
-    }
+    if (stillCalculating || keepCurrentView) schedulePoll(regionId);
+  }
+
+  function schedulePoll(regionId: number): void {
+    pollTimer = setTimeout(() => void load(regionId, { background: true }), CALCULATION_POLL_MS);
   }
 
   /** Shows a schedule the server returned from another call (e.g. after saving an edit) */
@@ -78,6 +80,8 @@ export const useScheduleStore = defineStore("timeline/schedule", () => {
     stopPolling();
     switching.value = false;
     state.value = { kind: "ready", data };
+    // the server may still be recalculating it: refetch until it is ready, as load() does
+    if (data.status.keyword === "CALCULATING") schedulePoll(data.region.id);
   }
 
   return { state, switching, schedule, reset, fail, failWith, load, replace, stopPolling };

@@ -3,6 +3,8 @@ package stb.core.application.schedule;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -14,6 +16,7 @@ import stb.core.domain.exception.ScheduleNotFoundException;
 import stb.core.domain.model.Region;
 import stb.core.domain.model.RequestStatus;
 import stb.core.domain.model.Schedule;
+import stb.core.domain.repository.EngineerCrewOffShiftRecordRepository;
 import stb.core.domain.repository.EngineerCrewRepository;
 import stb.core.domain.repository.RegionRepository;
 import stb.core.domain.repository.RequestRepository;
@@ -30,6 +33,7 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
     private final RegionRepository regionRepository;
     private final RequestRepository requestRepository;
     private final EngineerCrewRepository engineerCrewRepository;
+    private final EngineerCrewOffShiftRecordRepository engineerCrewOffShiftRecordRepository;
 
     @Transactional(readOnly = true)
     public ScheduleTimelineDto execute(int regionId) {
@@ -50,11 +54,21 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
                 )
             );
 
+        // every crew of the region is shown, the ones taken off shift today marked as such
         return ScheduleTimelineDto.from(
             schedule,
             findUnassignedRequests(schedule, regionId),
-            engineerCrewRepository.findAllActiveByRegionIdAndTargetDate(regionId, targetDate)
+            engineerCrewRepository.findAllByRegionId(regionId),
+            findOffShiftCrewIds(regionId, targetDate)
         );
+    }
+
+    private Set<Integer> findOffShiftCrewIds(int regionId, LocalDate targetDate) {
+        return engineerCrewOffShiftRecordRepository
+            .findAllByEngineerCrewRegionIdAndOffShiftDate(regionId, targetDate)
+            .stream()
+            .map(record -> record.getEngineerCrew().getId())
+            .collect(Collectors.toSet());
     }
 
     private List<UnassignedRequestDto> findUnassignedRequests(Schedule schedule, int regionId) {

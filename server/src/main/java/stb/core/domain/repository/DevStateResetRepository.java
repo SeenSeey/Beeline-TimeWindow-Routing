@@ -27,6 +27,7 @@ public class DevStateResetRepository {
         entityManager.createQuery("delete from EngineerCrewEquipment").executeUpdate();
         entityManager.createQuery("delete from ScheduleSlot").executeUpdate();
         entityManager.createQuery("delete from Schedule").executeUpdate();
+        entityManager.createQuery("delete from EngineerCrewOffShiftRecord").executeUpdate();
         entityManager.createQuery("""
                 update Request request
                 set request.status = :status,
@@ -44,7 +45,12 @@ public class DevStateResetRepository {
 
     private void lockTables() {
         entityManager.createNativeQuery("""
-                lock table requests, schedules, schedule_slots, request_actions_audit, engineer_crew_equipment
+                lock table requests,
+                    schedules,
+                    schedule_slots,
+                    request_actions_audit,
+                    engineer_crew_equipment,
+                    engineer_crew_off_shift_records
                 in share row exclusive mode
                 """)
                 .executeUpdate();

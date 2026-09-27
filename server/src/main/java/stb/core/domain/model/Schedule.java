@@ -31,7 +31,7 @@ public class Schedule extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private Status status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
     @JoinColumn(name = "previous_schedule_id")
     private Schedule previousSchedule;
 
@@ -69,6 +69,10 @@ public class Schedule extends BaseEntity {
 
     public void addSlot(ScheduleSlot slot) {
         slots.add(ScheduleSlot.createFrom(this, slot));
+    }
+
+    public void markAsCalculating() {
+        setStatus(Status.CALCULATING);
     }
 
     public void markAsCreated() {

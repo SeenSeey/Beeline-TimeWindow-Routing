@@ -119,7 +119,8 @@ export function buildCrewRows(schedule: ScheduleData, axis: TimeAxis): CrewRow[]
     return { ...e, shift: [norm(e.shiftStartTime), norm(e.shiftEndTime)], requests, segments };
   });
 
-  // Crews ordered by name, A→Я; numbers in names compare as numbers ("Бригада 2" before "Бригада 10")
+  // Crews ordered by name, A→Я, whether on shift or not; numbers in names compare as numbers
+  // ("Бригада 2" before "Бригада 10")
   return rows.sort((a, b) => crewNameCollator.compare(a.name, b.name) || a.id - b.id);
 }
 

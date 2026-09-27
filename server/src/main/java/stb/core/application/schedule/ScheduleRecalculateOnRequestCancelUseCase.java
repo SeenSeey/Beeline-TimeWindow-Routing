@@ -63,8 +63,6 @@ public class ScheduleRecalculateOnRequestCancelUseCase {
         List<EngineerCrew> engineerCrews = engineerCrewRepository.findAllActiveByRegionIdAndTargetDate(region.getId(), targetDate);
         List<CrewLatestSlot> crewLatestSlots = scheduleSlotRepository.findLatestSlotsForCrewsByRegionId(region.getId());
 
-        crewLatestSlots.forEach(slot -> log.info("Координаты из базы: {} {}", slot.getLatitude(), slot.getLongitude()));
-
         List<ScheduleSlot> staticSlots = new ArrayList<>();
 
         for (ScheduleSlot slot : currentSchedule.getSlots()) {

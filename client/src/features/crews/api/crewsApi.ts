@@ -18,6 +18,14 @@ export async function fetchCrew(id: number): Promise<CrewDetailed | null> {
   return response.data?.payload ?? null;
 }
 
+/**
+ * Takes the crew off shift for today (204, no body); the server then recalculates the schedule without it.
+ * Answers 409 when the crew is already off shift today, 404 when there is no such crew.
+ */
+export async function takeCrewOffShift(id: number): Promise<void> {
+  await axios.patch(`/api/v1/crews/${id}/offShift`);
+}
+
 export async function fetchRegions(): Promise<RegionInfo[]> {
   const response = await axios.get<ApiResponse<RegionInfo[]>>("/api/v1/regions");
   return response.data?.payload ?? [];

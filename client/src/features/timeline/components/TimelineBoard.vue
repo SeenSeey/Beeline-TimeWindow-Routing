@@ -24,6 +24,7 @@
     <VisitTooltip />
     <ScheduleEditMenu />
     <VisitStatusMenu />
+    <CrewShiftMenu />
   </BoardLayout>
 </template>
 
@@ -33,6 +34,7 @@ import type { ScheduleData } from "../types";
 import BoardControls from "./BoardControls.vue";
 import BoardHeader from "./BoardHeader.vue";
 import BoardLayout from "./BoardLayout.vue";
+import CrewShiftMenu from "./CrewShiftMenu.vue";
 import CrewRoutePanel from "./CrewRoutePanel.vue";
 import ScheduleEditBar from "./ScheduleEditBar.vue";
 import ScheduleEditMenu from "./ScheduleEditMenu.vue";

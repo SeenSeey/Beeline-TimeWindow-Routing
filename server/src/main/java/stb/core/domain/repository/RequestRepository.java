@@ -61,4 +61,11 @@ public interface RequestRepository extends JpaRepository<Request, Integer>, JpaS
             AND r.status.keyword IN ('IDLE', 'ASSIGNED')
             """)
     List<Request> findAllForRescheduleByRegionId(int regionId);
+
+    @Query("""
+            SELECT r FROM Request r
+            WHERE r.assignedCrew.id = :assignedCrewId
+            AND r.status.keyword = 'ASSIGNED'
+            """)
+    List<Request> findAllIncomingByAssignedCrewId(int assignedCrewId);
 }

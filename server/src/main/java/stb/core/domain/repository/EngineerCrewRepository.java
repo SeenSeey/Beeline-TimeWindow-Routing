@@ -22,4 +22,6 @@ public interface EngineerCrewRepository extends JpaRepository<EngineerCrew, Inte
             )
             """)
     List<EngineerCrew> findAllActiveByRegionIdAndTargetDate(int regionId, LocalDate targetDate);
+
+    List<EngineerCrew> findAllByRegionId(int regionId);
 }

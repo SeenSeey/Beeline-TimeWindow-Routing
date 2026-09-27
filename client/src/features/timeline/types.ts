@@ -73,6 +73,8 @@ export interface Engineer {
   /** equipment the crew has on hand now; a request needing something missing here can't be moved to the crew */
   equipment: EquipmentOnHand[];
   slots: Slot[];
+  /** taken off shift for the schedule's date: shown on the board, but takes no requests */
+  offShift?: boolean;
 }
 
 /** EquipmentDto */

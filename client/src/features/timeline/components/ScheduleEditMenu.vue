@@ -106,7 +106,10 @@ const targetViolations = computed(() =>
   target.value ? (edit.violationsByRequest.get(target.value.requestId) ?? []) : [],
 );
 
-const otherCrews = computed(() => board.crews.filter((crew) => crew.id !== target.value?.crew?.id));
+// a crew taken off shift takes no requests
+const otherCrews = computed(() =>
+  board.crews.filter((crew) => crew.id !== target.value?.crew?.id && !crew.offShift),
+);
 
 function placeInto(crew: CrewRow): void {
   const current = target.value;

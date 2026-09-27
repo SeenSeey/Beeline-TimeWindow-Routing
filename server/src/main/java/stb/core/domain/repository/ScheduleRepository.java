@@ -2,6 +2,7 @@ package stb.core.domain.repository;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import stb.core.domain.model.Schedule;
@@ -23,6 +24,11 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Integer> {
             """)
     int countAllByTargetDate(LocalDate targetDate);
 
+    @Query("""
+            DELETE FROM Schedule s
+            WHERE s.status = :status
+            """)
+    @Modifying
     long deleteAllByStatus(Schedule.Status status);
 
     List<Schedule> findAllByTargetDateAndStatus(LocalDate targetDate, Schedule.Status status);

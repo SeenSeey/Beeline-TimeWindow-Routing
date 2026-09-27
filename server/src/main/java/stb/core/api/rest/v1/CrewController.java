@@ -10,6 +10,7 @@ import stb.core.api.rest.v1.dto.ServerResponse;
 import stb.core.api.utils.PaginationUtils;
 import stb.core.application.crew.CrewEquipmentAddUseCase;
 import stb.core.application.crew.CrewFindByIdUseCase;
+import stb.core.application.crew.CrewOffShiftUseCase;
 import stb.core.application.crew.CrewSearchUseCase;
 import stb.core.domain.dto.CrewDetailedDto;
 import stb.core.domain.dto.CrewDto;
@@ -24,6 +25,7 @@ public class CrewController {
     private final CrewSearchUseCase crewSearchUseCase;
     private final CrewFindByIdUseCase crewFindByIdUseCase;
     private final CrewEquipmentAddUseCase crewEquipmentAddUseCase;
+    private final CrewOffShiftUseCase crewOffShiftUseCase;
 
     @GetMapping
     public ResponseEntity<ServerResponse<PageResponseDto<CrewDto>>> search(
@@ -49,5 +51,11 @@ public class CrewController {
                                                                         @RequestBody CrewEquipmentAddDto dto) {
         crewEquipmentAddUseCase.execute(id, dto);
         return ResponseEntity.ok(ServerResponse.ok(HttpStatus.OK.value(), crewFindByIdUseCase.execute(id)));
+    }
+
+    @PatchMapping("/{crewId}/offShift")
+    public ResponseEntity<?> takeCrewOffShift(@PathVariable int crewId) {
+        crewOffShiftUseCase.execute(crewId);
+        return ResponseEntity.noContent().build();
     }
 }

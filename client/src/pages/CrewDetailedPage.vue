@@ -1,5 +1,12 @@
 <template>
-  <CrewDetails v-if="state.kind === 'ready'" :crew="state.data" />
+  <CrewDetails
+    v-if="state.kind === 'ready'"
+    :crew="state.data"
+    :off-shift-pending="store.offShiftPending"
+    :off-shift-done="store.offShiftDone"
+    :off-shift-error="store.offShiftError"
+    @take-off-shift="store.takeOffShift(id)"
+  />
 
   <CrewDetailsMessage v-else-if="state.kind === 'loading'" :id="id" kind="loading" />
 

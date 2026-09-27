@@ -37,6 +37,14 @@ public interface ScheduleSlotRepository extends JpaRepository<ScheduleSlot, Inte
                                                            @Param("crewId") int crewId,
                                                            @Param("type") ScheduleSlot.SlotType type);
 
+    @Query("""
+            SELECT s FROM ScheduleSlot s
+            WHERE s.request.assignedCrew.id = :crewId
+            AND s.schedule.targetDate = :targetDate
+            ORDER BY s.startTimeWindow
+            """)
+    List<ScheduleSlot> findAllIncomingSlotsByTargetDateAndCrewId(LocalDate targetDate, int crewId);
+
     @Query(value = """
             SELECT slot.* FROM schedule_slots slot
             JOIN schedules schedule ON slot.schedule_id = schedule.id
@@ -84,4 +92,14 @@ public interface ScheduleSlotRepository extends JpaRepository<ScheduleSlot, Inte
             WHERE ls.region_id = :regionId
             """, nativeQuery = true)
     List<CrewLatestSlot> findLatestSlotsForCrewsByRegionId(int regionId);
+
+    @Query("""
+            SELECT s FROM ScheduleSlot s
+            WHERE s.request.id = :requestId
+            AND NOT EXISTS (
+                SELECT 1 FROM Schedule sc
+                WHERE sc.previousSchedule.id = s.id
+            )
+            """)
+    ScheduleSlot findActiveSlotByRequestId(int requestId);
 }

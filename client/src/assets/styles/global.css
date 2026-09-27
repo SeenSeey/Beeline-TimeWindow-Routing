@@ -54,6 +54,7 @@
   --region-2: #ea580c;
   --region-3: #16a34a;
   --unassigned: #e11d48;
+  --warning: #d4a106; /* yellow: a crew taken off shift */
   --slot-canceled: #f3f4f6; /* gray-100: a canceled work bar */
   --tooltip-bg: #0f141c;
   --tooltip-ink: #ffffff;
@@ -84,6 +85,7 @@
     --region-2: #fb923c;
     --region-3: #22c55e;
     --unassigned: #f43f5e;
+    --warning: #facc15;
     --slot-canceled: #3b4658; /* a lifted slate: reads as light grey among the dark panels */
     --tooltip-bg: #1f2733;
     --tooltip-ink: #ffffff;
@@ -112,6 +114,7 @@
   --region-2: #fb923c;
   --region-3: #22c55e;
   --unassigned: #f43f5e;
+  --warning: #facc15;
   --slot-canceled: #3b4658;
   --tooltip-bg: #1f2733;
   --tooltip-ink: #ffffff;

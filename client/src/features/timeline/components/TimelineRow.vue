@@ -4,8 +4,10 @@
     :class="selected ? 'bg-accent-soft' : 'hover:bg-canvas'"
     tabindex="0"
     :aria-pressed="selected"
+    aria-haspopup="menu"
     @click="emit('select')"
     @keydown.enter.space.prevent="emit('select')"
+    @contextmenu="onContextMenu"
   >
     <!-- Sticky crew label: opaque background mirrors the row's hover/selected state -->
     <div
@@ -45,6 +47,7 @@
       <UiBadge v-if="edit.active && edit.changedCrewIds.has(crew.id)" color="var(--accent)" class="mt-1 w-fit">
         изменено
       </UiBadge>
+      <UiBadge v-if="crew.offShift" color="var(--warning)" class="mt-1 w-fit">снят со смены</UiBadge>
     </div>
 
     <!-- Track; in edit mode also a drop target for requests dragged from other rows or the unassigned list -->
@@ -62,9 +65,10 @@
         :style="{ left: scale.left(h * 60) }"
       ></div>
 
+      <!-- the shift; faded out when the crew was taken off it -->
       <div
         class="absolute top-[7px] bottom-[7px] rounded-md"
-        :class="selected ? 'bg-accent/10' : 'bg-shift'"
+        :class="[selected ? 'bg-accent/10' : 'bg-shift', { 'opacity-40': crew.offShift }]"
         :style="{ left: scale.left(crew.shift[0]), width: scale.width(crew.shift[0], crew.shift[1]) }"
       ></div>
 
@@ -99,7 +103,7 @@
         class="absolute top-2 ps-2 text-xs text-faint"
         :style="{ left: scale.left(crew.shift[0]) }"
       >
-        без заявок
+        {{ crew.offShift ? "снят со смены" : "без заявок" }}
       </span>
     </div>
   </div>
@@ -113,6 +117,7 @@ import { formatTime } from "../model/format";
 import { axisMinuteToTime, decodeDragPayload, DRAG_REQUEST_TYPE, indexByDropMinute } from "../model/scheduleDraft";
 import type { CrewRow, TimeScale } from "../model/timeline";
 import { useBoardStore } from "../stores/board";
+import { useCrewShiftStore } from "../stores/crewShift";
 import { useScheduleEditStore } from "../stores/scheduleEdit";
 import type { JobTypeKeyword } from "../types";
 import TimelineWorkBar from "./TimelineWorkBar.vue";
@@ -135,6 +140,24 @@ const emit = defineEmits<{
 
 const board = useBoardStore();
 const edit = useScheduleEditStore();
+const shiftStore = useCrewShiftStore();
+
+/**
+ * Right-click on the row (the work bars have their own menu): the crew menu — take it off shift.
+ * Not in edit mode: the server's recalculation would clash with the unsaved draft.
+ */
+function onContextMenu(event: MouseEvent): void {
+  if (edit.active) return;
+  event.preventDefault();
+  // a keyboard-opened context menu reports no pointer position: place it under the crew's label
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  const fromKeyboard = event.clientX === 0 && event.clientY === 0;
+  shiftStore.openMenu({
+    crewId: props.crew.id,
+    x: fromKeyboard ? rect.left : event.clientX,
+    y: fromKeyboard ? rect.bottom : event.clientY,
+  });
+}
 
 // `?? []`: a server from before skills were added to the schedule doesn't send them
 const skills = computed(() => props.crew.skills ?? []);
@@ -148,8 +171,9 @@ const equipmentText = computed(() =>
 /** a request is being dragged over this row */
 const dropHover = ref(false);
 
+// a crew taken off shift takes no requests, so its row is no drop target
 const carriesRequest = (event: DragEvent): boolean =>
-  edit.active && !!event.dataTransfer?.types.includes(DRAG_REQUEST_TYPE);
+  edit.active && !props.crew.offShift && !!event.dataTransfer?.types.includes(DRAG_REQUEST_TYPE);
 
 function onDragOver(event: DragEvent): void {
   if (!carriesRequest(event) || !event.dataTransfer) return;
