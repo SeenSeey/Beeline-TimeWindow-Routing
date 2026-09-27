@@ -5,7 +5,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Objects;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.function.Function;
 
 @Entity
 @Table(name = "alteration_reasons", uniqueConstraints = @UniqueConstraint(
@@ -18,6 +20,8 @@ import java.util.Objects;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder(access = AccessLevel.PROTECTED)
 public class AlterationReason extends BaseEntity {
+
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "schedule_id", nullable = false)
@@ -98,30 +102,58 @@ public class AlterationReason extends BaseEntity {
                 .build();
     }
 
+    public String getDescription() {
+        return getType().descriptionBuilder.apply(this);
+    }
+
     public enum Type {
-        INITIAL_NO_AVAILABLE_TIME_SLOT,
+        INITIAL_NO_AVAILABLE_TIME_SLOT(reason -> ""),
 
-        ADDED_FOR_HIGHER_PRIORITY_REQUEST,
-        REASSIGNED_FOR_HIGHER_PRIORITY_REQUEST,
-        REMOVED_FOR_HIGHER_PRIORITY_REQUEST,
-        TIME_CHANGED_FOR_HIGHER_PRIORITY_REQUEST,
+        ADDED_FOR_HIGHER_PRIORITY_REQUEST(reason -> ""),
+        REASSIGNED_FOR_HIGHER_PRIORITY_REQUEST(reason -> ""),
+        REMOVED_FOR_HIGHER_PRIORITY_REQUEST(reason -> "Заявка снята с расписания из-за срочной заявки №%d".formatted(reason.getCauseRequest().getId())),
+        TIME_CHANGED_FOR_HIGHER_PRIORITY_REQUEST(reason -> ""),
 
-        ADDED_AFTER_REQUEST_CANCELLATION,
-        REMOVED_AFTER_REQUEST_CANCELLATION,
-        ADDED_FOR_CREW_OFF_SHIFT,
-        REMOVED_FOR_CREW_OFF_SHIFT,
-        REASSIGNED_FOR_CREW_OFF_SHIFT,
+        ADDED_AFTER_REQUEST_CANCELLATION(reason -> ""),
+        REMOVED_AFTER_REQUEST_CANCELLATION(reason -> ""),
+        ADDED_FOR_CREW_OFF_SHIFT(reason -> ""),
+        REMOVED_FOR_CREW_OFF_SHIFT(reason -> ""),
+        REASSIGNED_FOR_CREW_OFF_SHIFT(reason -> ""),
+
+        // TODO: проверить нужно ли
         // перемещения, объяснимые без контекста пересчёта: хранят прежнюю позицию заявки
-        REASSIGNED,
-        RESCHEDULED_AFTER_INSERTION,
-        RESCHEDULED_AFTER_REMOVAL,
-        RESCHEDULED,
-        NO_CREW_WITH_REQUIRED_SKILL,
-        NO_CREW_WITH_REQUIRED_VEHICLE,
-        NO_CAPACITY_FOR_REQUIRED_EQUIPMENT,
-        NO_REQUIRED_EQUIPMENT_IN_STOCK,
+        REASSIGNED(reason -> ""),
+        RESCHEDULED_AFTER_INSERTION(reason -> ""),
+        RESCHEDULED_AFTER_REMOVAL(reason -> ""),
+        RESCHEDULED(reason -> ""),
+        NO_CREW_WITH_REQUIRED_SKILL(reason -> ""),
+        NO_CREW_WITH_REQUIRED_VEHICLE(reason -> ""),
+        NO_CAPACITY_FOR_REQUIRED_EQUIPMENT(reason -> ""),
+        NO_REQUIRED_EQUIPMENT_IN_STOCK(reason -> "");
 
         // TODO: проверить, нужно ли
-//        NO_AVAILABLE_TIME_SLOT
+        // NO_AVAILABLE_TIME_SLOT
+
+        private final Function<AlterationReason, String> descriptionBuilder;
+
+        Type(Function<AlterationReason, String> descriptionBuilder) {
+            this.descriptionBuilder = descriptionBuilder;
+        }
+
+        private String formatSkillReason(Request request) {
+            List<String> skills = request.getJobType().getRequiredSkills().stream()
+                    .map(skill -> "«%s»".formatted(skill.getDisplayName()))
+                    .toList();
+
+            if (skills.isEmpty()) {
+                return "У типа работ «%s» не указаны навыки, поэтому ни одна бригада не подходит".formatted(request.getJobType().getDisplayName());
+            }
+
+            if (skills.size() == 1) {
+                return "Среди бригад на смене нет бригады с навыком %s".formatted(skills.getFirst());
+            }
+
+            return "Среди бригад на смене нет бригады ни с одним из навыков: %s".formatted(String.join(", ", skills));
+        }
     }
 }

@@ -1,4 +1,4 @@
-package stb.core.application.support.audit;
+package stb.core.domain.service;
 
 import org.springframework.stereotype.Component;
 import stb.core.domain.dto.ScheduleHistoryResult;
@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.stream.Stream;
 
 @Component
-public class RequestActionAuditFactory {
+public class RequestActionAuditService {
 
-    public List<RequestActionAudit> from(ScheduleHistoryResult scheduleHistoryResult) {
+    public List<RequestActionAudit> createFrom(ScheduleHistoryResult scheduleHistoryResult) {
         List<RequestActionAudit> addedToScheduleAudit = scheduleHistoryResult.assigned()
                 .stream()
                 .map(slot -> RequestActionAudit.assigned(slot.getRequest(), slot.getEngineerCrew(), slot.getStartTimeWindow(), slot.getEndTimeWindow()))

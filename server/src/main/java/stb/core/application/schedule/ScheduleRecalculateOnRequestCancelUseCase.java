@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import stb.core.application.support.audit.RequestActionAuditFactory;
+import stb.core.domain.service.RequestActionAuditService;
 import stb.core.domain.dto.ScheduleHistoryResult;
 import stb.core.domain.exception.RequestNotFoundException;
 import stb.core.domain.model.*;
@@ -22,7 +22,7 @@ public class ScheduleRecalculateOnRequestCancelUseCase {
     private final ScheduleSlotRepository scheduleSlotRepository;
     private final AlterationReasonRepository reasonRepository;
     private final ScheduleRecalculationService scheduleRecalculationService;
-    private final RequestActionAuditFactory auditFactory;
+    private final RequestActionAuditService auditFactory;
     private final RequestActionAuditRepository requestActionAuditRepository;
 
     @Transactional
@@ -44,7 +44,7 @@ public class ScheduleRecalculateOnRequestCancelUseCase {
         }
 
         ScheduleHistoryResult result = scheduleRecalculationService.recalculateSchedule(region, targetDate);
-        requestActionAuditRepository.saveAll(auditFactory.from(result));
+        requestActionAuditRepository.saveAll(auditFactory.createFrom(result));
 
 //        List<AlterationReason> reasons = Stream.of(
 //                        result.assigned().stream().map(slot -> AlterationReason.addedDueToEmergency(result.schedule(), slot.getRequest(), emergencyRequest)).toList(),

@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import stb.core.application.support.reason.AlterationReasonFormatter;
 import stb.core.domain.dto.AlterationReasonDto;
 import stb.core.domain.dto.ScheduleTimelineDto;
 import stb.core.domain.dto.UnassignedRequestDto;
@@ -38,7 +37,6 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
     private final EngineerCrewRepository engineerCrewRepository;
     private final EngineerCrewOffShiftRecordRepository engineerCrewOffShiftRecordRepository;
     private final AlterationReasonRepository reasonRepository;
-    private final AlterationReasonFormatter reasonFormatter;
 
     @Transactional(readOnly = true)
     public ScheduleTimelineDto execute(int regionId) {
@@ -79,7 +77,7 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
 
     private List<AlterationReasonDto> findAlterationReasons(Schedule schedule) {
         return reasonRepository.findAllDistinctByScheduleIdOrderById(schedule.getId()).stream()
-                .map(reason -> AlterationReasonDto.from(reason, reasonFormatter.format(reason)))
+                .map(AlterationReasonDto::from)
                 .toList();
     }
 
