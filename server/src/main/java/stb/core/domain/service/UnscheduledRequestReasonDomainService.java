@@ -1,6 +1,7 @@
 package stb.core.domain.service;
 
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import stb.core.domain.model.AlterationReason;
 import stb.core.domain.model.EngineerCrew;
 import stb.core.domain.model.EngineerCrewEquipment;
@@ -16,7 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Component
+@Service
 public class UnscheduledRequestReasonDomainService {
 
     public List<AlterationReason> analyze(Schedule schedule,
