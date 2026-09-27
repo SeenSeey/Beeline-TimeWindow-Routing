@@ -68,7 +68,6 @@ public class ScheduleEditUseCase {
     @Transactional
     public void apply(int regionId, ScheduleEditDto edit) {
         EditPlan plan = plan(regionId, edit);
-
         List<SchedulePreviewDto.Violation> violations = plan.violations();
         if (!violations.isEmpty()) {
             throw new DomainException.ValidationException(violations.stream()
@@ -86,7 +85,6 @@ public class ScheduleEditUseCase {
                         && editedCrewIds.contains(slot.getRequest().getAssignedCrew().getId()))
                 .toList();
         schedule.getSlots().removeAll(replacedSlots);
-
         scheduleSlotRepository.deleteAll(replacedSlots);
 
         for (Request request : plan.removedRequests()) {
@@ -101,8 +99,10 @@ public class ScheduleEditUseCase {
                 EngineerCrew previousCrew = request.getAssignedCrew();
                 if (previousCrew == null) {
                     request.assignCrew(crew, statuses);
+                    audit(request, schedule, RequestActionAudit.Action.INITIAL_ASSIGNATION, crew, now);
                 } else if (previousCrew.getId() != crew.getId()) {
                     request.assignCrew(crew, statuses);
+                    audit(request, schedule, RequestActionAudit.Action.ASSIGNED_CREW_CHANGE, crew, now);
                 }
                 schedule.addSlot(request, crew, ScheduleSlot.SlotType.REQUEST, visit.arrivalTime(), visit.startTime(), visit.endTime());
             }
