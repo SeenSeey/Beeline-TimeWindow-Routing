@@ -6,10 +6,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import stb.core.domain.model.*;
 import stb.core.domain.port.route.dto.Location;
-import stb.core.domain.repository.EngineerCrewRepository;
-import stb.core.domain.repository.RequestRepository;
-import stb.core.domain.repository.RequestStatusRepository;
-import stb.core.domain.repository.ScheduleRepository;
+import stb.core.domain.repository.*;
 import stb.core.domain.service.CrewEquipmentDomainService;
 import stb.core.domain.service.RouteDomainService;
 import stb.core.domain.service.SpeedProfileDomainService;
@@ -40,11 +37,15 @@ public class ScheduleCalculateUseCase {
     private final RouteDomainService routeDomainService;
     private final SpeedProfileDomainService speedProfileDomainService;
     private final CrewEquipmentDomainService crewEquipmentDomainService;
+    private final AlterationReasonRepository reasonRepository;
+    private final RequestActionAuditRepository requestActionAuditRepository;
 
     @Transactional
     public void execute(LocalDate targetDate) {
         List<Schedule> schedules = scheduleRepository.findAllByTargetDateAndStatus(targetDate, Schedule.Status.CALCULATING);
         List<RequestStatus> statuses = requestStatusRepository.findAll();
+        List<RequestActionAudit> audits = new ArrayList<>();
+        List<AlterationReason> reasons = new ArrayList<>();
 
         for (Schedule schedule : schedules) {
             Region region = schedule.getRegion();
@@ -78,26 +79,36 @@ public class ScheduleCalculateUseCase {
             List<Request> assignedRequests = new ArrayList<>();
 
             for (OutputSlotDto slotDto : result.requestDtoList()) {
+                Request request = requestById.get(slotDto.requestId());
+
                 if (slotDto.engineerId() == null || slotDto.serviceStartTime() == null || slotDto.departureTime() == null) {
                     log.warn("Не удалось распределить заявку {} в текущее расписание региона {}", slotDto.requestId(), region.getDisplayName());
+                    reasons.add(AlterationReason.initialNoAvailableTimeSlots(schedule, request));
                     continue;
                 }
 
-                Request request = requestById.get(slotDto.requestId());
+                EngineerCrew crew = crewById.get(slotDto.engineerId());
 
-                request.assignCrew(crewById.get(slotDto.engineerId()), statuses);
+                request.assignCrew(crew, statuses);
                 assignedRequests.add(request);
                 schedule.addSlot(
                         request,
+                        crew,
                         ScheduleSlot.SlotType.REQUEST,
                         slotDto.arrivalTime(),
                         slotDto.serviceStartTime(),
                         slotDto.departureTime()
                 );
+
+                audits.add(RequestActionAudit.assigned(request, crew, slotDto.serviceStartTime(), slotDto.departureTime()));
             }
 
             crewEquipmentDomainService.issueInitialLoadout(engineerCrews, assignedRequests);
             schedule.markAsCreated();
         }
+
+        scheduleRepository.saveAll(schedules);
+        // reasonRepository.saveAll(reasons);
+        // requestActionAuditRepository.saveAll(audits);
     }
 }

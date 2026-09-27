@@ -32,6 +32,10 @@ public interface ScheduleSlotRepository extends JpaRepository<ScheduleSlot, Inte
             WHERE sc.targetDate = :targetDate
             AND r.assignedCrew.id = :crewId
             AND s.type = :type
+            AND NOT EXISTS (
+                SELECT nextSchedule FROM Schedule nextSchedule
+                WHERE nextSchedule.previousSchedule.id = sc.id
+            )
             ORDER BY s.startTimeWindow
             """)
     List<ScheduleSlot> findAllByTargetDateAndCrewIdAndType(@Param("targetDate") LocalDate targetDate,

@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import stb.core.domain.dto.AlterationReasonDto;
 import stb.core.domain.dto.ScheduleTimelineDto;
 import stb.core.domain.dto.UnassignedRequestDto;
 import stb.core.domain.exception.RegionNotFoundException;
@@ -16,6 +17,7 @@ import stb.core.domain.exception.ScheduleNotFoundException;
 import stb.core.domain.model.Region;
 import stb.core.domain.model.RequestStatus;
 import stb.core.domain.model.Schedule;
+import stb.core.domain.repository.AlterationReasonRepository;
 import stb.core.domain.repository.EngineerCrewOffShiftRecordRepository;
 import stb.core.domain.repository.EngineerCrewRepository;
 import stb.core.domain.repository.RegionRepository;
@@ -34,6 +36,7 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
     private final RequestRepository requestRepository;
     private final EngineerCrewRepository engineerCrewRepository;
     private final EngineerCrewOffShiftRecordRepository engineerCrewOffShiftRecordRepository;
+    private final AlterationReasonRepository reasonRepository;
 
     @Transactional(readOnly = true)
     public ScheduleTimelineDto execute(int regionId) {
@@ -59,7 +62,8 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
             schedule,
             findUnassignedRequests(schedule, regionId),
             engineerCrewRepository.findAllByRegionId(regionId),
-            findOffShiftCrewIds(regionId, targetDate)
+            findOffShiftCrewIds(regionId, targetDate),
+            findAlterationReasons(schedule)
         );
     }
 
@@ -69,6 +73,12 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
             .stream()
             .map(record -> record.getEngineerCrew().getId())
             .collect(Collectors.toSet());
+    }
+
+    private List<AlterationReasonDto> findAlterationReasons(Schedule schedule) {
+        return reasonRepository.findAllDistinctByScheduleIdOrderById(schedule.getId()).stream()
+                .map(AlterationReasonDto::from)
+                .toList();
     }
 
     private List<UnassignedRequestDto> findUnassignedRequests(Schedule schedule, int regionId) {

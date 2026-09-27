@@ -25,6 +25,7 @@ public class DevStateResetRepository {
 
         entityManager.createQuery("delete from RequestActionAudit").executeUpdate();
         entityManager.createQuery("delete from EngineerCrewEquipment").executeUpdate();
+        entityManager.createQuery("delete from AlterationReason").executeUpdate();
         entityManager.createQuery("delete from ScheduleSlot").executeUpdate();
         entityManager.createQuery("delete from Schedule").executeUpdate();
         entityManager.createQuery("delete from EngineerCrewOffShiftRecord").executeUpdate();
@@ -48,6 +49,7 @@ public class DevStateResetRepository {
                 lock table requests,
                     schedules,
                     schedule_slots,
+                    alteration_reasons,
                     request_actions_audit,
                     engineer_crew_equipment,
                     engineer_crew_off_shift_records

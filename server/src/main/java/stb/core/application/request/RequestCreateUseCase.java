@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+// import stb.core.application.support.audit.RequestActionAuditWriter;
 import stb.core.domain.dto.GeoPosition;
 import stb.core.domain.dto.RequestCreateDto;
 import stb.core.domain.dto.RequestDto;
@@ -13,11 +14,13 @@ import stb.core.domain.exception.*;
 import stb.core.domain.model.JobType;
 import stb.core.domain.model.Region;
 import stb.core.domain.model.Request;
+// import stb.core.domain.model.RequestActionAudit;
 import stb.core.domain.model.Schedule;
 import stb.core.domain.port.Geocoder;
 import stb.core.domain.repository.*;
 
 import java.time.LocalDate;
+// import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor
@@ -33,6 +36,7 @@ public class RequestCreateUseCase {
     private final Geocoder geocoder;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final ScheduleRepository scheduleRepository;
+    // private final RequestActionAuditWriter auditWriter;
 
     @Transactional
     public RequestDto execute(RequestCreateDto createDto) {
@@ -74,6 +78,7 @@ public class RequestCreateUseCase {
         }
 
         requestRepository.save(request);
+        // auditWriter.save(RequestActionAudit.requestCreated(request, LocalDateTime.now()));
 
         if (request.isUrgent()) {
             LocalDate targetDate = LocalDate.now();

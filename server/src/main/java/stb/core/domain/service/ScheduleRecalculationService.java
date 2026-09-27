@@ -3,6 +3,7 @@ package stb.core.domain.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import stb.core.domain.dto.ScheduleHistoryResult;
 import stb.core.domain.exception.ScheduleNotFoundException;
 import stb.core.domain.model.*;
 import stb.core.domain.port.route.dto.Location;
@@ -11,7 +12,6 @@ import stb.core.domain.repository.*;
 import stb.core.domain.repository.projection.CrewLatestSlot;
 import stb.core.domain.repository.projection.EngineerCrewSlotsCount;
 import stb.core.domain.service.scheduler.ScheduleAssemblerDomainService;
-import stb.core.domain.service.scheduler.dto.ScheduleCalculationResult;
 import stb.core.domain.service.scheduler.dto.ScheduleContext;
 import stb.core.domain.service.scheduler.dto.TravelMatrix;
 import stb.core.domain.service.scheduler.dto.output.OutputSlotDto;
@@ -38,7 +38,7 @@ public class ScheduleRecalculationService {
     private final SpeedProfileDomainService speedProfileDomainService;
     private final RouteDomainService routeDomainService;
 
-    public void recalculateSchedule(Region region, LocalDate targetDate) {
+    public ScheduleHistoryResult recalculateSchedule(Region region, LocalDate targetDate) {
         Schedule currentSchedule = scheduleRepository.findByTargetDateAndRegionId(targetDate, region.getId())
                 .orElseThrow(() -> new ScheduleNotFoundException("Расписание на %s для региона %s не найдено".formatted(targetDate, region.getId())));
 
@@ -59,6 +59,10 @@ public class ScheduleRecalculationService {
                 .filter(slot -> slot.getRequest().isInProgress() || slot.getRequest().isCompleted())
                 .toList();
 
+        Map<Integer, ScheduleSlot> slotByRequestId = currentSchedule.getSlots()
+                .stream()
+                .collect(Collectors.toMap(slot -> slot.getRequest().getId(), Function.identity()));
+
         List<Location> points = Stream.concat(Stream.concat(
                         Stream.of(Location.from(region)),
                         requestsToReschedule.stream().map(Location::from)),
@@ -77,33 +81,70 @@ public class ScheduleRecalculationService {
                 .replanning(true)
                 .build();
 
-        ScheduleCalculationResult result = scheduleAssemblerDomainService.createSchedule(context);
+        stb.core.domain.service.scheduler.dto.ScheduleCalculationResult result = scheduleAssemblerDomainService.createSchedule(context);
 
         Schedule schedule = Schedule.createFrom(currentSchedule);
         staticSlots.forEach(schedule::addSlot);
 
-        // TODO: отмечать историю
+        List<ScheduleSlot> assigned = new ArrayList<>();
+        List<ScheduleSlot> reassigned = new ArrayList<>();
+        List<Request> unassigned = new ArrayList<>();
+        List<ScheduleSlot> startTimeChanged = new ArrayList<>();
+
         for (OutputSlotDto slotDto : result.requestDtoList()) {
             Request request = requestById.get(slotDto.requestId());
 
             if (slotDto.engineerId() == null || slotDto.serviceStartTime() == null || slotDto.departureTime() == null) {
                 log.warn("Не удалось распределить заявку {} в текущее расписание региона {}", slotDto.requestId(), region.getDisplayName());
                 request.unassign(statuses);
+                unassigned.add(request);
                 continue;
             }
 
             request.assignCrew(crewById.get(slotDto.engineerId()), statuses);
 
-            schedule.addSlot(
+            ScheduleSlot slot = schedule.addSlot(
                     request,
+                    crewById.get(slotDto.engineerId()),
                     ScheduleSlot.SlotType.REQUEST,
                     slotDto.arrivalTime(),
                     slotDto.serviceStartTime(),
                     slotDto.departureTime()
             );
+
+            ScheduleSlot previousSlot = slotByRequestId.get(request.getId());
+
+            if (previousSlot != null) {
+                if (slotStartTimeChanged(previousSlot, slot)) {
+                    startTimeChanged.add(slot);
+                } else if (slotCrewChanged(previousSlot, slot)) {
+                    reassigned.add(slot);
+                }
+            } else {
+                assigned.add(slot);
+            }
         }
 
         scheduleRepository.save(schedule);
         requestRepository.saveAll(requestsToReschedule);
+
+        return new ScheduleHistoryResult(startTimeChanged, assigned, reassigned, unassigned, schedule);
+    }
+
+    private boolean slotStartTimeChanged(ScheduleSlot previousSlot, ScheduleSlot currentSlot) {
+        if (previousSlot == null || currentSlot == null) {
+            return false;
+        }
+
+        return !(previousSlot.getStartTimeWindow().equals(currentSlot.getStartTimeWindow())
+                && previousSlot.getEndTimeWindow().equals(currentSlot.getEndTimeWindow()));
+    }
+
+    private boolean slotCrewChanged(ScheduleSlot previousSlot, ScheduleSlot currentSlot) {
+        if (previousSlot == null || currentSlot == null) {
+            return false;
+        }
+
+        return previousSlot.getEngineerCrew().getId() != currentSlot.getEngineerCrew().getId();
     }
 }

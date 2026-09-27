@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import stb.core.domain.service.RequestActionAuditService;
+import stb.core.domain.dto.ScheduleHistoryResult;
 import stb.core.domain.exception.RequestNotFoundException;
 import stb.core.domain.model.*;
 import stb.core.domain.repository.*;
@@ -18,7 +20,10 @@ public class ScheduleRecalculateOnRequestCancelUseCase {
 
     private final RequestRepository requestRepository;
     private final ScheduleSlotRepository scheduleSlotRepository;
+    private final AlterationReasonRepository reasonRepository;
     private final ScheduleRecalculationService scheduleRecalculationService;
+    private final RequestActionAuditService auditFactory;
+    private final RequestActionAuditRepository requestActionAuditRepository;
 
     @Transactional
     public void execute(int requestId) {
@@ -38,7 +43,18 @@ public class ScheduleRecalculateOnRequestCancelUseCase {
             return;
         }
 
-        scheduleRecalculationService.recalculateSchedule(region, targetDate);
+        ScheduleHistoryResult result = scheduleRecalculationService.recalculateSchedule(region, targetDate);
+        // requestActionAuditRepository.saveAll(auditFactory.createFrom(result));
+
+//        List<AlterationReason> reasons = Stream.of(
+//                        result.assigned().stream().map(slot -> AlterationReason.addedDueToEmergency(result.schedule(), slot.getRequest(), emergencyRequest)).toList(),
+//                        result.startTimeChanged().stream().map(slot -> AlterationReason.startTimeChangedDueToEmergency(result.schedule(), slot.getRequest(), emergencyRequest)).toList(),
+//                        result.unassigned().stream().map(request -> AlterationReason.removedDueToEmergency(result.schedule(), request, emergencyRequest)).toList()
+//                )
+//                .flatMap(Collection::stream)
+//                .toList();
+
+        // reasonRepository.saveAll(reasons);
 
         log.info("Расписание для региона {} пересчитано в связи с отменой заявки {}", region.getDisplayName(), canceledRequest.getId());
     }

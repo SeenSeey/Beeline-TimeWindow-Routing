@@ -3,10 +3,7 @@ package stb.core.application.schedule;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import stb.core.domain.dto.ScheduleEditDto;
-import stb.core.domain.dto.SchedulePreviewDto;
-import stb.core.domain.dto.ScheduleTimelineDto;
-import stb.core.domain.dto.UnassignedRequestDto;
+import stb.core.domain.dto.*;
 import stb.core.domain.exception.DomainException;
 import stb.core.domain.exception.RequestNotFoundException;
 import stb.core.domain.exception.ScheduleNotFoundException;
@@ -16,7 +13,6 @@ import stb.core.domain.service.CrewRouteTimingDomainService;
 import stb.core.domain.service.CrewRouteTimingDomainService.PlannedVisit;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -26,12 +22,12 @@ import java.util.stream.Collectors;
 public class ScheduleEditUseCase {
 
     private final ScheduleRepository scheduleRepository;
-    private final ScheduleSlotRepository scheduleSlotRepository;
     private final EngineerCrewRepository engineerCrewRepository;
     private final RequestRepository requestRepository;
     private final RequestStatusRepository requestStatusRepository;
-    private final RequestActionAuditRepository requestActionAuditRepository;
+    private final ScheduleSlotRepository scheduleSlotRepository;
     private final CrewRouteTimingDomainService crewRouteTimingDomainService;
+    private final RequestActionAuditRepository requestActionAuditRepository;
 
     private record CrewPlan(EngineerCrew crew, List<PlannedVisit> visits) {
     }
@@ -72,6 +68,7 @@ public class ScheduleEditUseCase {
         EditPlan plan = plan(regionId, edit);
 
         List<SchedulePreviewDto.Violation> violations = plan.violations();
+
         if (!violations.isEmpty()) {
             throw new DomainException.ValidationException(violations.stream()
                     .map(violation -> "заявка №%d: %s".formatted(violation.requestId(), violation.message()))
@@ -79,39 +76,55 @@ public class ScheduleEditUseCase {
         }
 
         Schedule schedule = plan.schedule();
+
         List<RequestStatus> statuses = requestStatusRepository.findAll();
-        LocalDateTime now = LocalDateTime.now();
         Set<Integer> editedCrewIds = plan.editedCrewIds();
+        Map<Integer, ScheduleSlot> slotsByRequestId = schedule.getSlots()
+                .stream()
+                .collect(Collectors.toMap(slot -> slot.getRequest().getId(), Function.identity()));
 
         List<ScheduleSlot> replacedSlots = schedule.getSlots().stream()
                 .filter(slot -> slot.getRequest().getAssignedCrew() != null
                         && editedCrewIds.contains(slot.getRequest().getAssignedCrew().getId()))
                 .toList();
+
         schedule.getSlots().removeAll(replacedSlots);
         scheduleSlotRepository.deleteAll(replacedSlots);
 
+        List<RequestActionAudit> audit = new ArrayList<>();
+
         for (Request request : plan.removedRequests()) {
-            audit(request, schedule, RequestActionAudit.Action.REMOVE_FROM_SCHEDULE, request.getAssignedCrew(), now);
+            audit.add(RequestActionAudit.removedFromSchedule(request));
             request.unassign(statuses);
         }
 
         plan.routes().forEach(route -> {
             EngineerCrew crew = route.crew();
+
             for (PlannedVisit visit : route.visits()) {
                 Request request = visit.request();
                 EngineerCrew previousCrew = request.getAssignedCrew();
+
                 if (previousCrew == null) {
                     request.assignCrew(crew, statuses);
-                    audit(request, schedule, RequestActionAudit.Action.INITIAL_ASSIGNATION, crew, now);
+                    audit.add(RequestActionAudit.assigned(request, crew, visit.startTime(), visit.endTime()));
                 } else if (previousCrew.getId() != crew.getId()) {
                     request.assignCrew(crew, statuses);
-                    audit(request, schedule, RequestActionAudit.Action.ASSIGNED_CREW_CHANGE, crew, now);
+                    audit.add(RequestActionAudit.reassigned(request, crew, visit.startTime(), visit.endTime()));
+                } else if (slotsByRequestId.containsKey(request.getId())) {
+                    ScheduleSlot previousSlot = slotsByRequestId.get(request.getId());
+
+                    if (previousSlot.getStartTimeWindow() != visit.startTime()) {
+                        audit.add(RequestActionAudit.rescheduled(request, visit.startTime(), visit.endTime()));
+                    }
                 }
-                schedule.addSlot(request, ScheduleSlot.SlotType.REQUEST, visit.arrivalTime(), visit.startTime(), visit.endTime());
+
+                schedule.addSlot(request, crew, ScheduleSlot.SlotType.REQUEST, visit.arrivalTime(), visit.startTime(), visit.endTime());
             }
         });
 
         scheduleRepository.save(schedule);
+        // requestActionAuditRepository.saveAll(audit);
     }
 
     private EditPlan plan(int regionId, ScheduleEditDto edit) {
@@ -171,10 +184,10 @@ public class ScheduleEditUseCase {
         }
 
         List<Request> removedRequests = schedule.getSlots().stream()
+                .filter(slot -> slot.getEngineerCrew() != null
+                        && editedCrews.containsKey(slot.getEngineerCrew().getId())
+                        && !plannedRequestIds.contains(slot.getRequest().getId()))
                 .map(ScheduleSlot::getRequest)
-                .filter(request -> request.getAssignedCrew() != null
-                        && editedCrews.containsKey(request.getAssignedCrew().getId())
-                        && !plannedRequestIds.contains(request.getId()))
                 .distinct()
                 .toList();
 
@@ -216,15 +229,5 @@ public class ScheduleEditUseCase {
                 .forEach(unassigned::add);
         plan.removedRequests().stream().map(UnassignedRequestDto::from).forEach(unassigned::add);
         return unassigned;
-    }
-
-    private void audit(Request request, Schedule schedule, RequestActionAudit.Action action, EngineerCrew crew, LocalDateTime at) {
-        requestActionAuditRepository.save(RequestActionAudit.builder()
-                .request(request)
-                .schedule(schedule)
-                .action(action)
-                .assignedCrew(crew)
-                .timestamp(at)
-                .build());
     }
 }

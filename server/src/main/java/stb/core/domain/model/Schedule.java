@@ -10,7 +10,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "schedules")
+@Table(name = "schedules", uniqueConstraints = @UniqueConstraint(
+        name = "uk_schedules_previous_schedule",
+        columnNames = "previous_schedule_id"
+))
 @Getter
 @Setter(AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
@@ -40,6 +43,7 @@ public class Schedule extends BaseEntity {
     private Region region;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "schedule", cascade = CascadeType.ALL)
+    @OrderBy("startTimeWindow ASC, id ASC")
     private List<ScheduleSlot> slots;
 
     public static Schedule createFrom(Schedule schedule) {
@@ -63,12 +67,24 @@ public class Schedule extends BaseEntity {
         setSlots(new ArrayList<>());
     }
 
-    public void addSlot(Request request, ScheduleSlot.SlotType type, LocalTime arrivalTime, LocalTime startTimeWindow, LocalTime endTimeWindow) {
-        slots.add(new ScheduleSlot(this, request, type, arrivalTime, startTimeWindow, endTimeWindow));
+    public ScheduleSlot addSlot(Request request,
+                        EngineerCrew engineerCrew,
+                        ScheduleSlot.SlotType type,
+                        LocalTime arrivalTime,
+                        LocalTime startTimeWindow,
+                        LocalTime endTimeWindow) {
+
+        var slot = new ScheduleSlot(this, request, engineerCrew, type, arrivalTime, startTimeWindow, endTimeWindow);
+        slots.add(slot);
+
+        return slot;
     }
 
-    public void addSlot(ScheduleSlot slot) {
-        slots.add(ScheduleSlot.createFrom(this, slot));
+    public ScheduleSlot addSlot(ScheduleSlot slot) {
+        ScheduleSlot slotCopy = ScheduleSlot.createFrom(this, slot);
+        slots.add(slotCopy);
+
+        return slotCopy;
     }
 
     public void markAsRecalculating() {

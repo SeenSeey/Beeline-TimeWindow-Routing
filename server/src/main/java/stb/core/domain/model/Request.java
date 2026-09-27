@@ -128,7 +128,9 @@ public class Request extends BaseEntity implements GeopositionProvider {
     public void unassign(List<RequestStatus> statuses) {
         setAssignedCrew(null);
         setAssignedAt(null);
-        updateStatus(statuses, RequestStatus.Keyword.IDLE);
+        if (!isCanceled()) {
+            updateStatus(statuses, RequestStatus.Keyword.IDLE);
+        }
     }
 
     public void markInProgress(List<RequestStatus> statuses) {

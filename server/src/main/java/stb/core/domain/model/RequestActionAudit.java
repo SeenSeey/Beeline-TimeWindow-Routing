@@ -4,41 +4,141 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Objects;
 
 @Entity
-@Table(name = "request_actions_audit")
+@Table(name = "request_actions_audit", indexes = @Index(
+        name = "idx_request_actions_audit_timeline",
+        columnList = "request_id, timestamp DESC, id DESC"
+))
 @Getter
 @Setter(AccessLevel.PROTECTED)
-@Builder
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder
 public class RequestActionAudit extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "request_id", nullable = false)
     private Request request;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "schedule_id", nullable = false)
-    private Schedule schedule;
-
     @Column(name = "action", nullable = false)
     @Enumerated(EnumType.STRING)
     private Action action;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_crew_id", nullable = false)
+    @JoinColumn(name = "assigned_crew_id")
     private EngineerCrew assignedCrew;
 
     @Column(name = "timestamp", nullable = false)
     private LocalDateTime timestamp;
 
+    @Column(name = "planned_start")
+    private LocalTime plannedStart;
+
+    @Column(name = "planned_end")
+    private LocalTime plannedEnd;
+
+    public static RequestActionAudit requestCreated(Request request) {
+        return action(request, Action.REQUEST_CREATED);
+    }
+
+    public static RequestActionAudit assigned(Request request,
+                                              EngineerCrew assignedCrew,
+                                              LocalTime plannedStart,
+                                              LocalTime plannedEnd) {
+
+        return create(
+                request,
+                Action.ASSIGNED,
+                Objects.requireNonNull(assignedCrew, "assignedCrew не должна быть null"),
+                plannedStart,
+                plannedEnd
+        );
+    }
+
+    public static RequestActionAudit reassigned(Request request,
+                                                EngineerCrew assignedCrew,
+                                                LocalTime plannedStart,
+                                                LocalTime plannedEnd) {
+
+        return create(
+                request,
+                Action.REASSIGNED,
+                Objects.requireNonNull(assignedCrew, "assignedCrew не должна быть null"),
+                plannedStart,
+                plannedEnd
+        );
+    }
+
+    public static RequestActionAudit rescheduled(Request request,
+                                                 LocalTime plannedStart,
+                                                 LocalTime plannedEnd) {
+
+        return create(request, Action.RESCHEDULED, null, plannedStart, plannedEnd);
+    }
+
+    public static RequestActionAudit removedFromSchedule(Request request) {
+        return action(request, Action.REMOVED_FROM_SCHEDULE);
+    }
+
+    public static RequestActionAudit started(Request request) {
+        return action(request, Action.STARTED);
+    }
+
+    public static RequestActionAudit completed(Request request) {
+        return action(request, Action.COMPLETED);
+    }
+
+    public static RequestActionAudit canceled(Request request) {
+        return action(request, Action.CANCELED);
+    }
+
+    private static RequestActionAudit action(Request request, Action action) {
+        return create(request, action, null, null, null);
+    }
+
+    private static RequestActionAudit create(Request request,
+                                             Action action,
+                                             EngineerCrew assignedCrew,
+                                             LocalTime plannedStart,
+                                             LocalTime plannedEnd) {
+
+        Objects.requireNonNull(request, "request не должна быть null");
+        Objects.requireNonNull(action, "action не должен быть null");
+
+        if (action == Action.ASSIGNED || action == Action.RESCHEDULED) {
+            Objects.requireNonNull(plannedStart, "plannedStart не должно быть null");
+            Objects.requireNonNull(plannedEnd, "plannedEnd не должно быть null");
+        }
+
+        return RequestActionAudit.builder()
+                .request(request)
+                .action(action)
+                .assignedCrew(assignedCrew)
+                .plannedStart(plannedStart)
+                .plannedEnd(plannedEnd)
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
     public enum Action {
 
-        INITIAL_ASSIGNATION,
-        ASSIGNED_CREW_CHANGE,
-        REMOVE_FROM_SCHEDULE,
-        COMPLETE_REQUEST,
-        CANCEL_REQUEST
+        REQUEST_CREATED("Заявка создана"),
+        ASSIGNED("Назначена бригаде"),
+        REASSIGNED("Бригада изменена"),
+        RESCHEDULED("Перенесена"),
+        REMOVED_FROM_SCHEDULE("Снята с расписания"),
+        STARTED("Взята в работу"),
+        COMPLETED("Выполнена"),
+        CANCELED("Отменена");
+
+        @Getter
+        private final String displayName;
+
+        Action(String displayName) {
+            this.displayName = displayName;
+        }
     }
 }
