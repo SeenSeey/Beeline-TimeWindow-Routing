@@ -19,6 +19,7 @@ public interface AlterationReasonRepository extends JpaRepository<AlterationReas
             LEFT JOIN FETCH request.requiredEquipment
             LEFT JOIN FETCH reason.causeRequest
             LEFT JOIN FETCH reason.causeCrew
+            LEFT JOIN FETCH reason.previousCrew
             WHERE reason.schedule.id = :scheduleId
             ORDER BY reason.id
             """)

@@ -25,7 +25,7 @@ import static org.mockito.Mockito.*;
 class ScheduleEmergencyHandleUseCaseTest {
 
     @Test
-    void writesAuditAndHigherPriorityReasonForAddedSlot() {
+    void writesHigherPriorityReasonForDisplacedRequestButNotForEmergencyItself() {
         Region region = new Region("Region", "Office", 55.7, 37.6, null);
         ReflectionTestUtils.setField(region, "id", 1);
         EngineerCrew crew = new EngineerCrew("Crew", region, null,
@@ -36,9 +36,12 @@ class ScheduleEmergencyHandleUseCaseTest {
         Request displaced = Request.builder().region(region).build();
         ReflectionTestUtils.setField(displaced, "id", 4);
         Schedule current = Schedule.createFrom(new Schedule(LocalDate.now(), region));
+        current.addSlot(emergency, crew, ScheduleSlot.SlotType.REQUEST,
+                LocalTime.of(8, 50), LocalTime.of(9, 0), LocalTime.of(9, 40));
         current.addSlot(displaced, crew, ScheduleSlot.SlotType.REQUEST,
                 LocalTime.of(9, 50), LocalTime.of(10, 0), LocalTime.of(11, 0));
-        ScheduleSlot addedSlot = current.getSlots().getFirst();
+        ScheduleSlot emergencySlot = current.getSlots().get(0);
+        ScheduleSlot addedSlot = current.getSlots().get(1);
 
         RequestRepository requests = mock(RequestRepository.class);
         ScheduleRecalculationService recalculation = mock(ScheduleRecalculationService.class);
@@ -47,7 +50,7 @@ class ScheduleEmergencyHandleUseCaseTest {
         when(requests.findById(3)).thenReturn(Optional.of(emergency));
         when(recalculation.recalculateSchedule(eq(region), eq(LocalDate.now()), any()))
                 .thenReturn(new ScheduleRecalculationService.Recalculation(
-                        current, new ScheduleVersionDiff(List.of(addedSlot), List.of(), List.of()), List.of()));
+                        current, new ScheduleVersionDiff(List.of(emergencySlot, addedSlot), List.of(), List.of()), List.of()));
 
         new ScheduleEmergencyHandleUseCase(
                 requests, recalculation, new RequestActionAuditFactory(), auditWriter,
@@ -56,7 +59,7 @@ class ScheduleEmergencyHandleUseCaseTest {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<RequestActionAudit>> auditCaptor = ArgumentCaptor.forClass(List.class);
         verify(auditWriter).saveAll(auditCaptor.capture());
-        assertThat(auditCaptor.getValue()).singleElement().satisfies(audit ->
+        assertThat(auditCaptor.getValue()).hasSize(2).allSatisfy(audit ->
                 assertThat(audit.getAction()).isEqualTo(RequestActionAudit.Action.ASSIGNED));
 
         @SuppressWarnings("unchecked")

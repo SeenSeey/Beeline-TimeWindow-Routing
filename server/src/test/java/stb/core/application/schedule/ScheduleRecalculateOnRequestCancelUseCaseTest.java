@@ -25,7 +25,7 @@ import static org.mockito.Mockito.*;
 class ScheduleRecalculateOnRequestCancelUseCaseTest {
 
     @Test
-    void writesAuditAndReasonsForRemovedAndStillUnscheduledRequests() {
+    void writesAuditAndUnscheduledReasonsButNoReasonForCanceledRequestItself() {
         Region region = new Region("Region", "Office", 55.7, 37.6, null);
         ReflectionTestUtils.setField(region, "id", 1);
         EngineerCrew crew = new EngineerCrew("Crew", region, null,
@@ -72,12 +72,6 @@ class ScheduleRecalculateOnRequestCancelUseCaseTest {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<AlterationReason>> reasonCaptor = ArgumentCaptor.forClass(List.class);
         verify(reasonRepository).saveAll(reasonCaptor.capture());
-        List<AlterationReason> reasons = reasonCaptor.getValue();
-        assertThat(reasons).extracting(AlterationReason::getRequest).containsExactly(canceled, stillUnscheduled);
-        assertThat(reasons).extracting(AlterationReason::getType).containsExactly(
-                AlterationReason.Type.REMOVED_AFTER_REQUEST_CANCELLATION,
-                AlterationReason.Type.NO_CREW_WITH_REQUIRED_SKILL);
-        assertThat(reasons).allSatisfy(reason -> assertThat(reason.getSchedule()).isSameAs(current));
-        assertThat(reasons.getFirst().getCauseRequest()).isSameAs(canceled);
+        assertThat(reasonCaptor.getValue()).containsExactly(unscheduledReason);
     }
 }

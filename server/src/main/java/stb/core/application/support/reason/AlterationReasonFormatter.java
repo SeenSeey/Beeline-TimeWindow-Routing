@@ -5,7 +5,7 @@ import stb.core.domain.model.AlterationReason;
 import stb.core.domain.model.Request;
 
 import java.time.format.DateTimeFormatter;
-import java.util.stream.Collectors;
+import java.util.List;
 
 @Component
 public class AlterationReasonFormatter {
@@ -16,44 +16,52 @@ public class AlterationReasonFormatter {
         Request request = reason.getRequest();
         return switch (reason.getType()) {
             case ADDED_FOR_HIGHER_PRIORITY_REQUEST ->
-                    "Заявка добавлена в расписание из-за заявки №%d с более высоким приоритетом"
-                            .formatted(reason.getCauseRequest().getId());
-            case MOVED_FOR_HIGHER_PRIORITY_REQUEST ->
-                    "Заявка перенесена из-за заявки №%d с более высоким приоритетом"
+                    "Заявка добавлена в расписание при пересчёте после поступления срочной заявки №%d"
                             .formatted(reason.getCauseRequest().getId());
             case REMOVED_FOR_HIGHER_PRIORITY_REQUEST ->
-                    "Заявка снята с расписания из-за заявки №%d с более высоким приоритетом"
+                    "Заявка снята с расписания из-за срочной заявки №%d"
                             .formatted(reason.getCauseRequest().getId());
             case ADDED_AFTER_REQUEST_CANCELLATION ->
                     "Заявка добавлена в расписание после отмены заявки №%d"
                             .formatted(reason.getCauseRequest().getId());
-            case MOVED_AFTER_REQUEST_CANCELLATION ->
-                    "Заявка перенесена после отмены заявки №%d"
-                            .formatted(reason.getCauseRequest().getId());
             case REMOVED_AFTER_REQUEST_CANCELLATION ->
-                    "Заявка снята с расписания после отмены заявки №%d"
+                    "Заявка снята с расписания при пересчёте после отмены заявки №%d"
                             .formatted(reason.getCauseRequest().getId());
             case ADDED_FOR_CREW_OFF_SHIFT ->
-                    "Заявка добавлена в расписание из-за недоступности бригады «%s»"
-                            .formatted(reason.getCauseCrew().getName());
-            case MOVED_FOR_CREW_OFF_SHIFT ->
-                    "Заявка перераспределена, так как бригада «%s» недоступна"
+                    "Заявка добавлена в расписание при пересчёте после снятия бригады «%s» со смены"
                             .formatted(reason.getCauseCrew().getName());
             case REMOVED_FOR_CREW_OFF_SHIFT ->
-                    "Заявка снята с расписания из-за недоступности бригады «%s»"
+                    "Заявка снята с расписания после снятия бригады «%s» со смены"
                             .formatted(reason.getCauseCrew().getName());
+            case REASSIGNED_FOR_CREW_OFF_SHIFT ->
+                    "Заявка передана другой бригаде: бригада «%s» снята со смены"
+                            .formatted(reason.getCauseCrew().getName());
+            case REASSIGNED ->
+                    "Заявка передана от бригады «%s» при перестроении маршрутов"
+                            .formatted(reason.getPreviousCrew().getName());
+            case RESCHEDULED_AFTER_INSERTION ->
+                    "Визит перенесён на более позднее время (вместо %s): в маршрут бригады перед этой заявкой добавили заявку №%d"
+                            .formatted(TIME_FORMATTER.format(reason.getPreviousStartTime()),
+                                    reason.getCauseRequest().getId());
+            case RESCHEDULED_AFTER_REMOVAL ->
+                    "Визит перенесён на более раннее время (вместо %s): из маршрута бригады убрали заявку №%d, которая стояла перед этой"
+                            .formatted(TIME_FORMATTER.format(reason.getPreviousStartTime()),
+                                    reason.getCauseRequest().getId());
+            case RESCHEDULED ->
+                    "Визит перенесён (вместо %s) при перестроении маршрута бригады"
+                            .formatted(TIME_FORMATTER.format(reason.getPreviousStartTime()));
             case NO_CREW_WITH_REQUIRED_SKILL -> formatSkillReason(request);
             case NO_CREW_WITH_REQUIRED_VEHICLE ->
-                    "Нет подходящей бригады с транспортом «%s»"
+                    "Среди бригад с нужными навыками нет бригады с транспортом «%s»"
                             .formatted(request.getRequiredVehicle().getDisplayName());
             case NO_CAPACITY_FOR_REQUIRED_EQUIPMENT ->
-                    "У подходящих бригад нет возможности взять оборудование «%s»: вместимость транспорта исчерпана"
+                    "Подходящие бригады не могут взять оборудование «%s»: транспорт уже заполнен оборудованием для других заявок"
                             .formatted(request.getRequiredEquipment().getDisplayName());
             case NO_REQUIRED_EQUIPMENT_IN_STOCK ->
-                    "У подходящих бригад нет в наличии оборудования «%s»"
+                    "У подходящих бригад не осталось свободного оборудования «%s»"
                             .formatted(request.getRequiredEquipment().getDisplayName());
             case NO_AVAILABLE_TIME_SLOT ->
-                    "В период %s–%s у подходящих бригад не найдено свободного времени"
+                    "У подходящих бригад не нашлось свободного времени в окне визита %s–%s"
                             .formatted(
                                     TIME_FORMATTER.format(request.getStartTimeWindow()),
                                     TIME_FORMATTER.format(request.getEndTimeWindow())
@@ -61,13 +69,18 @@ public class AlterationReasonFormatter {
         };
     }
 
+    // бригаде достаточно любого из навыков типа работ — как в solver и анализаторе
     private String formatSkillReason(Request request) {
-        String skills = request.getJobType().getRequiredSkills().stream()
-                .map(skill -> skill.getDisplayName())
-                .collect(Collectors.joining(", "));
+        List<String> skills = request.getJobType().getRequiredSkills().stream()
+                .map(skill -> "«%s»".formatted(skill.getDisplayName()))
+                .toList();
         if (skills.isEmpty()) {
-            return "Нет бригады с навыками, необходимыми для этого типа работ";
+            return "У типа работ «%s» не указаны навыки, поэтому ни одна бригада не подходит"
+                    .formatted(request.getJobType().getDisplayName());
         }
-        return "Нет бригады с необходимыми навыками: %s".formatted(skills);
+        if (skills.size() == 1) {
+            return "Среди бригад на смене нет бригады с навыком %s".formatted(skills.getFirst());
+        }
+        return "Среди бригад на смене нет бригады ни с одним из навыков: %s".formatted(String.join(", ", skills));
     }
 }

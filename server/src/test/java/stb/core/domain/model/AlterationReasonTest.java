@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -17,6 +18,9 @@ class AlterationReasonTest {
     private final Request causeRequest = Request.builder().build();
     private final EngineerCrew causeCrew = new EngineerCrew();
     private final LocalDateTime createdAt = LocalDateTime.of(2026, 9, 27, 12, 0);
+    private final EngineerCrew previousCrew = new EngineerCrew();
+    private final ScheduleSlot previousSlot = new ScheduleSlot(schedule, request, previousCrew,
+            ScheduleSlot.SlotType.REQUEST, LocalTime.of(9, 20), LocalTime.of(9, 30), LocalTime.of(10, 30));
 
     @Test
     void requestTypesKeepOnlyRequestCause() {
@@ -55,6 +59,36 @@ class AlterationReasonTest {
     }
 
     @Test
+    void movementTypesKeepPreviousPositionOfRequest() {
+        AlterationReason byRequest = AlterationReason.movedByRequest(
+                schedule, previousSlot, AlterationReason.Type.RESCHEDULED_AFTER_INSERTION, causeRequest, createdAt);
+        AlterationReason withoutCause = AlterationReason.moved(
+                schedule, previousSlot, AlterationReason.Type.REASSIGNED, createdAt);
+
+        assertThat(byRequest.getRequest()).isSameAs(request);
+        assertThat(byRequest.getCauseRequest()).isSameAs(causeRequest);
+        assertThat(byRequest.getPreviousCrew()).isSameAs(previousCrew);
+        assertThat(byRequest.getPreviousStartTime()).isEqualTo(LocalTime.of(9, 30));
+        assertThat(withoutCause.getCauseRequest()).isNull();
+        assertThat(withoutCause.getCauseCrew()).isNull();
+        assertThat(withoutCause.getPreviousCrew()).isSameAs(previousCrew);
+    }
+
+    @Test
+    void previousPositionIsRequiredOnlyForMovementTypes() {
+        assertThatIllegalArgumentException().isThrownBy(() -> AlterationReason.causedByRequest(
+                schedule, request, AlterationReason.Type.RESCHEDULED_AFTER_INSERTION, causeRequest, createdAt));
+        assertThatIllegalArgumentException().isThrownBy(() -> AlterationReason.unscheduled(
+                schedule, request, AlterationReason.Type.RESCHEDULED, createdAt));
+        assertThatIllegalArgumentException().isThrownBy(() -> AlterationReason.moved(
+                schedule, previousSlot, AlterationReason.Type.NO_AVAILABLE_TIME_SLOT, createdAt));
+        assertThatIllegalArgumentException().isThrownBy(() -> AlterationReason.movedByRequest(
+                schedule, previousSlot, AlterationReason.Type.ADDED_AFTER_REQUEST_CANCELLATION, causeRequest, createdAt));
+        assertThatIllegalArgumentException().isThrownBy(() -> AlterationReason.moved(
+                schedule, previousSlot, AlterationReason.Type.RESCHEDULED_AFTER_REMOVAL, createdAt));
+    }
+
+    @Test
     void rejectsTypeWithMismatchedCause() {
         assertThatIllegalArgumentException().isThrownBy(() -> AlterationReason.causedByRequest(
                 schedule, request, AlterationReason.Type.ADDED_FOR_CREW_OFF_SHIFT, causeRequest, createdAt));
@@ -67,7 +101,7 @@ class AlterationReasonTest {
         assertThatIllegalArgumentException().isThrownBy(() -> AlterationReason.unscheduled(
                 schedule, request, AlterationReason.Type.REMOVED_AFTER_REQUEST_CANCELLATION, createdAt));
         assertThatIllegalArgumentException().isThrownBy(() -> AlterationReason.unscheduled(
-                schedule, request, AlterationReason.Type.MOVED_FOR_CREW_OFF_SHIFT, createdAt));
+                schedule, request, AlterationReason.Type.REASSIGNED_FOR_CREW_OFF_SHIFT, createdAt));
     }
 
     @Test
@@ -90,7 +124,7 @@ class AlterationReasonTest {
 
     private static AlterationReason.Type[] typesWith(AlterationReason.Cause cause) {
         return Arrays.stream(AlterationReason.Type.values())
-                .filter(type -> type.getCause() == cause)
+                .filter(type -> type.getCause() == cause && !type.isMovement())
                 .toArray(AlterationReason.Type[]::new);
     }
 }

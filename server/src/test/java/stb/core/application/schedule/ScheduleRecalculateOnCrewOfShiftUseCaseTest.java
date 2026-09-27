@@ -81,7 +81,7 @@ class ScheduleRecalculateOnCrewOfShiftUseCaseTest {
         List<AlterationReason> reasons = reasonCaptor.getValue();
         assertThat(reasons).extracting(AlterationReason::getRequest).containsExactly(request, stillUnscheduled);
         assertThat(reasons).extracting(AlterationReason::getType).containsExactly(
-                AlterationReason.Type.MOVED_FOR_CREW_OFF_SHIFT,
+                AlterationReason.Type.REASSIGNED_FOR_CREW_OFF_SHIFT,
                 AlterationReason.Type.NO_CREW_WITH_REQUIRED_SKILL);
         assertThat(reasons).allSatisfy(reason -> assertThat(reason.getSchedule()).isSameAs(current));
         assertThat(reasons.getFirst().getCauseCrew()).isSameAs(unavailableCrew);

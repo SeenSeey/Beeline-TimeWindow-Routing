@@ -71,8 +71,7 @@ public class SchedulerMapper {
                 request.getJobType().getRequiredSkills(),
                 request.getRequiredVehicle()!=null ? request.getRequiredVehicle().getKeyword() : null,
                 request.isUrgent(),
-                request.getRequiredEquipment() != null ? request.getRequiredEquipment().getId() : null,
-                request.getDeadline()
+                request.getRequiredEquipment() != null ? request.getRequiredEquipment().getId() : null
         );
     }
 
