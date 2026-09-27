@@ -76,47 +76,81 @@ public class ScheduleEditUseCase {
                     .collect(Collectors.joining("; ", "Изменения нельзя сохранить — ", "")));
         }
 
-        // TODO: история
+        Schedule schedule = plan.schedule();
 
         List<RequestStatus> statuses = requestStatusRepository.findAll();
-
-        Schedule previousSchedule = plan.schedule();
-        Schedule currentSchedule = Schedule.createFrom(previousSchedule);
         Set<Integer> editedCrewIds = plan.editedCrewIds();
 
-        List<ScheduleSlot> replacedSlots = previousSchedule.getSlots().stream()
+        List<ScheduleSlot> replacedSlots = schedule.getSlots().stream()
                 .filter(slot -> slot.getRequest().getAssignedCrew() != null
                         && editedCrewIds.contains(slot.getRequest().getAssignedCrew().getId()))
                 .toList();
+        schedule.getSlots().removeAll(replacedSlots);
 
-        previousSchedule.getSlots().removeAll(replacedSlots);
         scheduleSlotRepository.deleteAll(replacedSlots);
 
         for (Request request : plan.removedRequests()) {
+            audit(request, schedule, RequestActionAudit.Action.REMOVE_FROM_SCHEDULE, request.getAssignedCrew(), now);
             request.unassign(statuses);
         }
 
         plan.routes().forEach(route -> {
             EngineerCrew crew = route.crew();
             for (PlannedVisit visit : route.visits()) {
-
                 Request request = visit.request();
                 EngineerCrew previousCrew = request.getAssignedCrew();
-
                 if (previousCrew == null) {
                     request.assignCrew(crew, statuses);
                 } else if (previousCrew.getId() != crew.getId()) {
                     request.assignCrew(crew, statuses);
                 }
-
-                currentSchedule.addSlot(request, crew, ScheduleSlot.SlotType.REQUEST, visit.arrivalTime(), visit.startTime(), visit.endTime());;
+                schedule.addSlot(request, crew, ScheduleSlot.SlotType.REQUEST, visit.arrivalTime(), visit.startTime(), visit.endTime());
             }
         });
 
-        ScheduleHistoryResult result = ScheduleHistoryResult.createHistory(previousSchedule, currentSchedule);
+        scheduleRepository.save(schedule);
 
-        scheduleRepository.save(currentSchedule);
-        requestActionAuditRepository.saveAll(auditFactory.createFrom(result));
+//        // TODO: история
+//
+//        List<RequestStatus> statuses = requestStatusRepository.findAll();
+//
+//        Schedule previousSchedule = plan.schedule();
+//        Schedule currentSchedule = Schedule.createFrom(previousSchedule);
+//        Set<Integer> editedCrewIds = plan.editedCrewIds();
+//
+//        List<ScheduleSlot> replacedSlots = previousSchedule.getSlots().stream()
+//                .filter(slot -> slot.getRequest().getAssignedCrew() != null
+//                        && editedCrewIds.contains(slot.getRequest().getAssignedCrew().getId()))
+//                .toList();
+//
+//        previousSchedule.getSlots().removeAll(replacedSlots);
+//        scheduleSlotRepository.deleteAll(replacedSlots);
+//
+//        for (Request request : plan.removedRequests()) {
+//            request.unassign(statuses);
+//        }
+//
+//        plan.routes().forEach(route -> {
+//            EngineerCrew crew = route.crew();
+//            for (PlannedVisit visit : route.visits()) {
+//
+//                Request request = visit.request();
+//                EngineerCrew previousCrew = request.getAssignedCrew();
+//
+//                if (previousCrew == null) {
+//                    request.assignCrew(crew, statuses);
+//                } else if (previousCrew.getId() != crew.getId()) {
+//                    request.assignCrew(crew, statuses);
+//                }
+//
+//                currentSchedule.addSlot(request, crew, ScheduleSlot.SlotType.REQUEST, visit.arrivalTime(), visit.startTime(), visit.endTime());;
+//            }
+//        });
+//
+//        ScheduleHistoryResult result = ScheduleHistoryResult.createHistory(previousSchedule, currentSchedule);
+//
+//        scheduleRepository.save(currentSchedule);
+//        requestActionAuditRepository.saveAll(auditFactory.createFrom(result));
     }
 
     private EditPlan plan(int regionId, ScheduleEditDto edit) {

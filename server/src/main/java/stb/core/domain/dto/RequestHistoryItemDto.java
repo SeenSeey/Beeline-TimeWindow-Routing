@@ -1,9 +1,11 @@
 package stb.core.domain.dto;
 
+import stb.core.domain.model.EngineerCrew;
 import stb.core.domain.model.RequestActionAudit;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Optional;
 
 public record RequestHistoryItemDto(
         int id,
@@ -22,8 +24,8 @@ public record RequestHistoryItemDto(
                 audit.getTimestamp(),
                 audit.getAction(),
                 audit.getAction().getDisplayName(),
-                audit.getAssignedCrew() == null ? null : audit.getAssignedCrew().getId(),
-                audit.getAssignedCrew() == null ? null : audit.getAssignedCrew().getName(),
+                Optional.ofNullable(audit.getAssignedCrew()).map(EngineerCrew::getId).orElse(null),
+                Optional.ofNullable(audit.getAssignedCrew()).map(EngineerCrew::getName).orElse(null),
                 audit.getPlannedStart(),
                 audit.getPlannedEnd()
         );

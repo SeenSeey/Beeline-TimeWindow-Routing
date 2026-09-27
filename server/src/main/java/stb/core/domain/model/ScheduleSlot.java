@@ -8,10 +8,7 @@ import java.time.LocalTime;
 import java.util.Objects;
 
 @Entity
-@Table(name = "schedule_slots", indexes = @Index(
-        name = "idx_schedule_slots_schedule_crew",
-        columnList = "schedule_id, engineer_crew_id"
-))
+@Table(name = "schedule_slots")
 @Getter
 @Setter(AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
