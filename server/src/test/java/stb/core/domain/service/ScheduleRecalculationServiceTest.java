@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 import stb.core.domain.model.*;
-import stb.core.domain.replanning.ScheduleVersionDiff;
 import stb.core.domain.replanning.ScheduleVersionDiffDomainService;
 import stb.core.domain.repository.*;
 import stb.core.domain.service.scheduler.ScheduleAssemblerDomainService;
@@ -35,10 +34,10 @@ class ScheduleRecalculationServiceTest {
     private final RouteDomainService routes = mock(RouteDomainService.class);
     private final ScheduleRecalculationService service = new ScheduleRecalculationService(
             requests, schedules, crews, slots, statuses, assembler, speeds, routes,
-            new ScheduleVersionDiffDomainService());
+            new ScheduleVersionDiffDomainService(), new UnscheduledRequestReasonDomainService());
 
     @Test
-    void removesCanceledRequestFromNewVersionAndUnassignsIt() {
+    void removesCanceledRequestAndExplainsRequestsStillOutOfSchedule() {
         EngineerCrew crew = crew(2);
         RequestStatus canceledStatus = new RequestStatus("Canceled", RequestStatus.Keyword.CANCELED);
         Request canceled = Request.builder()
@@ -51,17 +50,29 @@ class ScheduleRecalculationServiceTest {
         ReflectionTestUtils.setField(canceled, "id", 3);
         Schedule previous = previousSchedule(canceled, crew);
         ScheduleSlot removedSlot = previous.getSlots().getFirst();
-        givenRecalculation(previous, List.of(), List.of(crew), List.of(canceledStatus), List.of());
+        Request stillUnscheduled = Request.builder()
+                .region(region)
+                .jobType(new JobType("Монтаж", List.of(new Skill("Монтаж", Skill.Keyword.INSTALLATION_OR_ADDON)),
+                        20, 60, 90, JobType.Keyword.INSTALLATION, 3))
+                .build();
+        ReflectionTestUtils.setField(stillUnscheduled, "id", 6);
+        givenRecalculation(previous, List.of(stillUnscheduled), List.of(crew), List.of(canceledStatus), List.of());
 
-        ScheduleVersionDiff diff = service.recalculateSchedule(region, LocalDate.now());
+        ScheduleRecalculationService.Recalculation recalculation = recalculate();
 
         Schedule current = savedSchedule();
         assertThat(current.getPreviousSchedule()).isSameAs(previous);
         assertThat(current.getSlots()).isEmpty();
         assertThat(previous.getSlots()).containsExactly(removedSlot);
-        assertThat(diff.removed()).containsExactly(removedSlot);
+        assertThat(recalculation.schedule()).isSameAs(current);
+        assertThat(recalculation.diff().removed()).containsExactly(removedSlot);
         assertThat(canceled.getAssignedCrew()).isNull();
         assertThat(canceled.getStatus()).isSameAs(canceledStatus);
+        assertThat(recalculation.unscheduledReasons()).singleElement().satisfies(reason -> {
+            assertThat(reason.getSchedule()).isSameAs(current);
+            assertThat(reason.getRequest()).isSameAs(stillUnscheduled);
+            assertThat(reason.getType()).isEqualTo(AlterationReason.Type.NO_CREW_WITH_REQUIRED_SKILL);
+        });
     }
 
     @Test
@@ -82,15 +93,19 @@ class ScheduleRecalculationServiceTest {
                         LocalTime.of(8, 0), LocalTime.of(18, 0),
                         LocalTime.of(9, 50), LocalTime.of(10, 0), LocalTime.of(11, 0), null)));
 
-        ScheduleVersionDiff diff = service.recalculateSchedule(region, LocalDate.now());
+        ScheduleRecalculationService.Recalculation recalculation = recalculate();
 
         Schedule current = savedSchedule();
         assertThat(current.getSlots()).singleElement().satisfies(slot ->
                 assertThat(slot.getEngineerCrew()).isSameAs(activeCrew));
         assertThat(previous.getSlots().getFirst().getEngineerCrew()).isSameAs(unavailableCrew);
-        assertThat(diff.moved()).singleElement().satisfies(change ->
+        assertThat(recalculation.diff().moved()).singleElement().satisfies(change ->
                 assertThat(change.currentSlot().getSchedule()).isSameAs(current));
         assertThat(request.getAssignedCrew()).isSameAs(activeCrew);
+    }
+
+    private ScheduleRecalculationService.Recalculation recalculate() {
+        return service.recalculateSchedule(region, LocalDate.now(), LocalDateTime.of(2026, 9, 27, 12, 0));
     }
 
     private void givenRecalculation(Schedule previous,

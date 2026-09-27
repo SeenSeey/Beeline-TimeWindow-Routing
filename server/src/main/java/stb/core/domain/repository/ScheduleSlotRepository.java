@@ -67,7 +67,6 @@ public interface ScheduleSlotRepository extends JpaRepository<ScheduleSlot, Inte
             WITH slots AS (
                 SELECT
                     ss.*,
-                    ss.engineer_crew_id,
                     r.latitude,
                     r.longitude,
                     r.region_id,

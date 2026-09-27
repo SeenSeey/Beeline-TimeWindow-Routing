@@ -9,21 +9,21 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import stb.core.application.support.reason.SlotAlterationReasonFormatter;
+import stb.core.application.support.reason.AlterationReasonFormatter;
+import stb.core.domain.dto.AlterationReasonDto;
 import stb.core.domain.dto.ScheduleTimelineDto;
-import stb.core.domain.dto.SlotAlterationReasonDto;
 import stb.core.domain.dto.UnassignedRequestDto;
 import stb.core.domain.exception.RegionNotFoundException;
 import stb.core.domain.exception.ScheduleNotFoundException;
 import stb.core.domain.model.Region;
 import stb.core.domain.model.RequestStatus;
 import stb.core.domain.model.Schedule;
+import stb.core.domain.repository.AlterationReasonRepository;
 import stb.core.domain.repository.EngineerCrewOffShiftRecordRepository;
 import stb.core.domain.repository.EngineerCrewRepository;
 import stb.core.domain.repository.RegionRepository;
 import stb.core.domain.repository.RequestRepository;
 import stb.core.domain.repository.ScheduleRepository;
-import stb.core.domain.repository.SlotAlterationReasonRepository;
 
 @Component
 @RequiredArgsConstructor
@@ -37,8 +37,8 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
     private final RequestRepository requestRepository;
     private final EngineerCrewRepository engineerCrewRepository;
     private final EngineerCrewOffShiftRecordRepository engineerCrewOffShiftRecordRepository;
-    private final SlotAlterationReasonRepository reasonRepository;
-    private final SlotAlterationReasonFormatter reasonFormatter;
+    private final AlterationReasonRepository reasonRepository;
+    private final AlterationReasonFormatter reasonFormatter;
 
     @Transactional(readOnly = true)
     public ScheduleTimelineDto execute(int regionId) {
@@ -77,15 +77,9 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
             .collect(Collectors.toSet());
     }
 
-    private List<SlotAlterationReasonDto> findAlterationReasons(Schedule schedule) {
-        Schedule previousSchedule = schedule.getPreviousSchedule();
-        if (previousSchedule == null) {
-            return List.of();
-        }
-        return reasonRepository.findAllForCurrentTransition(
-                        schedule.getId(), previousSchedule.getId())
-                .stream()
-                .map(reason -> SlotAlterationReasonDto.from(reason, reasonFormatter.format(reason)))
+    private List<AlterationReasonDto> findAlterationReasons(Schedule schedule) {
+        return reasonRepository.findAllByScheduleId(schedule.getId()).stream()
+                .map(reason -> AlterationReasonDto.from(reason, reasonFormatter.format(reason)))
                 .toList();
     }
 

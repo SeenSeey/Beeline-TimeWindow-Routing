@@ -18,6 +18,7 @@ import stb.core.domain.service.scheduler.dto.TravelMatrix;
 import stb.core.domain.service.scheduler.dto.output.OutputSlotDto;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,8 +40,9 @@ public class ScheduleRecalculationService {
     private final SpeedProfileDomainService speedProfileDomainService;
     private final RouteDomainService routeDomainService;
     private final ScheduleVersionDiffDomainService scheduleVersionDiffDomainService;
+    private final UnscheduledRequestReasonDomainService unscheduledReasonDomainService;
 
-    public ScheduleVersionDiff recalculateSchedule(Region region, LocalDate targetDate) {
+    public Recalculation recalculateSchedule(Region region, LocalDate targetDate, LocalDateTime timestamp) {
         Schedule currentSchedule = scheduleRepository.findByTargetDateAndRegionId(targetDate, region.getId())
                 .orElseThrow(() -> new ScheduleNotFoundException("Расписание на %s для региона %s не найдено".formatted(targetDate, region.getId())));
 
@@ -99,7 +101,8 @@ public class ScheduleRecalculationService {
         ScheduleVersionDiff diff = scheduleVersionDiffDomainService.compare(currentSchedule, schedule);
         scheduleRepository.save(schedule);
         requestRepository.saveAll(applyAssignments(diff, statuses));
-        return diff;
+        return new Recalculation(schedule, diff, unscheduledReasonDomainService.analyze(
+                schedule, requestsToReschedule, engineerCrews, true, timestamp));
     }
 
     private static List<Request> applyAssignments(ScheduleVersionDiff diff, List<RequestStatus> statuses) {
@@ -121,5 +124,10 @@ public class ScheduleRecalculationService {
             }
         });
         return List.copyOf(updated.values());
+    }
+
+    public record Recalculation(Schedule schedule,
+                                ScheduleVersionDiff diff,
+                                List<AlterationReason> unscheduledReasons) {
     }
 }

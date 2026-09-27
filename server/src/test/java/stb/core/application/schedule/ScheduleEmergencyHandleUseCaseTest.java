@@ -5,11 +5,11 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 import stb.core.application.support.audit.RequestActionAuditFactory;
 import stb.core.application.support.audit.RequestActionAuditWriter;
-import stb.core.application.support.reason.SlotAlterationReasonFactory;
+import stb.core.application.support.reason.AlterationReasonFactory;
 import stb.core.domain.model.*;
 import stb.core.domain.replanning.ScheduleVersionDiff;
 import stb.core.domain.repository.RequestRepository;
-import stb.core.domain.repository.SlotAlterationReasonRepository;
+import stb.core.domain.repository.AlterationReasonRepository;
 import stb.core.domain.service.ScheduleRecalculationService;
 
 import java.time.LocalDate;
@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class ScheduleEmergencyHandleUseCaseTest {
@@ -41,14 +43,15 @@ class ScheduleEmergencyHandleUseCaseTest {
         RequestRepository requests = mock(RequestRepository.class);
         ScheduleRecalculationService recalculation = mock(ScheduleRecalculationService.class);
         RequestActionAuditWriter auditWriter = mock(RequestActionAuditWriter.class);
-        SlotAlterationReasonRepository reasonRepository = mock(SlotAlterationReasonRepository.class);
+        AlterationReasonRepository reasonRepository = mock(AlterationReasonRepository.class);
         when(requests.findById(3)).thenReturn(Optional.of(emergency));
-        when(recalculation.recalculateSchedule(region, LocalDate.now()))
-                .thenReturn(new ScheduleVersionDiff(List.of(addedSlot), List.of(), List.of()));
+        when(recalculation.recalculateSchedule(eq(region), eq(LocalDate.now()), any()))
+                .thenReturn(new ScheduleRecalculationService.Recalculation(
+                        current, new ScheduleVersionDiff(List.of(addedSlot), List.of(), List.of()), List.of()));
 
         new ScheduleEmergencyHandleUseCase(
                 requests, recalculation, new RequestActionAuditFactory(), auditWriter,
-                new SlotAlterationReasonFactory(), reasonRepository).execute(3);
+                new AlterationReasonFactory(), reasonRepository).execute(3);
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<RequestActionAudit>> auditCaptor = ArgumentCaptor.forClass(List.class);
@@ -57,11 +60,12 @@ class ScheduleEmergencyHandleUseCaseTest {
                 assertThat(audit.getAction()).isEqualTo(RequestActionAudit.Action.ASSIGNED));
 
         @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<SlotAlterationReason>> reasonCaptor = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<List<AlterationReason>> reasonCaptor = ArgumentCaptor.forClass(List.class);
         verify(reasonRepository).saveAll(reasonCaptor.capture());
         assertThat(reasonCaptor.getValue()).singleElement().satisfies(reason -> {
-            assertThat(reason.getAction()).isEqualTo(SlotAlterationReason.Action.ADDED_FOR_HIGHER_PRIORITY_REQUEST);
-            assertThat(reason.getSlot()).isSameAs(addedSlot);
+            assertThat(reason.getType()).isEqualTo(AlterationReason.Type.ADDED_FOR_HIGHER_PRIORITY_REQUEST);
+            assertThat(reason.getSchedule()).isSameAs(current);
+            assertThat(reason.getRequest()).isSameAs(displaced);
             assertThat(reason.getCauseRequest()).isSameAs(emergency);
         });
     }

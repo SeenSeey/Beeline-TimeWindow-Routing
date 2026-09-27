@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import stb.core.application.support.audit.RequestActionAuditWriter;
 import stb.core.domain.model.*;
 import stb.core.domain.port.route.dto.Location;
+import stb.core.domain.repository.AlterationReasonRepository;
 import stb.core.domain.repository.EngineerCrewRepository;
 import stb.core.domain.repository.RequestRepository;
 import stb.core.domain.repository.RequestStatusRepository;
@@ -14,6 +15,7 @@ import stb.core.domain.repository.ScheduleRepository;
 import stb.core.domain.service.CrewEquipmentDomainService;
 import stb.core.domain.service.RouteDomainService;
 import stb.core.domain.service.SpeedProfileDomainService;
+import stb.core.domain.service.UnscheduledRequestReasonDomainService;
 import stb.core.domain.service.scheduler.ScheduleAssemblerDomainService;
 import stb.core.domain.service.scheduler.dto.ScheduleCalculationResult;
 import stb.core.domain.service.scheduler.dto.ScheduleContext;
@@ -43,6 +45,8 @@ public class ScheduleCalculateUseCase {
     private final SpeedProfileDomainService speedProfileDomainService;
     private final CrewEquipmentDomainService crewEquipmentDomainService;
     private final RequestActionAuditWriter auditWriter;
+    private final UnscheduledRequestReasonDomainService unscheduledReasonDomainService;
+    private final AlterationReasonRepository reasonRepository;
 
     @Transactional
     public void execute(LocalDate targetDate) {
@@ -50,6 +54,7 @@ public class ScheduleCalculateUseCase {
         List<RequestStatus> statuses = requestStatusRepository.findAll();
         LocalDateTime timestamp = LocalDateTime.now();
         List<RequestActionAudit> audits = new ArrayList<>();
+        List<AlterationReason> reasons = new ArrayList<>();
 
         for (Schedule schedule : schedules) {
             Region region = schedule.getRegion();
@@ -105,9 +110,11 @@ public class ScheduleCalculateUseCase {
                         slotDto.serviceStartTime(), slotDto.departureTime(), timestamp));
             }
 
+            reasons.addAll(unscheduledReasonDomainService.analyze(schedule, requests, engineerCrews, false, timestamp));
             crewEquipmentDomainService.issueInitialLoadout(engineerCrews, assignedRequests);
             schedule.markAsCreated();
         }
+        reasonRepository.saveAll(reasons);
         auditWriter.saveAll(audits);
     }
 }

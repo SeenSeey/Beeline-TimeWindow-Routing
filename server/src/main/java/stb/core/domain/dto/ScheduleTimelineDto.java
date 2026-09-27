@@ -14,7 +14,7 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                                   RegionDto region,
                                   List<EngineerCrewRow> engineers,
                                   List<UnassignedRequestDto> unassignedRequests,
-                                  List<SlotAlterationReasonDto> alterationReasons) {
+                                  List<AlterationReasonDto> alterationReasons) {
 
     public static ScheduleTimelineDto from(Schedule schedule) {
         return from(schedule, List.of());
@@ -53,7 +53,7 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                                            List<UnassignedRequestDto> unassignedRequests,
                                            List<EngineerCrew> regionCrews,
                                            Set<Integer> offShiftCrewIds,
-                                           List<SlotAlterationReasonDto> alterationReasons) {
+                                           List<AlterationReasonDto> alterationReasons) {
         List<EngineerCrewRow> rows = new ArrayList<>(EngineerCrewRow.listFrom(schedule.getSlots())
                 .stream()
                 .map(row -> row.withOffShift(offShiftCrewIds.contains(row.id())))
