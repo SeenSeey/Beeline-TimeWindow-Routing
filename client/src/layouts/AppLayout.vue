@@ -5,7 +5,8 @@
     <AppSidebar :open="sidebarOpen" @close="sidebarOpen = false" />
 
     <!-- the content column sits to the right of the fixed sidebar on large screens -->
-    <div class="flex min-h-screen flex-col lg:ps-65">
+    <!-- lg:ps-72: the sidebar's width (w-72 in AppSidebar) -->
+    <div class="flex min-h-screen flex-col lg:ps-72">
       <AppHeader :sidebar-open="sidebarOpen" @open-sidebar="sidebarOpen = true" />
 
       <!-- grid so the page stretches to the remaining height -->

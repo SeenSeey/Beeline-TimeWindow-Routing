@@ -11,14 +11,14 @@
        start edge, out of view (and out of the tab order: invisible) while closed -->
   <aside
     id="app-sidebar"
-    class="fixed inset-y-0 start-0 z-40 flex w-65 flex-col border-e border-line bg-surface lg:z-20 lg:translate-x-0 motion-safe:transition-[translate,visibility] motion-safe:duration-200"
+    class="fixed inset-y-0 start-0 z-40 flex w-72 flex-col border-e border-line bg-surface lg:z-20 lg:translate-x-0 motion-safe:transition-[translate,visibility] motion-safe:duration-200"
     :class="open ? 'max-lg:shadow-xl' : 'max-lg:invisible max-lg:-translate-x-full'"
     aria-label="Боковая навигация"
   >
     <div class="flex h-14 items-center justify-between gap-x-2 px-6 max-lg:pe-3">
       <RouterLink
         to="/"
-        class="inline-flex items-center gap-x-2 rounded-md text-[15px] font-semibold text-ink no-underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+        class="inline-flex items-center gap-x-2 rounded-md text-[15px] font-semibold whitespace-nowrap text-ink no-underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
       >
         <span class="inline-flex size-7 items-center justify-center rounded-lg bg-accent text-white">
           <NavIcon name="route" />

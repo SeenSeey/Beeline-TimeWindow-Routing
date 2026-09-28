@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import UiRouteMap, { type UiRouteStop } from "@/components/ui/UiRouteMap.vue";
+import UiRouteMap, { type UiRouteStop, type UiRouteStopStatus } from "@/components/ui/UiRouteMap.vue";
 import { routeLegLabels, routeLegs, type LngLat } from "../model/crewRoute";
 import { formatTime } from "../model/format";
 import { visitKey, type Visit } from "../model/timeline";
@@ -30,10 +30,20 @@ const stops = computed<UiRouteStop[]>(() =>
     color: visit.color,
     outlineColor: visit.urgent ? "var(--urgent)" : undefined,
     to: { name: "request", params: { id: visit.slot.requestId } },
-    ariaLabel: `${index + 1}. ${formatTime(visit.slot.startSlotTime)}–${formatTime(visit.slot.endSlotTime)}, ${visit.slot.fullAddress}`,
+    ariaLabel: `${index + 1}. ${formatTime(visit.slot.startSlotTime)}–${formatTime(visit.slot.endSlotTime)}, ${visit.slot.fullAddress}${visit.slot.status ? `, ${visit.slot.status.displayName}` : ""}`,
     data: { visit: visitKey(visit) },
+    status: stopStatusOf(visit),
   })),
 );
+
+/** how far the visit got, the same way the timeline's bar tells it */
+function stopStatusOf(visit: Visit): UiRouteStopStatus | undefined {
+  const { status, canceledAt, completedAt } = visit.slot;
+  if (status?.keyword === "CANCELED" || canceledAt != null) return "canceled";
+  if (status?.keyword === "COMPLETED" || completedAt != null) return "done";
+  if (status?.keyword === "IN_PROGRESS") return "active";
+  return undefined;
+}
 
 // the line follows the roads the crew takes, leg by leg from the office through every visit; without a
 // stored route there is no line at all — straight segments between the pins would pass for a route that isn't one

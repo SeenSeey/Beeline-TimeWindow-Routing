@@ -15,7 +15,10 @@
 
     <ScheduleEditBar />
 
-    <TimelinePanel :region-name="schedule.region.displayName" />
+    <TimelinePanel
+      :region-name="schedule.region.displayName"
+      :recalculating="schedule.status.keyword === 'RECALCULATING'"
+    />
 
     <!-- the requests left out are only known once the schedule is calculated (an earlier version shows
          the ones it left out); until then the crew's route takes the whole width -->
