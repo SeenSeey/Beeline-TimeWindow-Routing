@@ -30,11 +30,13 @@ public class ScheduleRecalculateOnRequestCancelUseCase {
 
     @Transactional
     public void execute(int requestId) {
+        LocalDate targetDate = LocalDate.now();
+        log.info("Пересчёт расписания на {} в связи с отменой заявки {}", targetDate, requestId);
+
         Request canceledRequest = requestRepository.findById(requestId)
                 .orElseThrow(() -> new RequestNotFoundException("Заявка %s не существует".formatted(requestId)));
 
         Region region = canceledRequest.getRegion();
-        LocalDate targetDate = LocalDate.now();
 
         ScheduleSlot latestSlot = scheduleSlotRepository.findCanceledSlotByRequestId(requestId).orElse(null);
         if (latestSlot == null) {
@@ -43,7 +45,6 @@ public class ScheduleRecalculateOnRequestCancelUseCase {
         }
 
         ScheduleHistoryResult result = scheduleRecalculationService.recalculateSchedule(region, targetDate);
-        log.info("Пересчёт расписания на {} в связи с отменой заявки {}", targetDate, requestId);
 
         requestActionAuditRepository.saveAll(auditFactory.createFrom(result));
 

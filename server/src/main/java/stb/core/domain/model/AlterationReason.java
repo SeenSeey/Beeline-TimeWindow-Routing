@@ -208,7 +208,7 @@ public class AlterationReason extends BaseEntity {
         NO_CREW_WITH_REQUIRED_VEHICLE(reason -> "Среди бригад на смене с нужным навыком нет бригады с транспортом «%s»".formatted(reason.getRequest().getRequiredVehicle().getDisplayName())),
 
         ADDED_FOR_HIGHER_PRIORITY_REQUEST(reason -> "Заявка добавлена в расписание при пересчёте после поступления срочной заявки №%d".formatted(reason.getCauseRequest().getId())),
-        REASSIGNED_FOR_HIGHER_PRIORITY_REQUEST(reason -> ""),
+        REASSIGNED_FOR_HIGHER_PRIORITY_REQUEST(reason -> "Заявка передана другой бригаде при пересчёте после поступления срочной заявки №%d".formatted(reason.getCauseRequest().getId())),
         REMOVED_FOR_HIGHER_PRIORITY_REQUEST(reason -> "Заявка снята с расписания из-за срочной заявки №%d".formatted(reason.getCauseRequest().getId())),
         TIME_CHANGED_FOR_HIGHER_PRIORITY_REQUEST(reason -> "Визит перенесён (вместо %s) при пересчёте после поступления срочной заявки №%d".formatted(TIME_FORMATTER.format(reason.getPreviousStartTime()), reason.getCauseRequest().getId())),
 

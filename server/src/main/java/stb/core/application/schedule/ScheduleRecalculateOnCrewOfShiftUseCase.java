@@ -31,6 +31,10 @@ public class ScheduleRecalculateOnCrewOfShiftUseCase {
 
     @Transactional
     public void execute(int crewId) {
+
+        LocalDate targetDate = LocalDate.now();
+        log.info("Пересчёт расписания на {} в связи со снятием бригады {} со смены", targetDate, crewId);
+
         EngineerCrew crew = engineerCrewRepository.findById(crewId)
                 .orElseThrow(() -> new CrewNotFoundException("Бригда %s не найдена".formatted(crewId)));
 
@@ -41,10 +45,8 @@ public class ScheduleRecalculateOnCrewOfShiftUseCase {
         }
 
         Region region = crew.getRegion();
-        LocalDate targetDate = LocalDate.now();
 
         ScheduleHistoryResult result = scheduleRecalculationService.recalculateSchedule(region, targetDate);
-        log.info("Пересчёт расписания на {} в связи со снятием бригады {} со смены", targetDate, crewId);
 
         requestActionAuditRepository.saveAll(auditFactory.createFrom(result));
 
