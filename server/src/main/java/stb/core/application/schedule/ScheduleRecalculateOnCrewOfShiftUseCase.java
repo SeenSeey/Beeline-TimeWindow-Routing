@@ -21,7 +21,6 @@ import java.util.List;
 public class ScheduleRecalculateOnCrewOfShiftUseCase {
 
     private final RequestRepository requestRepository;
-    private final RequestStatusRepository requestStatusRepository;
     private final EngineerCrewRepository engineerCrewRepository;
     private final ScheduleRecalculationService scheduleRecalculationService;
     private final RequestActionAuditService auditFactory;
@@ -32,6 +31,10 @@ public class ScheduleRecalculateOnCrewOfShiftUseCase {
 
     @Transactional
     public void execute(int crewId) {
+
+        LocalDate targetDate = LocalDate.now();
+        log.info("Пересчёт расписания на {} в связи со снятием бригады {} со смены", targetDate, crewId);
+
         EngineerCrew crew = engineerCrewRepository.findById(crewId)
                 .orElseThrow(() -> new CrewNotFoundException("Бригда %s не найдена".formatted(crewId)));
 
@@ -42,22 +45,20 @@ public class ScheduleRecalculateOnCrewOfShiftUseCase {
         }
 
         Region region = crew.getRegion();
-        LocalDate targetDate = LocalDate.now();
 
         ScheduleHistoryResult result = scheduleRecalculationService.recalculateSchedule(region, targetDate);
-        log.info("Пересчёт расписания на {} в связи со снятием бригады {} со смены", targetDate, crewId);
 
-        // requestActionAuditRepository.saveAll(auditFactory.createFrom(result));
+        requestActionAuditRepository.saveAll(auditFactory.createFrom(result));
 
         List<AlterationReason> reasons = alterationReasonAssmblerService.assembleReasons(
                 result,
                 slot -> AlterationReason.addedDueToCrewOffShift(result.schedule(), slot.getRequest(), crew),
                 slot -> AlterationReason.reassignedDueToCrewOffShift(result.schedule(), slot.getRequest(), crew),
-                slot -> AlterationReason.startTimeChangedDueToCrewOffShift(result.schedule(), slot.getRequest(), crew),
+                change -> AlterationReason.startTimeChangedDueToCrewOffShift(result.schedule(), change.slot().getRequest(), change.previousStartTime(), crew),
                 request -> AlterationReason.removedDueToCrewOffShift(result.schedule(), request, crew)
         );
 
-        // reasonRepository.saveAll(reasons);
+        reasonRepository.saveAll(reasons);
 
         log.info("Расписание для региона {} пересчитано в связи с выходом инженера со смены {}", region.getDisplayName(), crew.getName());
     }

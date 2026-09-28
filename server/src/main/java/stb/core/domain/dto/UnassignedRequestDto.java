@@ -24,9 +24,14 @@ public record UnassignedRequestDto(
     LocalTime requestTimeWindowEnd,
     String assignedCrew,
     LocalDateTime assignedAt,
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+    AlterationReasonDto alterationReason
 ) {
     public static UnassignedRequestDto from(Request request) {
+        return from(request, null);
+    }
+
+    public static UnassignedRequestDto from(Request request, AlterationReasonDto alterationReason) {
         JobType jobType = request.getJobType();
 
         return new UnassignedRequestDto(
@@ -54,7 +59,8 @@ public record UnassignedRequestDto(
             request.getEndTimeWindow(),
             Optional.ofNullable(request.getAssignedCrew()).map(EngineerCrew::getName).orElse(null),
             request.getAssignedAt(),
-            request.getCreatedAt()
+            request.getCreatedAt(),
+            alterationReason
         );
     }
 }

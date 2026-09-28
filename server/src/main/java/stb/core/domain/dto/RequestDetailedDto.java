@@ -27,10 +27,11 @@ public record RequestDetailedDto(
         LocalDateTime createdAt,
         LocalDateTime completedAt,
         LocalDateTime canceledAt,
-        List<ScheduledVisitDto> scheduledVisits
+        List<ScheduledVisitDto> scheduledVisits,
+        List<RequestHistoryItemDto> history
 ) {
 
-    public static RequestDetailedDto from(Request request, List<ScheduleSlot> workSlots) {
+    public static RequestDetailedDto from(Request request, List<ScheduleSlot> workSlots, List<RequestActionAudit> audits) {
         return new RequestDetailedDto(
                 request.getId(),
                 request.getFullAddress(),
@@ -53,7 +54,8 @@ public record RequestDetailedDto(
                 request.getCreatedAt(),
                 request.getCompletedAt(),
                 request.getCanceledAt(),
-                workSlots.stream().map(ScheduledVisitDto::from).toList()
+                workSlots.stream().map(ScheduledVisitDto::from).toList(),
+                audits.stream().map(RequestHistoryItemDto::from).toList()
         );
     }
 

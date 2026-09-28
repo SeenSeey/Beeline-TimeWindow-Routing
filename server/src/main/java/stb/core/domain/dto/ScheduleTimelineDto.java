@@ -13,8 +13,7 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                                   DictionaryDto status,
                                   RegionDto region,
                                   List<EngineerCrewRow> engineers,
-                                  List<UnassignedRequestDto> unassignedRequests,
-                                  List<AlterationReasonDto> alterationReasons) {
+                                  List<UnassignedRequestDto> unassignedRequests) {
 
     public static ScheduleTimelineDto from(Schedule schedule) {
         return from(schedule, List.of());
@@ -26,23 +25,22 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                 schedule.getCreatedAt(),
                 DictionaryDto.from(schedule.getStatus()),
                 RegionDto.from(schedule.getRegion()),
-                EngineerCrewRow.listFrom(schedule.getSlots()),
-                unassignedRequests,
-                List.of()
+                EngineerCrewRow.listFrom(schedule.getSlots(), Map.of()),
+                unassignedRequests
         );
     }
 
     public static ScheduleTimelineDto from(Schedule schedule,
                                            List<UnassignedRequestDto> unassignedRequests,
                                            List<EngineerCrew> regionCrews) {
-        return from(schedule, unassignedRequests, regionCrews, Set.of(), List.of());
+        return from(schedule, unassignedRequests, regionCrews, Set.of(), Map.of());
     }
 
     public static ScheduleTimelineDto from(Schedule schedule,
                                            List<UnassignedRequestDto> unassignedRequests,
                                            List<EngineerCrew> regionCrews,
                                            Set<Integer> offShiftCrewIds) {
-        return from(schedule, unassignedRequests, regionCrews, offShiftCrewIds, List.of());
+        return from(schedule, unassignedRequests, regionCrews, offShiftCrewIds, Map.of());
     }
 
     /**
@@ -53,8 +51,8 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                                            List<UnassignedRequestDto> unassignedRequests,
                                            List<EngineerCrew> regionCrews,
                                            Set<Integer> offShiftCrewIds,
-                                           List<AlterationReasonDto> alterationReasons) {
-        List<EngineerCrewRow> rows = new ArrayList<>(EngineerCrewRow.listFrom(schedule.getSlots())
+                                           Map<Integer, AlterationReasonDto> reasonsByRequestId) {
+        List<EngineerCrewRow> rows = new ArrayList<>(EngineerCrewRow.listFrom(schedule.getSlots(), reasonsByRequestId)
                 .stream()
                 .map(row -> row.withOffShift(offShiftCrewIds.contains(row.id())))
                 .toList());
@@ -69,8 +67,7 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                 DictionaryDto.from(schedule.getStatus()),
                 RegionDto.from(schedule.getRegion()),
                 rows,
-                unassignedRequests,
-                alterationReasons
+                unassignedRequests
         );
     }
 
@@ -99,7 +96,7 @@ public record ScheduleTimelineDto(LocalDate targetDate,
             return new EngineerCrewRow(id, name, shiftStartTime, shiftEndTime, vehicle, skills, equipment, slots, offShift);
         }
 
-        public static List<EngineerCrewRow> listFrom(List<ScheduleSlot> slots) {
+        public static List<EngineerCrewRow> listFrom(List<ScheduleSlot> slots, Map<Integer, AlterationReasonDto> reasonsByRequestId) {
             if (slots.isEmpty()) {
                 return Collections.emptyList();
             }
@@ -115,12 +112,14 @@ public record ScheduleTimelineDto(LocalDate targetDate,
 
             return slotsByEngineerId.values()
                     .stream()
-                    .map(engineerSlots -> EngineerCrewRow.from(engineerSlots.getFirst().getEngineerCrew(), engineerSlots))
+                    .map(engineerSlots -> EngineerCrewRow.from(engineerSlots.getFirst().getEngineerCrew(), engineerSlots, reasonsByRequestId))
                     .toList();
         }
 
-        public static EngineerCrewRow from(EngineerCrew crew, List<ScheduleSlot> slots) {
-            return of(crew, slots.stream().map(TimelineSlotDto::from).toList());
+        public static EngineerCrewRow from(EngineerCrew crew, List<ScheduleSlot> slots, Map<Integer, AlterationReasonDto> reasonsByRequestId) {
+            return of(crew, slots.stream()
+                    .map(slot -> TimelineSlotDto.from(slot, reasonsByRequestId.get(slot.getRequest().getId())))
+                    .toList());
         }
 
         public static EngineerCrewRow of(EngineerCrew crew, List<TimelineSlotDto> slots) {
@@ -159,10 +158,11 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                                   LocalTime requestTimeWindowEnd,
                                   LocalDateTime createdAt,
                                   LocalDateTime completedAt,
-                                  LocalDateTime canceledAt) {
+                                  LocalDateTime canceledAt,
+                                  AlterationReasonDto alterationReason) {
 
-        public static TimelineSlotDto from(ScheduleSlot slot) {
-            return of(slot.getRequest(), slot.getType(), slot.getArrivalTime(), slot.getStartTimeWindow(), slot.getEndTimeWindow());
+        public static TimelineSlotDto from(ScheduleSlot slot, AlterationReasonDto alterationReason) {
+            return of(slot.getRequest(), slot.getType(), slot.getArrivalTime(), slot.getStartTimeWindow(), slot.getEndTimeWindow(), alterationReason);
         }
 
         public static TimelineSlotDto of(Request request,
@@ -170,6 +170,15 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                                          LocalTime arrivalTime,
                                          LocalTime startTime,
                                          LocalTime endTime) {
+            return of(request, type, arrivalTime, startTime, endTime, null);
+        }
+
+        public static TimelineSlotDto of(Request request,
+                                         ScheduleSlot.SlotType type,
+                                         LocalTime arrivalTime,
+                                         LocalTime startTime,
+                                         LocalTime endTime,
+                                         AlterationReasonDto alterationReason) {
             return new TimelineSlotDto(
                     request.getId(),
                     request.getFullAddress(),
@@ -188,7 +197,8 @@ public record ScheduleTimelineDto(LocalDate targetDate,
                     request.getEndTimeWindow(),
                     request.getCreatedAt(),
                     request.getCompletedAt(),
-                    request.getCanceledAt()
+                    request.getCanceledAt(),
+                    alterationReason
             );
         }
     }

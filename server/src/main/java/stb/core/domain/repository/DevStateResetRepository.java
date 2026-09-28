@@ -4,6 +4,7 @@ import org.springframework.stereotype.Repository;
 
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import stb.core.domain.model.RequestActionAudit;
 import stb.core.domain.model.RequestStatus;
 
 @Repository
@@ -23,7 +24,9 @@ public class DevStateResetRepository {
                 .setParameter("keyword", RequestStatus.Keyword.IDLE)
                 .getSingleResult();
 
-        entityManager.createQuery("delete from RequestActionAudit").executeUpdate();
+        entityManager.createQuery("delete from RequestActionAudit audit where audit.action <> :created")
+                .setParameter("created", RequestActionAudit.Action.REQUEST_CREATED)
+                .executeUpdate();
         entityManager.createQuery("delete from EngineerCrewEquipment").executeUpdate();
         entityManager.createQuery("delete from AlterationReason").executeUpdate();
         entityManager.createQuery("delete from ScheduleSlot").executeUpdate();

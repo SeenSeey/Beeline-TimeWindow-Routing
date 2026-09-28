@@ -3,6 +3,7 @@ package stb.core.application.schedule;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -57,13 +58,15 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
                 )
             );
 
+        Map<Integer, AlterationReasonDto> reasonsByRequestId = findAlterationReasons(schedule);
+
         // every crew of the region is shown, the ones taken off shift today marked as such
         return ScheduleTimelineDto.from(
             schedule,
-            findUnassignedRequests(schedule, regionId),
+            findUnassignedRequests(schedule, regionId, reasonsByRequestId),
             engineerCrewRepository.findAllByRegionId(regionId),
             findOffShiftCrewIds(regionId, targetDate),
-            findAlterationReasons(schedule)
+            reasonsByRequestId
         );
     }
 
@@ -75,13 +78,15 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
             .collect(Collectors.toSet());
     }
 
-    private List<AlterationReasonDto> findAlterationReasons(Schedule schedule) {
+    private Map<Integer, AlterationReasonDto> findAlterationReasons(Schedule schedule) {
         return reasonRepository.findAllDistinctByScheduleIdOrderById(schedule.getId()).stream()
                 .map(AlterationReasonDto::from)
-                .toList();
+                .collect(Collectors.toMap(AlterationReasonDto::requestId, reason -> reason));
     }
 
-    private List<UnassignedRequestDto> findUnassignedRequests(Schedule schedule, int regionId) {
+    private List<UnassignedRequestDto> findUnassignedRequests(Schedule schedule,
+                                                              int regionId,
+                                                              Map<Integer, AlterationReasonDto> reasonsByRequestId) {
         if (schedule.getStatus() != Schedule.Status.CREATED) {
             return List.of();
         }
@@ -89,7 +94,7 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
         return requestRepository
             .findAllUnassignedByRegionIdAndStatus(regionId, RequestStatus.Keyword.IDLE)
             .stream()
-            .map(UnassignedRequestDto::from)
+            .map(request -> UnassignedRequestDto.from(request, reasonsByRequestId.get(request.getId())))
             .toList();
     }
 }

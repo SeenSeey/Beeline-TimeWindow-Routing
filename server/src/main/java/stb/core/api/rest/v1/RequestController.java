@@ -24,7 +24,6 @@ public class RequestController {
     private final RequestMarkInProgressUseCase requestMarkInProgressUseCase;
     private final RequestMapPointsFindByRegionUseCase requestMapPointsFindByRegionUseCase;
     private final RequestCreateUseCase requestCreateUseCase;
-    private final RequestHistoryFindUseCase requestHistoryFindUseCase;
 
     @GetMapping("/map")
     public ResponseEntity<ServerResponse<List<RequestMapPointDto>>> findMapPoints(@RequestParam int regionId) {
@@ -42,11 +41,6 @@ public class RequestController {
     public ResponseEntity<ServerResponse<RequestDto>> createRequest(@RequestBody RequestCreateDto createDto) {
         var request = requestCreateUseCase.execute(createDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(ServerResponse.ok(HttpStatus.CREATED.value(), request));
-    }
-
-    @GetMapping("/{id}/history")
-    public ResponseEntity<ServerResponse<List<RequestHistoryItemDto>>> findHistory(@PathVariable int id) {
-        return ResponseEntity.ok(ServerResponse.ok(HttpStatus.OK.value(), requestHistoryFindUseCase.execute(id)));
     }
 
     @PatchMapping("/{id}/in_progress")

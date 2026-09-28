@@ -6,6 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
@@ -53,11 +54,23 @@ public class AlterationReason extends BaseEntity {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    public static AlterationReason initialNoAvailableTimeSlots(Schedule schedule, Request request) {
+    public static AlterationReason notPlaced(Schedule schedule, Request request, List<EngineerCrew> crewsOnShift) {
+        List<EngineerCrew> skilledCrews = crewsOnShift.stream()
+                .filter(crew -> !Collections.disjoint(crew.getSkills(), request.getJobType().getRequiredSkills()))
+                .toList();
+
+        Type type = Type.INITIAL_NO_AVAILABLE_TIME_SLOT;
+        if (skilledCrews.isEmpty()) {
+            type = Type.NO_CREW_WITH_REQUIRED_SKILL;
+        } else if (request.getRequiredVehicle() != null && skilledCrews.stream()
+                .noneMatch(crew -> crew.getVehicle().getKeyword() == request.getRequiredVehicle().getKeyword())) {
+            type = Type.NO_CREW_WITH_REQUIRED_VEHICLE;
+        }
+
         return AlterationReason.builder()
                 .schedule(schedule)
                 .request(request)
-                .type(Type.INITIAL_NO_AVAILABLE_TIME_SLOT)
+                .type(type)
                 .createdAt(LocalDateTime.now())
                 .build();
     }
@@ -92,11 +105,12 @@ public class AlterationReason extends BaseEntity {
                 .build();
     }
 
-    public static AlterationReason startTimeChangedDueToEmergency(Schedule schedule, Request request, Request causeRequest) {
+    public static AlterationReason startTimeChangedDueToEmergency(Schedule schedule, Request request, LocalTime previousStartTime, Request causeRequest) {
         return AlterationReason.builder()
                 .schedule(schedule)
                 .request(request)
                 .type(Type.TIME_CHANGED_FOR_HIGHER_PRIORITY_REQUEST)
+                .previousStartTime(previousStartTime)
                 .causeRequest(causeRequest)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -132,12 +146,54 @@ public class AlterationReason extends BaseEntity {
                 .build();
     }
 
-    public static AlterationReason startTimeChangedDueToCrewOffShift(Schedule schedule, Request request, EngineerCrew causeCrew) {
+    public static AlterationReason startTimeChangedDueToCrewOffShift(Schedule schedule, Request request, LocalTime previousStartTime, EngineerCrew causeCrew) {
         return AlterationReason.builder()
                 .schedule(schedule)
                 .request(request)
                 .type(Type.TIME_CHANGED_FOR_CREW_OFF_SHIFT)
+                .previousStartTime(previousStartTime)
                 .causeCrew(causeCrew)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    public static AlterationReason addedAfterRequestCancellation(Schedule schedule, Request request, Request causeRequest) {
+        return AlterationReason.builder()
+                .schedule(schedule)
+                .request(request)
+                .type(Type.ADDED_AFTER_REQUEST_CANCELLATION)
+                .causeRequest(causeRequest)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    public static AlterationReason reassignedAfterRequestCancellation(Schedule schedule, Request request, Request causeRequest) {
+        return AlterationReason.builder()
+                .schedule(schedule)
+                .request(request)
+                .type(Type.REASSIGNED_AFTER_REQUEST_CANCELLATION)
+                .causeRequest(causeRequest)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    public static AlterationReason removedAfterRequestCancellation(Schedule schedule, Request request, Request causeRequest) {
+        return AlterationReason.builder()
+                .schedule(schedule)
+                .request(request)
+                .type(Type.REMOVED_AFTER_REQUEST_CANCELLATION)
+                .causeRequest(causeRequest)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    public static AlterationReason startTimeChangedAfterRequestCancellation(Schedule schedule, Request request, LocalTime previousStartTime, Request causeRequest) {
+        return AlterationReason.builder()
+                .schedule(schedule)
+                .request(request)
+                .type(Type.TIME_CHANGED_AFTER_REQUEST_CANCELLATION)
+                .previousStartTime(previousStartTime)
+                .causeRequest(causeRequest)
                 .createdAt(LocalDateTime.now())
                 .build();
     }
@@ -147,33 +203,24 @@ public class AlterationReason extends BaseEntity {
     }
 
     public enum Type {
-        INITIAL_NO_AVAILABLE_TIME_SLOT(reason -> ""),
+        INITIAL_NO_AVAILABLE_TIME_SLOT( reason -> "У подходящих бригад не нашлось свободного времени в окне визита %s–%s".formatted(reason.getRequest().getStartTimeWindow(), reason.getRequest().getEndTimeWindow())),
+        NO_CREW_WITH_REQUIRED_SKILL(reason -> formatSkillReason(reason.getRequest())),
+        NO_CREW_WITH_REQUIRED_VEHICLE(reason -> "Среди бригад на смене с нужным навыком нет бригады с транспортом «%s»".formatted(reason.getRequest().getRequiredVehicle().getDisplayName())),
 
-        ADDED_FOR_HIGHER_PRIORITY_REQUEST(reason -> ""),
-        REASSIGNED_FOR_HIGHER_PRIORITY_REQUEST(reason -> ""),
+        ADDED_FOR_HIGHER_PRIORITY_REQUEST(reason -> "Заявка добавлена в расписание при пересчёте после поступления срочной заявки №%d".formatted(reason.getCauseRequest().getId())),
+        REASSIGNED_FOR_HIGHER_PRIORITY_REQUEST(reason -> "Заявка передана другой бригаде при пересчёте после поступления срочной заявки №%d".formatted(reason.getCauseRequest().getId())),
         REMOVED_FOR_HIGHER_PRIORITY_REQUEST(reason -> "Заявка снята с расписания из-за срочной заявки №%d".formatted(reason.getCauseRequest().getId())),
-        TIME_CHANGED_FOR_HIGHER_PRIORITY_REQUEST(reason -> ""),
+        TIME_CHANGED_FOR_HIGHER_PRIORITY_REQUEST(reason -> "Визит перенесён (вместо %s) при пересчёте после поступления срочной заявки №%d".formatted(TIME_FORMATTER.format(reason.getPreviousStartTime()), reason.getCauseRequest().getId())),
 
-        ADDED_AFTER_REQUEST_CANCELLATION(reason -> ""),
-        REMOVED_AFTER_REQUEST_CANCELLATION(reason -> ""),
-        ADDED_FOR_CREW_OFF_SHIFT(reason -> ""),
-        REMOVED_FOR_CREW_OFF_SHIFT(reason -> ""),
-        REASSIGNED_FOR_CREW_OFF_SHIFT(reason -> ""),
-        TIME_CHANGED_FOR_CREW_OFF_SHIFT(reason -> ""),
+        ADDED_AFTER_REQUEST_CANCELLATION(reason -> "Заявка добавлена в расписание после отмены заявки №%d".formatted(reason.getCauseRequest().getId())),
+        REMOVED_AFTER_REQUEST_CANCELLATION(reason -> "Заявка снята с расписания при пересчёте после отмены заявки №%d".formatted(reason.getCauseRequest().getId())),
+        REASSIGNED_AFTER_REQUEST_CANCELLATION(reason -> "Заявка передана другой бригаде при пересчёте после отмены заявки №%d".formatted(reason.getCauseRequest().getId())),
+        TIME_CHANGED_AFTER_REQUEST_CANCELLATION(reason -> "Визит перенесён (вместо %s) при пересчёте после отмены заявки №%d".formatted(TIME_FORMATTER.format(reason.getPreviousStartTime()), reason.getCauseRequest().getId())),
 
-        // TODO: проверить нужно ли
-        // перемещения, объяснимые без контекста пересчёта: хранят прежнюю позицию заявки
-        REASSIGNED(reason -> ""),
-        RESCHEDULED_AFTER_INSERTION(reason -> ""),
-        RESCHEDULED_AFTER_REMOVAL(reason -> ""),
-        RESCHEDULED(reason -> ""),
-        NO_CREW_WITH_REQUIRED_SKILL(reason -> ""),
-        NO_CREW_WITH_REQUIRED_VEHICLE(reason -> ""),
-        NO_CAPACITY_FOR_REQUIRED_EQUIPMENT(reason -> ""),
-        NO_REQUIRED_EQUIPMENT_IN_STOCK(reason -> "");
-
-        // TODO: проверить, нужно ли
-        // NO_AVAILABLE_TIME_SLOT
+        ADDED_FOR_CREW_OFF_SHIFT(reason -> "Заявка добавлена в расписание при пересчёте после снятия бригады «%s» со смены".formatted(reason.getCauseCrew().getName())),
+        REMOVED_FOR_CREW_OFF_SHIFT(reason -> "Заявка снята с расписания после снятия бригады «%s» со смены".formatted(reason.getCauseCrew().getName())),
+        REASSIGNED_FOR_CREW_OFF_SHIFT(reason -> "Заявка передана другой бригаде при пересчёте после снятия бригады «%s» со смены".formatted(reason.getCauseCrew().getName())),
+        TIME_CHANGED_FOR_CREW_OFF_SHIFT(reason -> "Визит перенесён (вместо %s) при пересчёте после снятия бригады «%s» со смены".formatted(TIME_FORMATTER.format(reason.getPreviousStartTime()), reason.getCauseCrew().getName()));
 
         private final Function<AlterationReason, String> descriptionBuilder;
 
@@ -181,7 +228,7 @@ public class AlterationReason extends BaseEntity {
             this.descriptionBuilder = descriptionBuilder;
         }
 
-        private String formatSkillReason(Request request) {
+        private static String formatSkillReason(Request request) {
             List<String> skills = request.getJobType().getRequiredSkills().stream()
                     .map(skill -> "«%s»".formatted(skill.getDisplayName()))
                     .toList();

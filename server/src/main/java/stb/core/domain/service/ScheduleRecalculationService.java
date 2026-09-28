@@ -89,15 +89,22 @@ public class ScheduleRecalculationService {
         List<ScheduleSlot> assigned = new ArrayList<>();
         List<ScheduleSlot> reassigned = new ArrayList<>();
         List<Request> unassigned = new ArrayList<>();
-        List<ScheduleSlot> startTimeChanged = new ArrayList<>();
+        List<Request> notPlaced = new ArrayList<>();
+        List<ScheduleHistoryResult.StartTimeChange> startTimeChanged = new ArrayList<>();
 
         for (OutputSlotDto slotDto : result.requestDtoList()) {
             Request request = requestById.get(slotDto.requestId());
+            ScheduleSlot previousSlot = slotByRequestId.get(request.getId());
 
             if (slotDto.engineerId() == null || slotDto.serviceStartTime() == null || slotDto.departureTime() == null) {
                 log.warn("Не удалось распределить заявку {} в текущее расписание региона {}", slotDto.requestId(), region.getDisplayName());
                 request.unassign(statuses);
-                unassigned.add(request);
+
+                if (previousSlot != null) {
+                    unassigned.add(request);
+                } else {
+                    notPlaced.add(request);
+                }
                 continue;
             }
 
@@ -112,13 +119,11 @@ public class ScheduleRecalculationService {
                     slotDto.departureTime()
             );
 
-            ScheduleSlot previousSlot = slotByRequestId.get(request.getId());
-
             if (previousSlot != null) {
-                if (slotStartTimeChanged(previousSlot, slot)) {
-                    startTimeChanged.add(slot);
-                } else if (slotCrewChanged(previousSlot, slot)) {
+                if (slotCrewChanged(previousSlot, slot)) {
                     reassigned.add(slot);
+                } else if (slotStartTimeChanged(previousSlot, slot)) {
+                    startTimeChanged.add(new ScheduleHistoryResult.StartTimeChange(slot, previousSlot.getStartTimeWindow()));
                 }
             } else {
                 assigned.add(slot);
@@ -128,7 +133,7 @@ public class ScheduleRecalculationService {
         scheduleRepository.save(schedule);
         requestRepository.saveAll(requestsToReschedule);
 
-        return new ScheduleHistoryResult(startTimeChanged, assigned, reassigned, unassigned, schedule);
+        return new ScheduleHistoryResult(startTimeChanged, assigned, reassigned, unassigned, notPlaced, engineerCrews, schedule);
     }
 
     private boolean slotStartTimeChanged(ScheduleSlot previousSlot, ScheduleSlot currentSlot) {
