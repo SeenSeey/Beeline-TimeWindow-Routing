@@ -28,6 +28,7 @@ public class ScheduleEditUseCase {
     private final ScheduleSlotRepository scheduleSlotRepository;
     private final CrewRouteTimingDomainService crewRouteTimingDomainService;
     private final RequestActionAuditRepository requestActionAuditRepository;
+    private final AlterationReasonRepository alterationReasonRepository;
 
     private record CrewPlan(EngineerCrew crew, List<PlannedVisit> visits) {
     }
@@ -114,7 +115,7 @@ public class ScheduleEditUseCase {
                 } else if (slotsByRequestId.containsKey(request.getId())) {
                     ScheduleSlot previousSlot = slotsByRequestId.get(request.getId());
 
-                    if (previousSlot.getStartTimeWindow() != visit.startTime()) {
+                    if (!Objects.equals(previousSlot.getStartTimeWindow(), visit.startTime())) {
                         audit.add(RequestActionAudit.rescheduled(request, visit.startTime(), visit.endTime()));
                     }
                 }
@@ -123,8 +124,12 @@ public class ScheduleEditUseCase {
             }
         });
 
+        // the dispatcher's changes aren't explained by the last recalculation anymore
+        List<Integer> changedRequestIds = audit.stream().map(item -> item.getRequest().getId()).toList();
+        alterationReasonRepository.deleteAllByScheduleIdAndRequestIdIn(schedule.getId(), changedRequestIds);
+
         scheduleRepository.save(schedule);
-        // requestActionAuditRepository.saveAll(audit);
+        requestActionAuditRepository.saveAll(audit);
     }
 
     private EditPlan plan(int regionId, ScheduleEditDto edit) {

@@ -203,22 +203,22 @@ public class AlterationReason extends BaseEntity {
     }
 
     public enum Type {
-        INITIAL_NO_AVAILABLE_TIME_SLOT( reason -> "У подходящих бригад не нашлось свободного времени в окне визита %s–%s".formatted(reason.getRequest().getStartTimeWindow(), reason.getRequest().getEndTimeWindow())),
+        INITIAL_NO_AVAILABLE_TIME_SLOT(reason -> formatNoTimeSlotReason(reason.getRequest())),
         NO_CREW_WITH_REQUIRED_SKILL(reason -> formatSkillReason(reason.getRequest())),
         NO_CREW_WITH_REQUIRED_VEHICLE(reason -> "Среди бригад на смене с нужным навыком нет бригады с транспортом «%s»".formatted(reason.getRequest().getRequiredVehicle().getDisplayName())),
 
         ADDED_FOR_HIGHER_PRIORITY_REQUEST(reason -> "Заявка добавлена в расписание при пересчёте после поступления срочной заявки №%d".formatted(reason.getCauseRequest().getId())),
         REASSIGNED_FOR_HIGHER_PRIORITY_REQUEST(reason -> "Заявка передана другой бригаде при пересчёте после поступления срочной заявки №%d".formatted(reason.getCauseRequest().getId())),
-        REMOVED_FOR_HIGHER_PRIORITY_REQUEST(reason -> "Заявка снята с расписания из-за срочной заявки №%d".formatted(reason.getCauseRequest().getId())),
+        REMOVED_FOR_HIGHER_PRIORITY_REQUEST(reason -> "Заявка снята с расписания при пересчёте после поступления срочной заявки №%d".formatted(reason.getCauseRequest().getId())),
         TIME_CHANGED_FOR_HIGHER_PRIORITY_REQUEST(reason -> "Визит перенесён (вместо %s) при пересчёте после поступления срочной заявки №%d".formatted(TIME_FORMATTER.format(reason.getPreviousStartTime()), reason.getCauseRequest().getId())),
 
-        ADDED_AFTER_REQUEST_CANCELLATION(reason -> "Заявка добавлена в расписание после отмены заявки №%d".formatted(reason.getCauseRequest().getId())),
+        ADDED_AFTER_REQUEST_CANCELLATION(reason -> "Заявка добавлена в расписание при пересчёте после отмены заявки №%d".formatted(reason.getCauseRequest().getId())),
         REMOVED_AFTER_REQUEST_CANCELLATION(reason -> "Заявка снята с расписания при пересчёте после отмены заявки №%d".formatted(reason.getCauseRequest().getId())),
         REASSIGNED_AFTER_REQUEST_CANCELLATION(reason -> "Заявка передана другой бригаде при пересчёте после отмены заявки №%d".formatted(reason.getCauseRequest().getId())),
         TIME_CHANGED_AFTER_REQUEST_CANCELLATION(reason -> "Визит перенесён (вместо %s) при пересчёте после отмены заявки №%d".formatted(TIME_FORMATTER.format(reason.getPreviousStartTime()), reason.getCauseRequest().getId())),
 
         ADDED_FOR_CREW_OFF_SHIFT(reason -> "Заявка добавлена в расписание при пересчёте после снятия бригады «%s» со смены".formatted(reason.getCauseCrew().getName())),
-        REMOVED_FOR_CREW_OFF_SHIFT(reason -> "Заявка снята с расписания после снятия бригады «%s» со смены".formatted(reason.getCauseCrew().getName())),
+        REMOVED_FOR_CREW_OFF_SHIFT(reason -> "Заявка снята с расписания при пересчёте после снятия бригады «%s» со смены".formatted(reason.getCauseCrew().getName())),
         REASSIGNED_FOR_CREW_OFF_SHIFT(reason -> "Заявка передана другой бригаде при пересчёте после снятия бригады «%s» со смены".formatted(reason.getCauseCrew().getName())),
         TIME_CHANGED_FOR_CREW_OFF_SHIFT(reason -> "Визит перенесён (вместо %s) при пересчёте после снятия бригады «%s» со смены".formatted(TIME_FORMATTER.format(reason.getPreviousStartTime()), reason.getCauseCrew().getName()));
 
@@ -226,6 +226,17 @@ public class AlterationReason extends BaseEntity {
 
         Type(Function<AlterationReason, String> descriptionBuilder) {
             this.descriptionBuilder = descriptionBuilder;
+        }
+
+        // notPlaced doesn't check the crews' equipment, so for a request that needs it the stock may be the cause too
+        private static String formatNoTimeSlotReason(Request request) {
+            String reason = "У подходящих бригад не нашлось свободного времени в окне визита %s–%s".formatted(request.getStartTimeWindow(), request.getEndTimeWindow());
+
+            if (request.getRequiredEquipment() == null) {
+                return reason;
+            }
+
+            return "%s или оборудования «%s»".formatted(reason, request.getRequiredEquipment().getDisplayName());
         }
 
         private static String formatSkillReason(Request request) {
