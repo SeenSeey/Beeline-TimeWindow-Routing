@@ -21,6 +21,10 @@
     <div v-if="visit.slot.requiredVehicle">Нужен транспорт: {{ visit.slot.requiredVehicle.displayName }}</div>
     <div v-if="visit.slot.requiredEquipment">Нужно оборудование: {{ visit.slot.requiredEquipment }}</div>
     <div v-if="visit.outOfWindow" class="font-medium text-red-400">Назначено вне запрошенного окна</div>
+    <!-- why a recalculation changed this visit; the bar carries a mark in its corner -->
+    <div v-if="visit.slot.alterationReason" class="font-medium text-amber-300">
+      Изменено: {{ visit.slot.alterationReason.description }}
+    </div>
     <!-- edit mode: what the new position breaks -->
     <div v-for="message in violations" :key="message" class="font-medium text-red-400">⚠ {{ message }}</div>
   </div>

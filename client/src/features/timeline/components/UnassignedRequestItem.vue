@@ -28,6 +28,26 @@
         <UiBadge v-if="request.status">{{ request.status.displayName }}</UiBadge>
       </div>
 
+      <!-- why the request is out of the schedule, with the same mark as a changed bar on the timeline -->
+      <p
+        v-if="request.alterationReason"
+        class="m-0 flex items-start gap-x-1.5 rounded-md border border-line bg-surface px-2 py-1.5 text-xs text-ink"
+      >
+        <svg
+          class="mt-px size-3.5 shrink-0 text-[var(--job-addon)]"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M21 12a9 9 0 0 1-15.5 6.2L3 16m0 5v-5h5M3 12a9 9 0 0 1 15.5-6.2L21 8m0-5v5h-5" />
+        </svg>
+        <span><span class="text-muted">Причина:</span> {{ request.alterationReason.description }}</span>
+      </p>
+
       <dl class="m-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
         <template v-for="d in details" :key="d.label">
           <dt class="text-muted">{{ d.label }}</dt>

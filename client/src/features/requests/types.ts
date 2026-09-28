@@ -92,6 +92,35 @@ export interface RequestDetailed {
   canceledAt: string | null;
   /** newest schedule first */
   scheduledVisits: ScheduledVisit[];
+  /** what happened to the request, from the audit table; newest first */
+  history: RequestHistoryItem[];
+}
+
+/** RequestActionAudit.Action — mirrors the server enum */
+export type RequestHistoryAction =
+  | "REQUEST_CREATED"
+  | "ASSIGNED"
+  | "REASSIGNED"
+  | "RESCHEDULED"
+  | "REMOVED_FROM_SCHEDULE"
+  | "STARTED"
+  | "COMPLETED"
+  | "CANCELED";
+
+/** RequestHistoryItemDto — one row of the request's audit */
+export interface RequestHistoryItem {
+  id: number;
+  /** ISO LocalDateTime */
+  timestamp: string;
+  action: RequestHistoryAction;
+  /** the action's display name, e.g. "Назначена бригаде" */
+  description: string;
+  /** the crew assigned by this action (assigned, reassigned); null otherwise */
+  crewId: number | null;
+  crewName: string | null;
+  /** "HH:mm:ss" — the planned work (assigned, reassigned, rescheduled); null otherwise */
+  plannedStart: string | null;
+  plannedEnd: string | null;
 }
 
 /** PageResponseDto<T>: `page` is 1-based */

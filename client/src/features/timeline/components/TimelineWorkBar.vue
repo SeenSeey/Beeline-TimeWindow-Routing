@@ -43,7 +43,11 @@
   >
     <!-- Text only when the bar is wide enough to show something readable; the request number goes first
          so it survives truncation -->
-    <div v-if="scale.px(from, to) >= MIN_TEXT_PX" class="pointer-events-none px-1.5 py-[3px]">
+    <div
+      v-if="scale.px(from, to) >= MIN_TEXT_PX"
+      class="pointer-events-none px-1.5 py-[3px]"
+      :class="{ 'ps-5': showChanged }"
+    >
       <!-- right padding keeps the number clear of the vehicle icon -->
       <div
         class="mono flex items-center gap-x-1 truncate font-semibold"
@@ -82,6 +86,17 @@
       </div>
       <div v-else class="truncate opacity-90">{{ visit.slot.fullAddress }}</div>
     </div>
+
+    <!-- changed by a recalculation: a mark in the corner, the reason in the hover tooltip -->
+    <span
+      v-if="showChanged"
+      class="pointer-events-none absolute top-[3px] start-[3px] inline-flex size-3.5 items-center justify-center rounded-full border border-black/15 bg-white text-ink"
+      aria-hidden="true"
+    >
+      <svg class="size-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 0 1-15.5 6.2L3 16m0 5v-5h5M3 12a9 9 0 0 1 15.5-6.2L21 8m0-5v5h-5" />
+      </svg>
+    </span>
 
     <VehicleIcon
       v-if="showVehicle && visit.slot.requiredVehicle && !violations.length"
@@ -136,6 +151,10 @@ const showVehicle = computed(
   () => !!props.visit.slot.requiredVehicle && props.scale.px(props.from, props.to) >= MIN_ICON_PX,
 );
 
+/** the schedule changed this visit (moved, reassigned…): a mark in the corner, when the bar has room for it */
+const changeReason = computed(() => props.visit.slot.alterationReason?.description ?? null);
+const showChanged = computed(() => !!changeReason.value && props.scale.px(props.from, props.to) >= MIN_ICON_PX);
+
 type Progress = "inProgress" | "completed" | "canceled";
 
 const PROGRESS_LABELS: Record<Progress, string> = {
@@ -162,8 +181,9 @@ const ariaLabel = computed(() => {
   const equipment = requiredEquipment ? `, нужно оборудование: ${requiredEquipment}` : "";
   const problems = violations.value.length ? `. Ошибки: ${violations.value.join("; ")}` : "";
   const state = progress.value ? `, ${PROGRESS_LABELS[progress.value]}` : "";
+  const changed = changeReason.value ? `. Изменено: ${changeReason.value}` : "";
   const action = editing.value ? ". Перетащите на строку бригады или откройте меню действий" : "";
-  return `Заявка #${requestId}${state}, ${fullAddress}${vehicle}${equipment}${problems}${action}`;
+  return `Заявка #${requestId}${state}, ${fullAddress}${vehicle}${equipment}${changed}${problems}${action}`;
 });
 
 function openMenuAt(x: number, y: number): void {

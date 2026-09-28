@@ -59,6 +59,16 @@ export interface Slot {
   createdAt: string | null;
   completedAt: string | null;
   canceledAt: string | null;
+  /** why the schedule changed this visit (moved, reassigned…); null when it hasn't. Optional: the edit
+      preview's rows don't carry it */
+  alterationReason?: AlterationReason | null;
+}
+
+/** AlterationReasonDto — why a recalculation changed a request's place in the schedule */
+export interface AlterationReason {
+  requestId: number;
+  /** ready to show, e.g. "Бригада снята со смены" */
+  description: string;
 }
 
 export interface Engineer {
@@ -131,6 +141,8 @@ export interface UnassignedRequest {
   assignedCrew: string | null;
   assignedAt: string | null;
   createdAt: string;
+  /** why the request is out of the schedule (not placed, taken off a route…); null when there is no reason on record */
+  alterationReason?: AlterationReason | null;
 }
 
 /** ScheduleEditDto.Stop — one visit of an edited route */
