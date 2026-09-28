@@ -5,6 +5,7 @@ import lombok.*;
 import stb.core.domain.common.GeopositionProvider;
 import stb.core.domain.exception.DomainException;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -18,6 +19,8 @@ import java.util.List;
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Request extends BaseEntity implements GeopositionProvider {
+
+    public static final Duration URGENT_START_LIMIT = Duration.ofMinutes(100);
 
     @Column(name = "full_address", nullable = false)
     private String fullAddress;
