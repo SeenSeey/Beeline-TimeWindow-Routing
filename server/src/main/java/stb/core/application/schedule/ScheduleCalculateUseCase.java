@@ -36,6 +36,8 @@ public class ScheduleCalculateUseCase {
 
     private final RequestRepository requestRepository;
     private final ScheduleRepository scheduleRepository;
+    private final AlterationReasonRepository reasonRepository;
+    private final RequestActionAuditRepository requestActionAuditRepository;
     private final EngineerCrewRepository engineerCrewRepository;
     private final RequestStatusRepository requestStatusRepository;
     private final ScheduleAssemblerDomainService assemblerDomainService;
