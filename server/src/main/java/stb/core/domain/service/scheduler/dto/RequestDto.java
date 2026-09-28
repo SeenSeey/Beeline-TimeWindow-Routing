@@ -43,6 +43,7 @@ public class RequestDto {
     private final Integer requiredEquipmentId;
     private final LocalDateTime createdAt;
     private final LocalDateTime deadline;
+    private final Integer previousCrewId;
     //Shadow vars
 
     private EngineerCrewDto engineerCrewDto;

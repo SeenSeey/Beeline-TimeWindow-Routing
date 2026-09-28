@@ -25,6 +25,7 @@ public class RoutingConstraintProvider implements ConstraintProvider {
     private static final int DEADLINE_WEIGHT = 1_000;
     private static final int FOREIGN_DISTRICT_SOFT_WEIGHT_PER_KM = 20_000;
     private static final double EARTH_RADIUS_KM = 6371;
+    private static final int ENGINEER_CHANGE_WEIGHT = 100_000;
 
     @Override
     public Constraint[] defineConstraints(ConstraintFactory factory) {
@@ -39,14 +40,14 @@ public class RoutingConstraintProvider implements ConstraintProvider {
 
                 mediumMaximizeCompletedRequests(factory),
                 mediumMinimizeUnusedEngineerCrews(factory),
-                mediumPrioritiseDeadlierRequests(factory),
 
+                softPrioritiseDeadlierRequests(factory),
                 softMinimizeUsedEngineerCrews(factory),
                 softPreferOwnDistrict(factory),
                 softMinimizeTravelDistance(factory),
                 softMinimizeTravelTime(factory),
                 softStartUrgentRequestsAsEarlyAsPossible(factory),
-//                softMinimizeWaitingTime(factory)
+                softPenalizeOverdueRequests(factory)
         };
     }
 
@@ -235,40 +236,13 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                 )
                 .penalize(
                         HardMediumSoftScore.ONE_SOFT,
-                        request -> URGENT_START_DELAY_SOFT_WEIGHT * (int) Duration.between(
+                        request -> URGENT_START_DELAY_SOFT_WEIGHT *  Duration.between(
                                 request.getWindowStart(),
                                 request.getServiceStartTime()
                         ).toMinutes()
                 )
                 .asConstraint(
                         "Start urgent requests as early as possible"
-                );
-    }
-
-    private Constraint softMinimizeWaitingTime(
-            ConstraintFactory factory
-    ) {
-        return factory
-                .forEach(EngineerCrewDto.class)
-                .penalize(
-                        HardMediumSoftScore.ONE_SOFT,
-                        engineerCrewDto ->
-                                engineerCrewDto.getRoute()
-                                        .stream()
-                                        .filter(request ->
-                                                request.getArrivalTime() != null
-                                                        && request.getServiceStartTime() != null
-                                        )
-                                        .mapToLong(request ->
-                                                Duration.between(
-                                                        request.getArrivalTime(),
-                                                        request.getServiceStartTime()
-                                                ).toMinutes()
-                                        )
-                                        .sum()
-                )
-                .asConstraint(
-                        "Minimize waiting time"
                 );
     }
 
@@ -363,19 +337,102 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                 .asConstraint("Minimize unused engineer crews");
     }
 
-    private Constraint mediumPrioritiseDeadlierRequests(ConstraintFactory factory){
-        return factory.forEach(RequestDto.class)
+    private Constraint softPrioritiseDeadlierRequests(ConstraintFactory factory){
+        return factory.forEachIncludingUnassigned(RequestDto.class)
                 .filter(request ->
-                request.getEngineerCrewDto() != null
-                        && request.getArrivalTime() != null
+                     request.getDeadline() !=null
                 )
                 .penalize(HardMediumSoftScore.ONE_SOFT,
-                        request -> (DEADLINE_WEIGHT *
-                                 Duration.between(request.getCreatedAt(), request.getDeadline()).toMinutes()
-                                / Duration.between(LocalDateTime.now(), request.getDeadline()).toMinutes()
-                        )
+                        request ->
+                        {
+
+                            LocalDateTime serviceStartDateTime;
+                            if (request.getServiceStartTime()==null){
+                                serviceStartDateTime = LocalDateTime.now()
+                                        .withHour(23)
+                                        .withMinute(59);
+                            }else {
+                                serviceStartDateTime = LocalDateTime.now().with(request.getServiceStartTime()) ;
+                            }
+                            long minutesToDeadline = Duration.between(serviceStartDateTime,
+                                    request.getDeadline()).toMinutes();
+                            if (minutesToDeadline <= 0) {
+                                return 0;
+                            }
+
+
+
+                            return Math.max(0, DEADLINE_WEIGHT * Duration.between(request.getCreatedAt(), request.getDeadline()).toMinutes()
+                                    / (minutesToDeadline));
+                        }
+
                 ).asConstraint(
                         "Prioritise deadlier requests"
+                );
+    }
+    private Constraint softPenalizeOverdueRequests(
+            ConstraintFactory factory) {
+        return factory
+                .forEachIncludingUnassigned(RequestDto.class)
+                .filter(request ->
+                                 request.getDeadline() != null
+                )
+                .penalize(
+                        HardMediumSoftScore.ONE_SOFT,
+                        request -> {
+                            if (request.getServiceStartTime()==null){
+                                return Math.max(
+                                        0,
+                                        Duration.between(
+                                                request.getDeadline(),
+                                                LocalDateTime.now()
+                                                        .withHour(23)
+                                                        .withMinute(59)
+                                        ).toMinutes());
+
+                            }
+                            long overdueMinutes = Math.max(
+                                    0,
+                                    Duration.between(
+                                            request.getDeadline(),
+                                            LocalDateTime.now().with(request.getServiceStartTime())
+                                    ).toMinutes()
+                            );
+
+                            return Math.toIntExact(
+                                    overdueMinutes * DEADLINE_WEIGHT
+                            );
+                        }
+                )
+                .asConstraint("Penalize overdue requests");
+    }
+
+    private Constraint softMinimizeEngineerChanges(
+            ConstraintFactory factory
+    ){
+        return factory
+                .forEach(RequestDto.class)
+                .filter(request ->
+                        request.getPreviousCrewId() != null
+                )
+                .penalize(
+                        HardMediumSoftScore.ONE_SOFT,
+                        request -> {
+                            EngineerCrewDto currentCrew =
+                                    request.getEngineerCrewDto();
+
+                            if (currentCrew == null) {
+                                return 0;
+                            }
+
+                            return request.getPreviousCrewId()
+                                    .equals(currentCrew.getId())
+                                    ? 0
+                                    : ENGINEER_CHANGE_WEIGHT;
+                        }
+                )
+                .asConstraint(
+                        "Minimize changes to engineer crew"
                 );
     }
 }

@@ -77,7 +77,8 @@ public class SchedulerMapper {
             request.isUrgent(),
             request.getRequiredEquipment() != null ? request.getRequiredEquipment().getId() : null,
             request.getCreatedAt(),
-            request.getDeadline()
+            request.getDeadline(),
+            request.getAssignedCrew() != null ? request.getAssignedCrew().getId() : null
         );
     }
 
