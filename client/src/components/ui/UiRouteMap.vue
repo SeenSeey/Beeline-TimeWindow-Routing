@@ -5,6 +5,8 @@
 <script lang="ts">
 import type { RouteLocationRaw } from "vue-router";
 
+export type UiRouteStopStatus = "active" | "done" | "canceled";
+
 /** One stop of the route: a numbered pin that links somewhere */
 export interface UiRouteStop {
   /** stable identity of the stop */
@@ -19,6 +21,11 @@ export interface UiRouteStop {
   outlineColor?: string;
   /** where the pin leads; without it the pin is only a mark (e.g. the page's own place) */
   to?: RouteLocationRaw;
+  /**
+   * how far the stop got, drawn on the pin: under way (a white ring and a play badge), done (faded, a check
+   * badge), called off (grey, a cross badge); none: still ahead, the pin as it is
+   */
+  status?: UiRouteStopStatus;
   ariaLabel: string;
   /** extra data-* attributes on the pin, e.g. for a hover tooltip that looks them up */
   data?: Record<string, string>;
@@ -27,7 +34,7 @@ export interface UiRouteStop {
 
 <script setup lang="ts">
 import "maplibre-gl/dist/maplibre-gl.css";
-import maplibregl, { type GeoJSONSource } from "maplibre-gl";
+import maplibregl, { type ExpressionSpecification, type GeoJSONSource } from "maplibre-gl";
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { currentMapStyleUrl } from "@/utils/mapStyle";
@@ -165,14 +172,38 @@ function midpointOf(points: [number, number][]): [number, number] {
   return points[points.length - 1]!;
 }
 
-/** A leg's label: a small pill edged in the leg's colour, so it reads as that line's */
-function createLegLabelElement(text: string, color: string): HTMLElement {
+/**
+ * A leg's label: a small pill edged in the leg's colour, so it reads as that line's. Hovering it brings its
+ * leg forward: the other legs (their lines, arrows and labels) fade out
+ */
+function createLegLabelElement(text: string, color: string, legIndex: number): HTMLElement {
   const element = document.createElement("span");
   element.textContent = text;
+  element.dataset.legIndex = String(legIndex);
   element.className =
-    "mono pointer-events-none rounded-full border-2 bg-surface px-1.5 py-px text-[11px] leading-tight font-semibold whitespace-nowrap text-ink shadow-[0_1px_3px_rgb(0_0_0/0.25)]";
+    "mono cursor-default rounded-full border-2 bg-surface px-1.5 py-px text-[11px] leading-tight font-semibold whitespace-nowrap text-ink shadow-[0_1px_3px_rgb(0_0_0/0.25)] motion-safe:transition-opacity";
   element.style.borderColor = color;
+  element.addEventListener("mouseenter", () => highlightLeg(legIndex));
+  element.addEventListener("mouseleave", () => highlightLeg(null));
   return element;
+}
+
+/** how visible the other legs stay while one is highlighted */
+const FADED_OPACITY = 0.15;
+const LINE_OPACITY = 0.95;
+
+/** One leg forward, the rest faded; null: all legs as usual */
+function highlightLeg(legIndex: number | null): void {
+  if (!map?.getLayer(ROUTE)) return;
+  const isHighlighted: ExpressionSpecification = ["==", ["get", "legIndex"], legIndex ?? -1];
+  map.setPaintProperty(ROUTE, "line-opacity", legIndex == null ? LINE_OPACITY : ["case", isHighlighted, LINE_OPACITY, FADED_OPACITY]);
+  map.setPaintProperty(ROUTE_ARROWS, "icon-opacity", legIndex == null ? 1 : ["case", isHighlighted, 1, FADED_OPACITY]);
+
+  for (const marker of legLabelMarkers) {
+    const element = marker.getElement();
+    const faded = legIndex != null && element.dataset.legIndex !== String(legIndex);
+    element.style.opacity = faded ? "0.35" : "";
+  }
 }
 
 /**
@@ -197,6 +228,36 @@ function pinSpreadOffsets(stops: UiRouteStop[]): [number, number][] {
   });
 }
 
+/** a stop status's badge: a small round icon on the pin's top-right, in its colour */
+const STATUS_BADGES: Record<UiRouteStopStatus, { color: string; icon: string }> = {
+  active: { color: "var(--job-installation)", icon: "M7 4v16l13-8z" },
+  done: { color: "var(--job-local)", icon: "M20 6 9 17l-5-5" },
+  canceled: { color: "var(--faint)", icon: "M18 6 6 18M6 6l12 12" },
+};
+
+/**
+ * The pin's look for how far its stop got, as the timeline's bars show it: under way — a white ring inside;
+ * done — faded; called off — grey instead of its colour, the number muted. Each with a small badge
+ */
+function styleStatus(element: HTMLElement, status: UiRouteStopStatus): void {
+  if (status === "active") element.style.boxShadow = "inset 0 0 0 2px #ffffff, 0 1px 4px rgb(0 0 0 / 0.3)";
+  if (status === "done") element.style.opacity = "0.6";
+  if (status === "canceled") {
+    element.style.background = "var(--slot-canceled)";
+    element.style.color = "var(--muted)";
+  }
+
+  const badge = STATUS_BADGES[status];
+  const badgeElement = document.createElement("span");
+  badgeElement.className =
+    "absolute -top-1.5 -end-1.5 grid size-3.5 place-items-center rounded-full border border-white text-white";
+  badgeElement.style.background = badge.color;
+  badgeElement.setAttribute("aria-hidden", "true");
+  // static markup of our own, no user data
+  badgeElement.innerHTML = `<svg class="size-2" viewBox="0 0 24 24" fill="${status === "active" ? "currentColor" : "none"}" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="${badge.icon}" /></svg>`;
+  element.append(badgeElement);
+}
+
 /** Numbered pin; a real link when it leads somewhere, so middle-click and keyboard work; else a plain mark */
 function createMarkerElement(stop: UiRouteStop): HTMLElement {
   const element = document.createElement(stop.to ? "a" : "span");
@@ -204,9 +265,10 @@ function createMarkerElement(stop: UiRouteStop): HTMLElement {
   element.setAttribute("aria-label", stop.ariaLabel);
   for (const [name, value] of Object.entries(stop.data ?? {})) element.dataset[name] = value;
   element.className =
-    "mono grid h-6 min-w-6 place-items-center rounded-full border-2 px-1 text-[11.5px] font-semibold text-white no-underline shadow-[0_1px_4px_rgb(0_0_0/0.3)]";
+    "mono relative grid h-6 min-w-6 place-items-center rounded-full border-2 px-1 text-[11.5px] font-semibold text-white no-underline shadow-[0_1px_4px_rgb(0_0_0/0.3)]";
   element.style.background = stop.color;
   element.style.borderColor = stop.outlineColor ?? "#ffffff";
+  if (stop.status) styleStatus(element, stop.status);
 
   if (stop.to) {
     const route = router.resolve(stop.to);
@@ -326,6 +388,8 @@ function render(): void {
       properties: {
         color: LEG_COLORS[index % LEG_COLORS.length],
         arrow: arrowImageName(index % LEG_COLORS.length),
+        // which leg it is: hovering a leg's label brings out the features with its index (highlightLeg)
+        legIndex: index,
       },
       geometry: { type: "LineString", coordinates: leg.points },
     })),
@@ -336,12 +400,16 @@ function render(): void {
   legLabelMarkers = legs.flatMap((leg, index) =>
     leg.label
       ? [
-          new maplibregl.Marker({ element: createLegLabelElement(leg.label, LEG_COLORS[index % LEG_COLORS.length]!) })
+          new maplibregl.Marker({
+            element: createLegLabelElement(leg.label, LEG_COLORS[index % LEG_COLORS.length]!, index),
+          })
             .setLngLat(midpointOf(leg.points))
             .addTo(currentMap),
         ]
       : [],
   );
+  // a label hovered before the legs changed is gone: nothing stays faded
+  highlightLeg(null);
 
   // the line may leave the pins' box (a detour, the start at the office): fit both
   if (legs.length || props.stops.length) {
@@ -382,7 +450,7 @@ onMounted(() => {
         "line-offset": ["interpolate", ["linear"], ["zoom"], 10, 1.5, 16, 4],
         // each leg in its own colour (LEG_COLORS)
         "line-color": ["get", "color"],
-        "line-opacity": 0.95,
+        "line-opacity": LINE_OPACITY,
       },
     });
 

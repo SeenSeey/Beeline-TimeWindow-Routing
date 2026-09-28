@@ -48,10 +48,10 @@
       class="pointer-events-none px-1.5 py-[3px]"
       :class="{ 'ps-5': showChanged }"
     >
-      <!-- right padding keeps the number clear of the vehicle icon -->
+      <!-- right padding keeps the number clear of the corner icons (equipment, vehicle) -->
       <div
         class="mono flex items-center gap-x-1 truncate font-semibold"
-        :class="{ 'pe-3.5': showVehicle }"
+        :class="cornerIconCount === 2 ? 'pe-7' : cornerIconCount === 1 ? 'pe-3.5' : ''"
       >
         <svg
           v-if="progress === 'completed'"
@@ -85,10 +85,6 @@
         {{ PROGRESS_LABELS.canceled }}
       </div>
       <div v-else class="truncate opacity-90">{{ visit.slot.fullAddress }}</div>
-      <!-- the equipment the request needs, after the address: the row is made taller for it (TimelineRow) -->
-      <div v-if="visit.slot.requiredEquipment" class="truncate font-medium">
-        {{ visit.slot.requiredEquipment }}
-      </div>
     </div>
 
     <!-- changed by a recalculation: a mark in the corner, the reason in the hover tooltip -->
@@ -102,12 +98,29 @@
       </svg>
     </span>
 
-    <!-- the vehicle the request needs, in the corner (its equipment is a text line above) -->
-    <VehicleIcon
-      v-if="showVehicle && visit.slot.requiredVehicle && !violations.length"
-      :vehicle="visit.slot.requiredVehicle"
-      class="pointer-events-none absolute top-[3px] end-[3px] size-3"
-    />
+    <!-- what the request needs, in the corner: its equipment (the same box as beside a crew's name; which
+         equipment is in the hover tooltip, VisitTooltip), then its vehicle -->
+    <span
+      v-if="cornerIconCount && !violations.length"
+      class="pointer-events-none absolute top-[3px] end-[3px] inline-flex items-center gap-x-0.5"
+    >
+      <svg
+        v-if="showEquipment"
+        class="size-3"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        role="img"
+        :aria-label="`Нужно оборудование: ${visit.slot.requiredEquipment}`"
+      >
+        <path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
+        <path d="M12 22V12M3.3 7l7.7 4.73a2 2 0 0 0 2 0L20.7 7M7.5 4.27l9 5.15" />
+      </svg>
+      <VehicleIcon v-if="showVehicle && visit.slot.requiredVehicle" :vehicle="visit.slot.requiredVehicle" class="size-3" />
+    </span>
     <!-- the rule violations are in the edit bar and in the hover tooltip -->
     <span
       v-if="violations.length"
@@ -131,7 +144,7 @@ import UiDot from "@/components/ui/UiDot.vue";
 import VehicleIcon from "./VehicleIcon.vue";
 
 const MIN_TEXT_PX = 36;
-/** the icons on the bar's top edge, in px: the vehicle icon (size-3), the changed mark (size-3.5) */
+/** the icons on the bar's top edge, in px: the vehicle and equipment icons (size-3), the changed mark (size-3.5) */
 const ICON_PX = 12;
 const CHANGED_MARK_PX = 14;
 /** their distance from the bar's ends (top-[3px] start/end-[3px]) and between each other */
@@ -160,11 +173,12 @@ const editAttrs = { role: "button", tabindex: 0, draggable: "true", "aria-haspop
 const changeReason = computed(() => props.visit.slot.alterationReason?.description ?? null);
 
 /**
- * Which icons fit on the bar's top edge: the changed mark on the left, the vehicle on the right. They share
- * the bar's width, the mark first, so they never run into each other on a narrow bar; one that doesn't fit
- * is left to the hover tooltip.
+ * Which icons fit on the bar's top edge: the changed mark on the left, the equipment and the vehicle on the
+ * right. They share the bar's width, most telling first — the mark, the vehicle, the equipment — so they
+ * never run into each other on a narrow bar; one that doesn't fit is left to the hover tooltip.
  */
 const topIcons = computed(() => {
+  const { requiredVehicle, requiredEquipment } = props.visit.slot;
   let room = props.scale.px(props.from, props.to) - ICON_EDGE_PX * 2;
 
   const fits = (width: number): boolean => {
@@ -174,12 +188,16 @@ const topIcons = computed(() => {
   };
 
   const changed = !!changeReason.value && fits(CHANGED_MARK_PX);
-  const vehicle = !!props.visit.slot.requiredVehicle && fits(ICON_PX);
-  return { changed, vehicle };
+  const vehicle = !!requiredVehicle && fits(ICON_PX);
+  const equipment = !!requiredEquipment && fits(ICON_PX);
+  return { changed, vehicle, equipment };
 });
 
 const showChanged = computed(() => topIcons.value.changed);
 const showVehicle = computed(() => topIcons.value.vehicle);
+/** left of the vehicle icon */
+const showEquipment = computed(() => topIcons.value.equipment);
+const cornerIconCount = computed(() => Number(showVehicle.value) + Number(showEquipment.value));
 
 type Progress = "inProgress" | "completed" | "canceled";
 

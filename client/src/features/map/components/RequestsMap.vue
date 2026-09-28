@@ -6,7 +6,7 @@
     <div
       v-if="hovered"
       ref="tooltip"
-      class="pointer-events-none absolute z-[2] grid max-w-[300px] gap-0.5 rounded-lg bg-tooltip px-3 py-2 text-xs leading-normal text-tooltip-ink shadow-md"
+      class="pointer-events-none absolute z-[2] grid max-w-[300px] gap-0.5 rounded-lg border border-tooltip-border bg-tooltip px-3 py-2 text-xs leading-normal text-tooltip-ink shadow-md"
       :style="{ left: tooltipPosition.x + 'px', top: tooltipPosition.y + 'px' }"
       role="tooltip"
     >

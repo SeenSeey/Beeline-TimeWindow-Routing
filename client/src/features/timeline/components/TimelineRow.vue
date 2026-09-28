@@ -1,7 +1,7 @@
 <template>
   <div
     class="group grid cursor-pointer border-b border-line last:border-b-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-inset motion-safe:transition-colors"
-    :class="[selected ? 'bg-accent-soft' : 'hover:bg-canvas', hasEquipmentLine ? 'min-h-[76px]' : 'min-h-[60px]']"
+    :class="[selected ? 'bg-accent-soft' : 'hover:bg-canvas', 'min-h-[60px]']"
     :style="{ gridTemplateColumns: `${labelWidth}px 1fr` }"
     tabindex="0"
     :aria-pressed="selected"
@@ -214,9 +214,6 @@ function onContextMenu(event: MouseEvent): void {
     y: fromKeyboard ? rect.bottom : event.clientY,
   });
 }
-
-/** a visit shows its equipment as a fourth line: the bars (the row's height minus a margin) need room for it */
-const hasEquipmentLine = computed(() => props.crew.requests.some((visit) => !!visit.slot.requiredEquipment));
 
 // `?? []`: a server from before skills were added to the schedule doesn't send them
 const skills = computed(() => props.crew.skills ?? []);

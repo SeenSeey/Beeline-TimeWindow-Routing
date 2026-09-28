@@ -78,7 +78,7 @@ import { computed } from "vue";
 import UiBadge from "@/components/ui/UiBadge.vue";
 import UiEmptyState from "@/components/ui/UiEmptyState.vue";
 import UiPanel from "@/components/ui/UiPanel.vue";
-import UiRouteMap, { type UiRouteStop } from "@/components/ui/UiRouteMap.vue";
+import UiRouteMap, { type UiRouteStop, type UiRouteStopStatus } from "@/components/ui/UiRouteMap.vue";
 import { jobTypeColor, statusColor } from "@/features/requests/model/colors";
 import { routeLegLabels, routeLegs, type LngLat } from "@/features/timeline/model/crewRoute";
 import { formatDate, formatDistance, formatTime } from "@/features/timeline/model/format";
@@ -105,9 +105,19 @@ const stops = computed<UiRouteStop[]>(() =>
     color: jobTypeColor(visit.jobType.keyword),
     outlineColor: visit.urgent ? "var(--urgent)" : undefined,
     to: { name: "request", params: { id: visit.requestId } },
-    ariaLabel: `${index + 1}. ${formatTime(visit.startTime)}–${formatTime(visit.endTime)}, ${visit.fullAddress}`,
+    ariaLabel: `${index + 1}. ${formatTime(visit.startTime)}–${formatTime(visit.endTime)}, ${visit.fullAddress}${visit.status ? `, ${visit.status.displayName}` : ""}`,
+    status: stopStatusOf(visit),
   })),
 );
+
+/** how far the visit got, as the timeline's bars tell it: by the request's status, or its visit finished */
+function stopStatusOf(visit: RouteVisit): UiRouteStopStatus | undefined {
+  const keyword = visit.status?.keyword;
+  if (keyword === "CANCELED") return "canceled";
+  if (keyword === "COMPLETED" || visit.finishedAt != null) return "done";
+  if (keyword === "IN_PROGRESS") return "active";
+  return undefined;
+}
 
 // no straight segments between the pins in place of a missing road route: they would pass for one
 const legs = computed<LngLat[][]>(() => (props.roadRoute ? routeLegs(props.roadRoute) : []));
