@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import stb.core.domain.model.*;
 import stb.core.domain.port.route.RouteStorage;
-import stb.core.domain.port.route.dto.CrewRouteDto;
 import stb.core.domain.port.route.dto.Location;
 import stb.core.domain.port.route.dto.RouteDto;
 import stb.core.domain.repository.*;
@@ -22,7 +21,6 @@ import stb.core.domain.service.scheduler.dto.output.OutputSlotDto;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -57,6 +55,11 @@ public class ScheduleCalculateUseCase {
         for (Schedule schedule : schedules) {
             Region region = schedule.getRegion();
             log.info("Расчёт для региона: {}", region.getDisplayName());
+
+            // only the region being calculated: the other regions' routes stay as long as their schedules do
+            // (clearAll would wipe them whenever a single region is calculated). Before the empty-region
+            // shortcut, so a region left without requests keeps no old routes either
+            routeStorage.clearCrewsRoutesByRegion(region);
 
             List<Request> requests = requestRepository.findAllForSchedulingByRegionId(region.getId());
             List<EngineerCrew> engineerCrews = engineerCrewRepository.findAllActiveByRegionIdAndTargetDate(region.getId(), targetDate);
@@ -113,28 +116,10 @@ public class ScheduleCalculateUseCase {
                 audits.add(RequestActionAudit.assigned(request, crew, slotDto.serviceStartTime(), slotDto.departureTime()));
             }
 
-            Map<Integer, List<ScheduleSlot>> crewLocations = schedule.getSlots()
+            schedule.getSlots()
                     .stream()
-                    .collect(Collectors.groupingBy(slot -> slot.getEngineerCrew().getId()));
-
-            for (var entry : crewLocations.entrySet()) {
-                EngineerCrew crew = crewById.get(entry.getKey());
-
-                log.info("Расчёт маршрута бригады {} в рамках расписания {}", crew.getName(), schedule.getId());
-
-                // in visit order: the slots come in the solver's request order, not the crew's
-                List<Request> visits = entry.getValue()
-                        .stream()
-                        .sorted(Comparator.comparing(ScheduleSlot::getStartTimeWindow))
-                        .map(ScheduleSlot::getRequest)
-                        .toList();
-
-                // leg by leg, from the region's office (it is among the points the routes were built for)
-                CrewRouteDto crewRoute = crewRouteDomainService.assemble(Location.from(region), visits, routes);
-
-                log.info("Маршрут рассчитан");
-                routeStorage.saveRoute(schedule, crew, crewRoute);
-            }
+                    .collect(Collectors.groupingBy(slot -> slot.getEngineerCrew().getId()))
+                    .forEach((crewId, slots) -> crewRouteDomainService.recalculateCrewRoute(region, crewById.get(crewId), slots, routes));
 
             crewEquipmentDomainService.issueInitialLoadout(engineerCrews, assignedRequests);
             schedule.markAsCreated();

@@ -25,7 +25,7 @@
           class="inline-flex h-8 flex-1 cursor-pointer items-center justify-center rounded-md bg-danger px-2 text-sm font-medium text-white hover:brightness-110 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-danger/50"
           @click="run('cancel')"
         >
-          Да, отменить
+          Отменить
         </button>
         <button
           type="button"
@@ -52,7 +52,11 @@
       >
         <UiDot v-if="statusStore.pendingAction === action" size="sm" pulse />
         <UiDot v-else size="sm" :color="ACTION_DOTS[action]" />
-        {{ statusStore.pendingAction === action ? STATUS_ACTION_LABELS[action].running : STATUS_ACTION_LABELS[action].idle }}
+        {{
+          statusStore.pendingAction === action
+            ? STATUS_ACTION_LABELS[action].running
+            : STATUS_ACTION_LABELS[action].idle
+        }}
       </button>
       <span v-if="!actions.length" class="px-2 py-1.5 text-xs text-faint">Статус заявки больше не меняется</span>
     </template>

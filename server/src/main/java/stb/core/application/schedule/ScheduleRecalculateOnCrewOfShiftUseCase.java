@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import stb.core.domain.port.route.RouteStorage;
+import stb.core.domain.port.route.dto.RouteDto;
 import stb.core.domain.service.AlterationReasonAssmblerService;
 import stb.core.domain.service.RequestActionAuditService;
 import stb.core.domain.dto.ScheduleHistoryResult;
@@ -27,11 +29,10 @@ public class ScheduleRecalculateOnCrewOfShiftUseCase {
     private final AlterationReasonRepository reasonRepository;
     private final RequestActionAuditRepository requestActionAuditRepository;
     private final AlterationReasonAssmblerService alterationReasonAssmblerService;
-
+    private final RouteStorage routeStorage;
 
     @Transactional
     public void execute(int crewId) {
-
         LocalDate targetDate = LocalDate.now();
         log.info("Пересчёт расписания на {} в связи со снятием бригады {} со смены", targetDate, crewId);
 
@@ -46,7 +47,9 @@ public class ScheduleRecalculateOnCrewOfShiftUseCase {
 
         Region region = crew.getRegion();
 
-        ScheduleHistoryResult result = scheduleRecalculationService.recalculateSchedule(region, targetDate);
+        List<RouteDto> routes = routeStorage.findAllRoutesByRegion(region);
+
+        ScheduleHistoryResult result = scheduleRecalculationService.recalculateSchedule(region, targetDate, routes);
 
         requestActionAuditRepository.saveAll(auditFactory.createFrom(result));
 

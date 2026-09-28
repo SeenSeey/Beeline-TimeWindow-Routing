@@ -30,7 +30,7 @@ public class ScheduleCrewRouteFindUseCase {
         EngineerCrew crew = engineerCrewRepository.findById(crewId)
                 .orElseThrow(() -> new CrewNotFoundException("Бригада с ID = %s не найдена".formatted(crewId)));
 
-        CrewRouteDto route = routeStorage.findRoute(schedule, crew);
+        CrewRouteDto route = routeStorage.findRoute(schedule.getRegion(), crew);
 
         if (route == null) {
             throw new DomainException.NotFoundException(

@@ -13,7 +13,7 @@
         class="inline-flex h-9.5 cursor-pointer items-center justify-center gap-x-2 rounded-lg bg-danger px-3 text-sm font-medium text-white hover:brightness-110 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-danger/50"
         @click="confirm"
       >
-        Да, отменить
+        Отменить
       </button>
       <UiButton @click="confirming = false">Нет</UiButton>
     </div>

@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import stb.core.domain.port.route.RouteStorage;
+import stb.core.domain.port.route.dto.RouteDto;
 import stb.core.domain.service.AlterationReasonAssmblerService;
 import stb.core.domain.service.RequestActionAuditService;
 import stb.core.domain.dto.ScheduleHistoryResult;
@@ -27,6 +29,7 @@ public class ScheduleRecalculateOnRequestCancelUseCase {
     private final AlterationReasonAssmblerService alterationReasonAssmblerService;
     private final RequestActionAuditService auditFactory;
     private final RequestActionAuditRepository requestActionAuditRepository;
+    private final RouteStorage routeStorage;
 
     @Transactional
     public void execute(int requestId) {
@@ -44,7 +47,10 @@ public class ScheduleRecalculateOnRequestCancelUseCase {
             return;
         }
 
-        ScheduleHistoryResult result = scheduleRecalculationService.recalculateSchedule(region, targetDate);
+        List<RouteDto> routes = routeStorage.findAllRoutesByRegion(region);
+        routeStorage.clearCrewsRoutesByRegion(region);
+
+        ScheduleHistoryResult result = scheduleRecalculationService.recalculateSchedule(region, targetDate, routes);
 
         requestActionAuditRepository.saveAll(auditFactory.createFrom(result));
 

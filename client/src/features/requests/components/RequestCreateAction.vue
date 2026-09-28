@@ -126,13 +126,17 @@
         </div>
       </div>
 
-      <fieldset class="m-0 grid gap-1.5 border-0 p-0">
-        <legend class="mb-1.5 p-0 text-sm font-medium text-ink">Временное окно</legend>
+      <!-- an emergency is handled as soon as possible: it takes no time window (disabling the fieldset
+           disables both inputs) -->
+      <fieldset class="m-0 grid gap-1.5 border-0 p-0" :disabled="isEmergency">
+        <legend class="mb-1.5 p-0 text-sm font-medium" :class="isEmergency ? 'text-muted' : 'text-ink'">
+          Временное окно
+        </legend>
         <div class="flex flex-wrap items-center gap-2">
           <input
             v-model="form.windowStart"
             type="time"
-            :class="[FIELD_CLASS, 'mono w-32!']"
+            :class="[FIELD_CLASS, 'mono w-32! disabled:cursor-not-allowed disabled:opacity-50']"
             aria-label="Начало окна"
             :aria-invalid="!!shownErrors.window"
           />
@@ -140,12 +144,13 @@
           <input
             v-model="form.windowEnd"
             type="time"
-            :class="[FIELD_CLASS, 'mono w-32!']"
+            :class="[FIELD_CLASS, 'mono w-32! disabled:cursor-not-allowed disabled:opacity-50']"
             aria-label="Конец окна"
             :aria-invalid="!!shownErrors.window"
           />
         </div>
-        <p v-if="shownErrors.window" class="m-0 text-xs text-danger">{{ shownErrors.window }}</p>
+        <p v-if="isEmergency" class="m-0 text-xs text-muted">Аварийная заявка выполняется без временного окна</p>
+        <p v-else-if="shownErrors.window" class="m-0 text-xs text-danger">{{ shownErrors.window }}</p>
       </fieldset>
 
       <p v-if="error" class="m-0 rounded-md bg-danger/10 px-3 py-2 text-sm text-danger" role="alert">{{ error }}</p>
@@ -234,12 +239,21 @@ watch(
 
 const isEmergency = computed(() => JOB_TYPES.find((jobType) => jobType.id === form.jobTypeId)?.keyword === "EMERGENCY");
 
+// an emergency takes no time window: times entered before switching to it are dropped, not just hidden
+watch(isEmergency, (emergency) => {
+  if (!emergency) return;
+  form.windowStart = "";
+  form.windowEnd = "";
+});
+
 const errors = computed(() => {
   const found: Partial<Record<"regionId" | "address" | "jobTypeId" | "window", string>> = {};
   if (form.regionId == null) found.regionId = "Выберите регион";
   if (!form.address.trim()) found.address = "Укажите адрес";
   if (form.jobTypeId == null) found.jobTypeId = "Выберите тип работ";
-  if (!!form.windowStart !== !!form.windowEnd) found.window = "Укажите обе границы окна или оставьте обе пустыми";
+  if (!isEmergency.value && !!form.windowStart !== !!form.windowEnd) {
+    found.window = "Укажите обе границы окна или оставьте обе пустыми";
+  }
   return found;
 });
 
@@ -257,8 +271,9 @@ function submit(): void {
     jobTypeId: form.jobTypeId as number,
     requiredVehicleId: form.vehicleId,
     requiredEquipmentId: null,
-    startTimeWindow: toServerTime(form.windowStart),
-    endTimeWindow: toServerTime(form.windowEnd),
+    // an emergency is sent without a window; the server then takes the whole day
+    startTimeWindow: isEmergency.value ? null : toServerTime(form.windowStart),
+    endTimeWindow: isEmergency.value ? null : toServerTime(form.windowEnd),
   });
 }
 </script>

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import stb.core.domain.port.route.RouteStorage;
 import stb.core.domain.service.RequestActionAuditService;
 import stb.core.domain.dto.ScheduleHistoryResult;
 import stb.core.domain.exception.RequestNotFoundException;
@@ -13,6 +14,8 @@ import stb.core.domain.service.AlterationReasonAssmblerService;
 import stb.core.domain.service.ScheduleRecalculationService;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Component
@@ -24,8 +27,9 @@ public class ScheduleEmergencyHandleUseCase {
     private final AlterationReasonRepository reasonRepository;
     private final ScheduleRecalculationService scheduleRecalculationService;
     private final AlterationReasonAssmblerService alterationReasonAssmblerService;
-    private final RequestActionAuditService auditFactory;
     private final RequestActionAuditRepository requestActionAuditRepository;
+    private final RequestActionAuditService auditFactory;
+    private final RouteStorage routeStorage;
 
     @Transactional
     public void execute(int requestId) {
@@ -35,7 +39,9 @@ public class ScheduleEmergencyHandleUseCase {
         Region region = emergencyRequest.getRegion();
         LocalDate targetDate = LocalDate.now();
 
-        ScheduleHistoryResult result = scheduleRecalculationService.recalculateSchedule(region, targetDate);
+        routeStorage.clearAll();
+
+        ScheduleHistoryResult result = scheduleRecalculationService.recalculateSchedule(region, targetDate, Collections.emptyList());
 
         requestActionAuditRepository.saveAll(auditFactory.createFrom(result));
 

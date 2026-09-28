@@ -6,18 +6,22 @@ import org.springframework.stereotype.Service;
 import stb.core.domain.dto.ScheduleHistoryResult;
 import stb.core.domain.exception.ScheduleNotFoundException;
 import stb.core.domain.model.*;
+import stb.core.domain.port.route.RouteStorage;
+import stb.core.domain.port.route.dto.CrewRouteDto;
 import stb.core.domain.port.route.dto.Location;
 import stb.core.domain.port.route.dto.RouteDto;
 import stb.core.domain.repository.*;
 import stb.core.domain.repository.projection.CrewLatestSlot;
 import stb.core.domain.repository.projection.EngineerCrewSlotsCount;
 import stb.core.domain.service.scheduler.ScheduleAssemblerDomainService;
+import stb.core.domain.service.scheduler.dto.ScheduleCalculationResult;
 import stb.core.domain.service.scheduler.dto.ScheduleContext;
 import stb.core.domain.service.scheduler.dto.TravelMatrix;
 import stb.core.domain.service.scheduler.dto.output.OutputSlotDto;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -37,10 +41,14 @@ public class ScheduleRecalculationService {
     private final ScheduleAssemblerDomainService scheduleAssemblerDomainService;
     private final SpeedProfileDomainService speedProfileDomainService;
     private final RouteDomainService routeDomainService;
+    private final CrewRouteDomainService crewRouteDomainService;
+    private final RouteStorage routeStorage;
 
-    public ScheduleHistoryResult recalculateSchedule(Region region, LocalDate targetDate) {
+    public ScheduleHistoryResult recalculateSchedule(Region region, LocalDate targetDate, List<RouteDto> regionRoutes) {
         Schedule currentSchedule = scheduleRepository.findByTargetDateAndRegionId(targetDate, region.getId())
                 .orElseThrow(() -> new ScheduleNotFoundException("Расписание на %s для региона %s не найдено".formatted(targetDate, region.getId())));
+
+        List<RouteDto> routes = new ArrayList<>(regionRoutes);
 
         List<Request> requestsToReschedule = requestRepository.findAllForRescheduleByRegionId(region.getId());
         List<EngineerCrew> engineerCrews = engineerCrewRepository.findAllActiveByRegionIdAndTargetDate(region.getId(), targetDate);
@@ -63,13 +71,16 @@ public class ScheduleRecalculationService {
                 .stream()
                 .collect(Collectors.toMap(slot -> slot.getRequest().getId(), Function.identity()));
 
-        List<Location> points = Stream.concat(Stream.concat(
-                        Stream.of(Location.from(region)),
-                        requestsToReschedule.stream().map(Location::from)),
-                crewLatestSlots.stream().map(Location::from)
-        ).toList();
+        if (routes.isEmpty()) {
+            List<Location> points = Stream.concat(Stream.concat(
+                            Stream.of(Location.from(region)),
+                            requestsToReschedule.stream().map(Location::from)),
+                    crewLatestSlots.stream().map(Location::from)
+            ).toList();
 
-        List<RouteDto> routes = routeDomainService.calculateAllRoutes(points, Vehicle.Keyword.CAR);
+            routes.addAll(routeDomainService.calculateAllRoutes(points, Vehicle.Keyword.CAR));
+            routeStorage.saveRoutes(region, routes);
+        }
 
         ScheduleContext context = ScheduleContext.builder()
                 .requests(requestsToReschedule)
@@ -81,10 +92,12 @@ public class ScheduleRecalculationService {
                 .replanning(true)
                 .build();
 
-        stb.core.domain.service.scheduler.dto.ScheduleCalculationResult result = scheduleAssemblerDomainService.createSchedule(context);
+        ScheduleCalculationResult result = scheduleAssemblerDomainService.createSchedule(context);
 
         Schedule schedule = Schedule.createFrom(currentSchedule);
         staticSlots.forEach(schedule::addSlot);
+
+        List<Request> updatedRequests = new ArrayList<>();
 
         List<ScheduleSlot> assigned = new ArrayList<>();
         List<ScheduleSlot> reassigned = new ArrayList<>();
@@ -105,6 +118,9 @@ public class ScheduleRecalculationService {
                 } else {
                     notPlaced.add(request);
                 }
+
+                updatedRequests.add(request);
+
                 continue;
             }
 
@@ -128,12 +144,29 @@ public class ScheduleRecalculationService {
             } else {
                 assigned.add(slot);
             }
+
+            updatedRequests.add(request);
         }
 
-        scheduleRepository.save(schedule);
-        requestRepository.saveAll(requestsToReschedule);
+        routeStorage.clearCrewsRoutesByRegion(region);
 
-        return new ScheduleHistoryResult(startTimeChanged, assigned, reassigned, unassigned, notPlaced, engineerCrews, schedule);
+        schedule.getSlots()
+                .stream()
+                .collect(Collectors.groupingBy(slot -> slot.getEngineerCrew().getId()))
+                .forEach((crewId, slots) -> crewRouteDomainService.recalculateCrewRoute(region, crewById.get(crewId), slots, routes));
+
+        scheduleRepository.save(schedule);
+        requestRepository.saveAll(updatedRequests);
+
+        return new ScheduleHistoryResult(
+                startTimeChanged,
+                assigned,
+                reassigned,
+                unassigned,
+                notPlaced,
+                engineerCrews,
+                schedule
+        );
     }
 
     private boolean slotStartTimeChanged(ScheduleSlot previousSlot, ScheduleSlot currentSlot) {

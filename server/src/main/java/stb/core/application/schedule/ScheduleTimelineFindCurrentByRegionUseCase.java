@@ -76,10 +76,6 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
         );
     }
 
-    /**
-     * crew id → the length of its stored route; only for a calculated schedule, whose routes are final.
-     * The geometry is loaded separately, for the crew the dispatcher selects (ScheduleCrewRouteFindUseCase)
-     */
     private Map<Integer, Double> findRouteDistances(Schedule schedule, List<EngineerCrew> crews) {
         if (schedule.getStatus() != Schedule.Status.CREATED) {
             return Map.of();
@@ -87,8 +83,8 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
 
         Map<Integer, Double> distancesByCrewId = new HashMap<>();
         for (EngineerCrew crew : crews) {
-            CrewRouteDto route = routeStorage.findRoute(schedule, crew);
-            // a crew without a route (no requests, off shift, expired) gets a row without one
+            CrewRouteDto route = routeStorage.findRoute(schedule.getRegion(), crew);
+
             if (route != null) {
                 distancesByCrewId.put(crew.getId(), route.distanceKilometers());
             }

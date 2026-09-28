@@ -130,10 +130,15 @@ public record ScheduleTimelineDto(int id,
                     .toList();
         }
 
-        public static EngineerCrewRow from(EngineerCrew crew, List<ScheduleSlot> slots, Map<Integer, AlterationReasonDto> reasonsByRequestId, Double routeDistanceKilometers) {
-            return of(crew, slots.stream()
-                    .map(slot -> TimelineSlotDto.from(slot, reasonsByRequestId.get(slot.getRequest().getId()), routeDistanceKilometers))
-                    .toList());
+        public static EngineerCrewRow from(EngineerCrew crew,
+                                           List<ScheduleSlot> slots,
+                                           Map<Integer, AlterationReasonDto> reasonsByRequestId,
+                                           Double routeDistanceKilometers) {
+            List<TimelineSlotDto> timelineSlots = slots.stream()
+                    .map(slot -> TimelineSlotDto.from(slot, reasonsByRequestId.get(slot.getRequest().getId())))
+                    .toList();
+            // the route's length belongs to the row: the client asks for a crew's route only when its row has one
+            return of(crew, timelineSlots, routeDistanceKilometers);
         }
 
         /** a row without a stored route, e.g. the edit preview's recalculated rows */
@@ -184,7 +189,7 @@ public record ScheduleTimelineDto(int id,
                                   LocalDateTime canceledAt,
                                   AlterationReasonDto alterationReason) {
 
-        public static TimelineSlotDto from(ScheduleSlot slot, AlterationReasonDto alterationReason, Double routeDistanceKilometers) {
+        public static TimelineSlotDto from(ScheduleSlot slot, AlterationReasonDto alterationReason) {
             return of(slot.getRequest(), slot.getType(), slot.getArrivalTime(), slot.getStartTimeWindow(), slot.getEndTimeWindow(), alterationReason);
         }
 

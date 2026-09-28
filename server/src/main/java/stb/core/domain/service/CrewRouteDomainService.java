@@ -1,22 +1,44 @@
 package stb.core.domain.service;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import stb.core.domain.common.PolylineEncoder;
+import stb.core.domain.model.EngineerCrew;
+import stb.core.domain.model.Region;
 import stb.core.domain.model.Request;
+import stb.core.domain.model.ScheduleSlot;
+import stb.core.domain.port.route.RouteStorage;
 import stb.core.domain.port.route.dto.CrewRouteDto;
 import stb.core.domain.port.route.dto.GeoPoint;
 import stb.core.domain.port.route.dto.Location;
 import stb.core.domain.port.route.dto.RouteDto;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class CrewRouteDomainService {
+
+    private final RouteStorage routeStorage;
+
+    public void recalculateCrewRoute(Region region, EngineerCrew crew, List<ScheduleSlot> slots, List<RouteDto> routes) {
+        log.info("Расчёт маршрута бригады {}", crew.getName());
+
+        List<Request> visits = slots
+                .stream()
+                .sorted(Comparator.comparing(ScheduleSlot::getStartTimeWindow))
+                .map(ScheduleSlot::getRequest)
+                .toList();
+
+        CrewRouteDto crewRoute = assemble(Location.from(region), visits, routes);
+        routeStorage.saveRoute(region, crew, crewRoute);
+
+        log.info("Маршрут рассчитан");
+    }
 
     /**
      * Собрать маршрут бригады по участкам: от {@code start} (офис региона) до первой заявки, затем от

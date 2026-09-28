@@ -13,7 +13,7 @@
         class="inline-flex h-9.5 cursor-pointer items-center justify-center gap-x-2 rounded-lg bg-danger px-3 text-sm font-medium text-white hover:brightness-110 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-danger/50"
         @click="confirmCancel"
       >
-        Да, отменить
+        Отменить
       </button>
       <UiButton @click="confirmingCancel = false">Нет</UiButton>
     </div>
@@ -22,7 +22,17 @@
     <div v-else-if="canStart || canComplete || canCancel" class="flex flex-wrap justify-end gap-2">
       <UiButton v-if="canStart" :disabled="!!pendingAction" @click="emit('change', 'in_progress')">
         <UiDot v-if="pendingAction === 'in_progress'" size="sm" pulse />
-        <svg v-else class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg
+          v-else
+          class="size-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
           <polygon points="6 3 20 12 6 21 6 3" />
         </svg>
         {{ pendingAction === "in_progress" ? "Начинаем…" : "Взять в работу" }}
@@ -36,7 +46,17 @@
         @click="emit('change', 'complete')"
       >
         <UiDot v-if="pendingAction === 'complete'" size="sm" pulse />
-        <svg v-else class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg
+          v-else
+          class="size-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
           <path d="M20 6 9 17l-5-5" />
         </svg>
         {{ pendingAction === "complete" ? "Завершаем…" : "Завершить" }}
@@ -44,7 +64,17 @@
 
       <UiButton v-if="canCancel" class="text-danger!" :disabled="!!pendingAction" @click="confirmingCancel = true">
         <UiDot v-if="pendingAction === 'cancel'" size="sm" pulse />
-        <svg v-else class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg
+          v-else
+          class="size-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
           <circle cx="12" cy="12" r="10" />
           <path d="m15 9-6 6M9 9l6 6" />
         </svg>

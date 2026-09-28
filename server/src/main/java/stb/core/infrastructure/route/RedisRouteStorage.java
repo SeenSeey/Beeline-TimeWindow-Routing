@@ -4,6 +4,8 @@ import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import stb.core.domain.model.EngineerCrew;
@@ -17,6 +19,7 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -25,8 +28,8 @@ import java.util.List;
 public class RedisRouteStorage implements RouteStorage {
 
     private static final String REGION_ROUTES_KEY_PREFIX = "region:routes:";
-    // "crew-route:", not the old "route:": values under that prefix hold a flat RouteDto, not legs
     private static final String CREW_ROUTE_KEY_PREFIX = "crew-route:";
+    private static final int CLEAR_BATCH_SIZE = 500;
     private static final TypeReference<List<RouteDto>> ROUTE_LIST_TYPE = new TypeReference<>() {};
 
     private final StringRedisTemplate redisTemplate;
@@ -54,8 +57,8 @@ public class RedisRouteStorage implements RouteStorage {
 
     @Override
     @Nullable
-    public CrewRouteDto findRoute(Schedule schedule, EngineerCrew engineerCrew) {
-        String key = buildSingleRouteKey(schedule, engineerCrew);
+    public CrewRouteDto findRoute(Region region, EngineerCrew engineerCrew) {
+        String key = buildSingleRouteKey(region, engineerCrew);
         String json = redisTemplate.opsForValue().get(key);
 
         if (json == null) {
@@ -71,8 +74,8 @@ public class RedisRouteStorage implements RouteStorage {
     }
 
     @Override
-    public void saveRoute(Schedule schedule, EngineerCrew engineerCrew, CrewRouteDto route) {
-        redisTemplate.opsForValue().set(buildSingleRouteKey(schedule, engineerCrew), jsonMapper.writeValueAsString(route), ttl);
+    public void saveRoute(Region region, EngineerCrew engineerCrew, CrewRouteDto route) {
+        redisTemplate.opsForValue().set(buildSingleRouteKey(region, engineerCrew), jsonMapper.writeValueAsString(route), ttl);
     }
 
     @Override
@@ -80,11 +83,54 @@ public class RedisRouteStorage implements RouteStorage {
         redisTemplate.opsForValue().set(buildRegionRoutesKey(region), jsonMapper.writeValueAsString(routes), ttl);
     }
 
+    @Override
+    public void clearAll() {
+        long deleted = 0;
+
+        for (String prefix : List.of(REGION_ROUTES_KEY_PREFIX, CREW_ROUTE_KEY_PREFIX)) {
+            deleted += deleteByPrefix(prefix);
+        }
+
+        log.info("Хранилище маршрутов очищено, удалено ключей: {}", deleted);
+    }
+
+    @Override
+    public void clearCrewsRoutesByRegion(Region region) {
+        // this region's crews only: "crew-route:<regionId>:" — the bare prefix would take every region's
+        long deleted = deleteByPrefix(CREW_ROUTE_KEY_PREFIX + region.getId() + ":");
+        log.info("Маршруты бригад региона {} удалены из хранилища, удалено ключей: {}", region.getId(), deleted);
+    }
+
+    private long deleteByPrefix(String prefix) {
+        ScanOptions options = ScanOptions.scanOptions().match(prefix + "*").count(CLEAR_BATCH_SIZE).build();
+        long deleted = 0;
+        List<String> batch = new ArrayList<>(CLEAR_BATCH_SIZE);
+
+        try (Cursor<String> keys = redisTemplate.scan(options)) {
+            while (keys.hasNext()) {
+                batch.add(keys.next());
+                if (batch.size() == CLEAR_BATCH_SIZE) {
+                    deleted += deleteBatch(batch);
+                }
+            }
+        }
+        return deleted + deleteBatch(batch);
+    }
+
+    private long deleteBatch(List<String> batch) {
+        if (batch.isEmpty()) {
+            return 0;
+        }
+        Long deleted = redisTemplate.delete(batch);
+        batch.clear();
+        return deleted == null ? 0 : deleted;
+    }
+
     private static String buildRegionRoutesKey(Region region) {
         return REGION_ROUTES_KEY_PREFIX + region.getId();
     }
 
-    private static String buildSingleRouteKey(Schedule schedule, EngineerCrew engineerCrew) {
-        return CREW_ROUTE_KEY_PREFIX + schedule.getId() + ":" + engineerCrew.getId();
+    private static String buildSingleRouteKey(Region region, EngineerCrew engineerCrew) {
+        return CREW_ROUTE_KEY_PREFIX + region.getId() + ":" + engineerCrew.getId();
     }
 }
