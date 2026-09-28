@@ -83,7 +83,7 @@ public class ScheduleCalculateUseCase {
 
                 if (slotDto.engineerId() == null || slotDto.serviceStartTime() == null || slotDto.departureTime() == null) {
                     log.warn("Не удалось распределить заявку {} в текущее расписание региона {}", slotDto.requestId(), region.getDisplayName());
-                    reasons.add(AlterationReason.initialNoAvailableTimeSlots(schedule, request));
+                    reasons.add(AlterationReason.notPlaced(schedule, request, engineerCrews));
                     continue;
                 }
 
@@ -108,7 +108,7 @@ public class ScheduleCalculateUseCase {
         }
 
         scheduleRepository.saveAll(schedules);
-        // reasonRepository.saveAll(reasons);
-        // requestActionAuditRepository.saveAll(audits);
+        reasonRepository.saveAll(reasons);
+        requestActionAuditRepository.saveAll(audits);
     }
 }

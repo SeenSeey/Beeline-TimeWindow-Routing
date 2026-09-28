@@ -43,7 +43,6 @@ public class Schedule extends BaseEntity {
     private Region region;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "schedule", cascade = CascadeType.ALL)
-    @OrderBy("startTimeWindow ASC, id ASC")
     private List<ScheduleSlot> slots;
 
     public static Schedule createFrom(Schedule schedule) {

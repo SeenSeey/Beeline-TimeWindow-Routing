@@ -13,13 +13,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
-// import stb.core.application.support.audit.RequestActionAuditWriter;
 import stb.core.domain.model.EngineerCrew;
 import stb.core.domain.model.Equipment;
 import stb.core.domain.model.JobType;
 import stb.core.domain.model.Region;
 import stb.core.domain.model.Request;
-// import stb.core.domain.model.RequestActionAudit;
+import stb.core.domain.model.RequestActionAudit;
 import stb.core.domain.model.RequestStatus;
 import stb.core.domain.model.Skill;
 import stb.core.domain.model.Vehicle;
@@ -27,6 +26,7 @@ import stb.core.domain.repository.EngineerCrewRepository;
 import stb.core.domain.repository.EquipmentRepository;
 import stb.core.domain.repository.JobTypeRepository;
 import stb.core.domain.repository.RegionRepository;
+import stb.core.domain.repository.RequestActionAuditRepository;
 import stb.core.domain.repository.RequestRepository;
 import stb.core.domain.repository.RequestStatusRepository;
 import stb.core.domain.repository.SkillRepository;
@@ -70,7 +70,7 @@ public class DemoDatasetLoader implements CommandLineRunner {
     private final EquipmentRepository equipmentRepository;
     private final EngineerCrewRepository engineerCrewRepository;
     private final RequestRepository requestRepository;
-    // private final RequestActionAuditWriter auditWriter;
+    private final RequestActionAuditRepository requestActionAuditRepository;
 
     @Override
     @Transactional
@@ -98,9 +98,9 @@ public class DemoDatasetLoader implements CommandLineRunner {
         }
         engineerCrewRepository.saveAll(crews);
         requestRepository.saveAll(requests);
-        // auditWriter.saveAll(requests.stream()
-                // .map(request -> RequestActionAudit.requestCreated(request, createdAt))
-                // .toList());
+        requestActionAuditRepository.saveAll(requests.stream()
+                .map(RequestActionAudit::requestCreated)
+                .toList());
 
         log.info("Демо-датасет загружен: регионов {}, бригад {}, заявок {}",
                 REGION_DIRS.size(), crews.size(), requests.size());

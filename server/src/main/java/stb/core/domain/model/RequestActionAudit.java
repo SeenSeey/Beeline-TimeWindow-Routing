@@ -8,10 +8,7 @@ import java.time.LocalTime;
 import java.util.Objects;
 
 @Entity
-@Table(name = "request_actions_audit", indexes = @Index(
-        name = "idx_request_actions_audit_timeline",
-        columnList = "request_id, timestamp DESC, id DESC"
-))
+@Table(name = "request_actions_audit")
 @Getter
 @Setter(AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
@@ -104,14 +101,6 @@ public class RequestActionAudit extends BaseEntity {
                                              EngineerCrew assignedCrew,
                                              LocalTime plannedStart,
                                              LocalTime plannedEnd) {
-
-        Objects.requireNonNull(request, "request не должна быть null");
-        Objects.requireNonNull(action, "action не должен быть null");
-
-        if (action == Action.ASSIGNED || action == Action.RESCHEDULED) {
-            Objects.requireNonNull(plannedStart, "plannedStart не должно быть null");
-            Objects.requireNonNull(plannedEnd, "plannedEnd не должно быть null");
-        }
 
         return RequestActionAudit.builder()
                 .request(request)
