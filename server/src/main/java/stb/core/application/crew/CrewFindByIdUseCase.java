@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import stb.core.domain.dto.CrewDetailedDto;
 import stb.core.domain.exception.CrewNotFoundException;
 import stb.core.domain.model.EngineerCrew;
+import stb.core.domain.model.Region;
 import stb.core.domain.model.Schedule;
 import stb.core.domain.model.ScheduleSlot;
 import stb.core.domain.port.route.RouteStorage;
@@ -14,6 +15,7 @@ import stb.core.domain.repository.EngineerCrewRepository;
 import stb.core.domain.repository.RequestRepository;
 import stb.core.domain.repository.ScheduleRepository;
 import stb.core.domain.repository.ScheduleSlotRepository;
+import stb.core.domain.service.RegionDomainService;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -27,6 +29,7 @@ public class CrewFindByIdUseCase {
     private final RequestRepository requestRepository;
     private final ScheduleRepository scheduleRepository;
     private final RouteStorage routeStorage;
+    private final RegionDomainService regionDomainService;
 
     @Transactional(readOnly = true)
     public CrewDetailedDto execute(int crewId) {
@@ -52,8 +55,10 @@ public class CrewFindByIdUseCase {
      * только для рассчитанного расписания
      */
     private CrewRouteDto findRoadRoute(EngineerCrew crew, LocalDate targetDate) {
+        Region rootRegion = regionDomainService.root(crew.getRegion());
+
         return scheduleRepository
-                .findByTargetDateAndRegionId(targetDate, crew.getRegion().getId())
+                .findByTargetDateAndRegionId(targetDate, rootRegion.getId())
                 .filter(schedule -> schedule.getStatus() == Schedule.Status.CREATED)
                 .map(schedule -> routeStorage.findRoute(schedule, crew))
                 .orElse(null);

@@ -14,7 +14,7 @@ public interface EngineerCrewRepository extends JpaRepository<EngineerCrew, Inte
 
     @Query("""
             SELECT c FROM EngineerCrew c
-            WHERE c.region.id = :regionId
+            WHERE (c.region.id = :regionId OR c.region.parentRegion.id = :regionId)
             AND NOT EXISTS (
                 SELECT 1 FROM EngineerCrewOffShiftRecord r
                 WHERE r.engineerCrew.id = c.id
@@ -23,5 +23,9 @@ public interface EngineerCrewRepository extends JpaRepository<EngineerCrew, Inte
             """)
     List<EngineerCrew> findAllActiveByRegionIdAndTargetDate(int regionId, LocalDate targetDate);
 
+    @Query("""
+            SELECT c FROM EngineerCrew c
+            WHERE (c.region.id = :regionId OR c.region.parentRegion.id = :regionId)
+            """)
     List<EngineerCrew> findAllByRegionId(int regionId);
 }

@@ -9,5 +9,21 @@ public enum EngineerColumn implements CsvColumn {
     SHIFT_START,
     SHIFT_END,
     SKILLS,
-    VEHICLE
+    VEHICLE,
+    DISTRICT(true);
+
+    private final boolean optional;
+
+    EngineerColumn() {
+        this(false);
+    }
+
+    EngineerColumn(boolean optional) {
+        this.optional = optional;
+    }
+
+    @Override
+    public boolean optional() {
+        return optional;
+    }
 }

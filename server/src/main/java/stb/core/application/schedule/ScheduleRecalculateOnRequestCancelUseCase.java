@@ -13,6 +13,7 @@ import stb.core.domain.exception.RequestNotFoundException;
 import stb.core.domain.model.*;
 import stb.core.domain.repository.*;
 import stb.core.domain.service.ScheduleRecalculationService;
+import stb.core.domain.service.RegionDomainService;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -32,6 +33,7 @@ public class ScheduleRecalculateOnRequestCancelUseCase {
     private final RequestActionAuditService auditFactory;
     private final RequestActionAuditRepository requestActionAuditRepository;
     private final RouteStorage routeStorage;
+    private final RegionDomainService regionDomainService;
 
     @Transactional
     public void execute(int requestId) {
@@ -41,7 +43,7 @@ public class ScheduleRecalculateOnRequestCancelUseCase {
         Request canceledRequest = requestRepository.findById(requestId)
                 .orElseThrow(() -> new RequestNotFoundException("Заявка %s не существует".formatted(requestId)));
 
-        Region region = canceledRequest.getRegion();
+        Region region = regionDomainService.root(canceledRequest.getRegion());
 
         ScheduleSlot latestSlot = scheduleSlotRepository.findCanceledSlotByRequestId(requestId).orElse(null);
         if (latestSlot == null) {

@@ -30,6 +30,8 @@ public class RequestDto {
 
     private final Location location;
 
+    private final int districtId;
+
     private final int serviceDurationMinutes;
 
     private final LocalTime windowStart;
@@ -41,6 +43,7 @@ public class RequestDto {
     private final Integer requiredEquipmentId;
     private final LocalDateTime createdAt;
     private final LocalDateTime deadline;
+    private final Integer previousCrewId;
     //Shadow vars
 
     private EngineerCrewDto engineerCrewDto;

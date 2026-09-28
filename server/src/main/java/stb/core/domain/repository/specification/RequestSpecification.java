@@ -2,6 +2,7 @@ package stb.core.domain.repository.specification;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
@@ -38,10 +39,13 @@ public class RequestSpecification implements Specification<Request> {
         }
 
         if (request.regionId() != null) {
+            Path<Region> region = root.get(Request_.REGION);
+
             predicates.add(
-                    cb.equal(
-                            root.get(Request_.REGION).get(Region_.ID),
-                            request.regionId())
+                    cb.or(
+                            cb.equal(region.get(Region_.ID), request.regionId()),
+                            cb.equal(region.get(Region_.PARENT_REGION).get(Region_.ID), request.regionId())
+                    )
             );
         }
 

@@ -3,6 +3,7 @@ package stb.core.infrastructure.boot;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,10 +32,14 @@ import stb.core.domain.repository.RequestRepository;
 import stb.core.domain.repository.RequestStatusRepository;
 import stb.core.domain.repository.SkillRepository;
 import stb.core.domain.repository.VehicleRepository;
+import stb.core.domain.service.RegionDomainService;
 import stb.core.infrastructure.csv.CsvDatasetParser;
 import stb.core.infrastructure.csv.CsvEquipment;
 import stb.core.infrastructure.csv.DatasetDomainMapper;
+import stb.core.infrastructure.csv.InvalidDatasetException;
 import stb.core.infrastructure.csv.dto.DatasetDto;
+import stb.core.infrastructure.csv.dto.EngineerDto;
+import stb.core.infrastructure.csv.dto.RequestDto;
 
 @Component
 @RequiredArgsConstructor
@@ -52,9 +57,9 @@ public class DemoDatasetLoader implements CommandLineRunner {
     private static final double PUBLIC_TRANSPORT_SPEED_KMH = 38;
     private static final double CAR_SPEED_KMH = 60;
 
-    private static final int PEDESTRIAN_EQUIPMENT_CAPACITY = 2;
-    private static final int BICYCLE_EQUIPMENT_CAPACITY = 3;
-    private static final int PUBLIC_TRANSPORT_EQUIPMENT_CAPACITY = 2;
+    private static final int PEDESTRIAN_EQUIPMENT_CAPACITY = 4;
+    private static final int BICYCLE_EQUIPMENT_CAPACITY = 6;
+    private static final int PUBLIC_TRANSPORT_EQUIPMENT_CAPACITY = 4;
     private static final int CAR_EQUIPMENT_CAPACITY = 100;
 
     private static final List<String> REGION_DIRS = List.of("vostok", "yugo-vostok", "yugo-centr");
@@ -71,6 +76,7 @@ public class DemoDatasetLoader implements CommandLineRunner {
     private final EngineerCrewRepository engineerCrewRepository;
     private final RequestRepository requestRepository;
     private final RequestActionAuditRepository requestActionAuditRepository;
+    private final RegionDomainService regionDomainService;
 
     @Override
     @Transactional
@@ -91,10 +97,22 @@ public class DemoDatasetLoader implements CommandLineRunner {
         List<Request> requests = new ArrayList<>();
         for (String dir : REGION_DIRS) {
             DatasetDto dataset = parser.parse(file -> getClass().getResourceAsStream("/demo/dataset/" + dir + "/" + file.fileName()));
-            Region region = regionRepository.save(mapper.toRegion(REGION_NAMES.get(dir), dataset.engineers().getFirst()));
-            dataset.engineers().forEach(engineer -> crews.add(mapper.toCrew(engineer, region, vehicles, skills)));
-            dataset.requests().forEach(request -> requests.add(mapper.toRequest(
-                    request, region, jobTypes, vehicles, equipment, statuses.get(RequestStatus.Keyword.IDLE), createdAt)));
+            Region region = regionRepository.save(mapper.toRegion(REGION_NAMES.get(dir), officeEngineer(dataset, dir)));
+            Map<String, Region> districts = districts(dataset, region);
+
+            List<Region> regionDistricts = new ArrayList<>(districts.values());
+            regionDistricts.add(region);
+
+            for (EngineerDto engineer : dataset.engineers()) {
+                Region crewRegion = engineer.district() == null ? region : districts.get(engineer.district());
+                crews.add(mapper.toCrew(engineer, crewRegion, vehicles, skills));
+            }
+
+            for (RequestDto request : dataset.requests()) {
+                Region requestRegion = regionDomainService.nearest(regionDistricts, request.location().latitude(), request.location().longitude());
+                requests.add(mapper.toRequest(
+                        request, requestRegion, jobTypes, vehicles, equipment, statuses.get(RequestStatus.Keyword.IDLE), createdAt));
+            }
         }
         engineerCrewRepository.saveAll(crews);
         requestRepository.saveAll(requests);
@@ -104,6 +122,27 @@ public class DemoDatasetLoader implements CommandLineRunner {
 
         log.info("Демо-датасет загружен: регионов {}, бригад {}, заявок {}",
                 REGION_DIRS.size(), crews.size(), requests.size());
+    }
+
+    private static EngineerDto officeEngineer(DatasetDto dataset, String dir) {
+        return dataset.engineers().stream()
+                .filter(engineer -> engineer.district() == null)
+                .findFirst()
+                .orElseThrow(() -> new InvalidDatasetException("%s: нет инженеров без подрайона, офис региона не определить".formatted(dir)));
+    }
+
+    private Map<String, Region> districts(DatasetDto dataset, Region region) {
+        Map<String, Region> districts = new LinkedHashMap<>();
+
+        for (EngineerDto engineer : dataset.engineers()) {
+            if (engineer.district() == null || districts.containsKey(engineer.district())) {
+                continue;
+            }
+
+            districts.put(engineer.district(), regionRepository.save(mapper.toDistrict(engineer, region)));
+        }
+
+        return districts;
     }
 
     private Map<CsvEquipment, Equipment> equipment() {

@@ -2,6 +2,7 @@ package stb.core.domain.repository.specification;
 
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import lombok.RequiredArgsConstructor;
@@ -28,10 +29,12 @@ public class EngineerCrewSpecification implements Specification<EngineerCrew> {
         }
 
         if (crew.regionId() != null) {
+            Path<Region> region = root.get(EngineerCrew_.REGION);
+
             predicates.add(
-                    cb.equal(
-                            root.get(EngineerCrew_.REGION).get(Region_.ID),
-                            crew.regionId()
+                    cb.or(
+                            cb.equal(region.get(Region_.ID), crew.regionId()),
+                            cb.equal(region.get(Region_.PARENT_REGION).get(Region_.ID), crew.regionId())
                     )
             );
         }
