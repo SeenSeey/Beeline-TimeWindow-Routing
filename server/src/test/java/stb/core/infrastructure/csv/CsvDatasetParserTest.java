@@ -61,6 +61,20 @@ class CsvDatasetParserTest {
     }
 
     @Test
+    void parsesOptionalDistrict() throws IOException {
+        writeCsv(DatasetFile.REQUESTS, List.of(REQUEST));
+        Files.writeString(dir.resolve(DatasetFile.ENGINEERS.fileName()), String.join("\n",
+                String.join(";", DatasetFile.ENGINEERS.header()) + ";" + EngineerColumn.DISTRICT.header(),
+                ENGINEER + ";",
+                "2;Бригада;Кашира;54.84;38.19;09:00;18:00;EMERGENCY;CAR;Кашира") + "\n");
+
+        DatasetDto dataset = parser.parse(dir);
+
+        assertThat(dataset.engineers()).extracting(EngineerDto::district).containsExactly(null, "Кашира");
+        assertThat(DatasetFile.ENGINEERS.header()).doesNotContain(EngineerColumn.DISTRICT.header());
+    }
+
+    @Test
     void parsesRows() throws IOException {
         write(REQUEST, ENGINEER,
                 "CANCEL_REQUEST;11:00;7;;;;;;;;;;",

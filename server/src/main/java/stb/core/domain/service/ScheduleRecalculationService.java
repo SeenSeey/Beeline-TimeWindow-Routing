@@ -73,7 +73,7 @@ public class ScheduleRecalculationService {
 
         if (routes.isEmpty()) {
             List<Location> points = Stream.concat(Stream.concat(
-                            Stream.of(Location.from(region)),
+                            engineerCrews.stream().map(Location::from).distinct(),
                             requestsToReschedule.stream().map(Location::from)),
                     crewLatestSlots.stream().map(Location::from)
             ).toList();

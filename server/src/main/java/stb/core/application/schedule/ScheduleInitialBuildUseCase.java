@@ -3,6 +3,7 @@ package stb.core.application.schedule;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import stb.core.domain.dto.ScheduleTimelineDto;
@@ -32,7 +33,7 @@ public class ScheduleInitialBuildUseCase {
             throw new ScheduleAlreadyExistsException("Расписание на %s уже сформировано".formatted(targetDate));
         }
 
-        List<Region> regions = regionRepository.findAll();
+        List<Region> regions = regionRepository.findAllByParentRegionIsNull(Sort.by("id"));
         List<Schedule> schedules = regions.stream()
                 .map(region -> new Schedule(targetDate, region))
                 .toList();

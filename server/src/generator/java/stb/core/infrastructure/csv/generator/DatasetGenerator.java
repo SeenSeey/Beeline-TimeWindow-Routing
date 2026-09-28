@@ -140,7 +140,7 @@ public final class DatasetGenerator {
             Crew crew = crews.get(i);
             Shift shift = SHIFTS.get(i % SHIFTS.size());
             engineers.add(new EngineerDto(engineerIdOffset + i + 1, crew.name(), region.officeAddress(), office,
-                    shift.start(), shift.end(), crew.skills(), crew.vehicle()));
+                    shift.start(), shift.end(), crew.skills(), crew.vehicle(), null));
         }
         return new DatasetDto(requests, List.copyOf(engineers), events(region, requests, List.copyOf(engineers), crews));
     }

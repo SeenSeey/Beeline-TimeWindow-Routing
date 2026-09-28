@@ -30,6 +30,6 @@ public enum DatasetFile {
     }
 
     private static List<String> headers(CsvColumn[] columns) {
-        return Arrays.stream(columns).map(CsvColumn::header).toList();
+        return Arrays.stream(columns).filter(column -> !column.optional()).map(CsvColumn::header).toList();
     }
 }

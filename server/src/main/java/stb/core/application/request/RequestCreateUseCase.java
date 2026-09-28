@@ -17,6 +17,7 @@ import stb.core.domain.model.RequestActionAudit;
 import stb.core.domain.model.Schedule;
 import stb.core.domain.port.Geocoder;
 import stb.core.domain.repository.*;
+import stb.core.domain.service.RegionDomainService;
 
 import java.time.LocalDate;
 
@@ -35,6 +36,7 @@ public class RequestCreateUseCase {
     private final ApplicationEventPublisher applicationEventPublisher;
     private final ScheduleRepository scheduleRepository;
     private final RequestActionAuditRepository requestActionAuditRepository;
+    private final RegionDomainService regionDomainService;
 
     @Transactional
     public RequestDto execute(RequestCreateDto createDto) {
@@ -54,13 +56,16 @@ public class RequestCreateUseCase {
         Region region = regionRepository.findById(createDto.regionId())
                 .orElseThrow(() -> new RegionNotFoundException("Регион с ID = %s не найден".formatted(createDto.regionId())));
 
+        Region rootRegion = regionDomainService.root(region);
+        Region district = regionDomainService.nearestDistrict(rootRegion, coordinates.latitude(), coordinates.longitude());
+
         Request request = new Request(
                 createDto.address(),
                 coordinates.latitude(),
                 coordinates.longitude(),
                 requestStatusRepository.findAll(),
                 jobType,
-                region,
+                district,
                 createDto.startTimeWindow(),
                 createDto.endTimeWindow()
         );
@@ -81,14 +86,14 @@ public class RequestCreateUseCase {
         if (request.isUrgent()) {
             LocalDate targetDate = LocalDate.now();
 
-            Schedule schedule = scheduleRepository.findByTargetDateAndRegionId(targetDate, region.getId())
+            Schedule schedule = scheduleRepository.findByTargetDateAndRegionId(targetDate, rootRegion.getId())
                             .orElse(null);
 
             if (schedule != null) {
                 schedule.markAsRecalculating();
                 scheduleRepository.save(schedule);
 
-                applicationEventPublisher.publishEvent(new EmergencyCreatedEvent(request.getId(), region.getId()));
+                applicationEventPublisher.publishEvent(new EmergencyCreatedEvent(request.getId(), rootRegion.getId()));
             } else {
                 log.info("Расписание для {} не найдено", targetDate);
             }

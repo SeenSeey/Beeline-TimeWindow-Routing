@@ -105,7 +105,8 @@ public interface ScheduleSlotRepository extends JpaRepository<ScheduleSlot, Inte
                 ls.latitude,
                 ls.longitude
             FROM latest_slots ls
-            WHERE ls.region_id = :regionId
+            JOIN regions rg ON rg.id = ls.region_id
+            WHERE (rg.id = :regionId OR rg.parent_region_id = :regionId)
             """, nativeQuery = true)
     List<CrewLatestSlot> findLatestSlotsForCrewsByRegionId(int regionId);
 

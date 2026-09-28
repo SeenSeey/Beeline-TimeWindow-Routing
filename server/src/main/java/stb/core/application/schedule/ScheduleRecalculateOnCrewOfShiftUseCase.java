@@ -13,6 +13,7 @@ import stb.core.domain.exception.CrewNotFoundException;
 import stb.core.domain.model.*;
 import stb.core.domain.repository.*;
 import stb.core.domain.service.ScheduleRecalculationService;
+import stb.core.domain.service.RegionDomainService;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -30,6 +31,7 @@ public class ScheduleRecalculateOnCrewOfShiftUseCase {
     private final RequestActionAuditRepository requestActionAuditRepository;
     private final AlterationReasonAssmblerService alterationReasonAssmblerService;
     private final RouteStorage routeStorage;
+    private final RegionDomainService regionDomainService;
 
     @Transactional
     public void execute(int crewId) {
@@ -45,7 +47,7 @@ public class ScheduleRecalculateOnCrewOfShiftUseCase {
             return;
         }
 
-        Region region = crew.getRegion();
+        Region region = regionDomainService.root(crew.getRegion());
 
         List<RouteDto> routes = routeStorage.findAllRoutesByRegion(region);
 

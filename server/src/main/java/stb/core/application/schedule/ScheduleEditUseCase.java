@@ -14,6 +14,7 @@ import stb.core.domain.repository.*;
 import stb.core.domain.service.CrewRouteDomainService;
 import stb.core.domain.service.CrewRouteTimingDomainService;
 import stb.core.domain.service.CrewRouteTimingDomainService.PlannedVisit;
+import stb.core.domain.service.RegionDomainService;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -34,6 +35,7 @@ public class ScheduleEditUseCase {
     private final AlterationReasonRepository alterationReasonRepository;
     private final CrewRouteDomainService crewRouteDomainService;
     private final RouteStorage routeStorage;
+    private final RegionDomainService regionDomainService;
 
     private record CrewPlan(EngineerCrew crew, List<PlannedVisit> visits) {
     }
@@ -230,8 +232,10 @@ public class ScheduleEditUseCase {
         return Optional.ofNullable(route.stops()).orElse(List.of());
     }
 
-    private static void checkCanBePlanned(Request request, int regionId, Set<Integer> editedCrewIds, int routeCrewId) {
-        if (request.getRegion().getId() != regionId) {
+    private void checkCanBePlanned(Request request, int regionId, Set<Integer> editedCrewIds, int routeCrewId) {
+        Region rootRegion = regionDomainService.root(request.getRegion());
+
+        if (rootRegion.getId() != regionId) {
             throw new DomainException.ValidationException("Заявка №%d из другого региона".formatted(request.getId()));
         }
         EngineerCrew currentCrew = request.getAssignedCrew();

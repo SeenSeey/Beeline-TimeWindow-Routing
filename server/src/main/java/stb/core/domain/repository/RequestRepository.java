@@ -15,7 +15,7 @@ public interface RequestRepository extends JpaRepository<Request, Integer>, JpaS
 
     @Query("""
             SELECT r FROM Request r
-            WHERE r.region.id = :regionId
+            WHERE (r.region.id = :regionId OR r.region.parentRegion.id = :regionId)
             AND r.assignedCrew IS NULL
             AND r.completedAt IS NULL
             AND r.canceledAt IS NULL
@@ -24,7 +24,7 @@ public interface RequestRepository extends JpaRepository<Request, Integer>, JpaS
 
     @Query("""
             SELECT r FROM Request r
-            WHERE r.region.id = :regionId
+            WHERE (r.region.id = :regionId OR r.region.parentRegion.id = :regionId)
             AND r.completedAt IS NULL
             AND r.canceledAt IS NULL
             ORDER BY r.urgent DESC, r.deadline ASC
@@ -33,7 +33,7 @@ public interface RequestRepository extends JpaRepository<Request, Integer>, JpaS
 
     @Query("""
             SELECT r FROM Request r
-            WHERE r.region.id = :regionId
+            WHERE (r.region.id = :regionId OR r.region.parentRegion.id = :regionId)
             AND r.assignedCrew IS NULL
             AND r.status.keyword = :status
             ORDER BY r.urgent DESC, r.deadline ASC
@@ -43,7 +43,7 @@ public interface RequestRepository extends JpaRepository<Request, Integer>, JpaS
 
     @Query("""
             SELECT r FROM Request r
-            WHERE r.region.id = :regionId
+            WHERE (r.region.id = :regionId OR r.region.parentRegion.id = :regionId)
             ORDER BY r.id
             """)
     List<Request> findAllByRegionId(@Param("regionId") int regionId);
@@ -57,7 +57,7 @@ public interface RequestRepository extends JpaRepository<Request, Integer>, JpaS
 
     @Query("""
             SELECT r FROM Request r
-            WHERE r.region.id = :regionId
+            WHERE (r.region.id = :regionId OR r.region.parentRegion.id = :regionId)
             AND r.status.keyword IN ('IDLE', 'ASSIGNED')
             """)
     List<Request> findAllForRescheduleByRegionId(int regionId);

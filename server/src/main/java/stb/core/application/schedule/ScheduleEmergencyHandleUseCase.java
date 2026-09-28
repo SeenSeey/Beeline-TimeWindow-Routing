@@ -12,6 +12,7 @@ import stb.core.domain.model.*;
 import stb.core.domain.repository.*;
 import stb.core.domain.service.AlterationReasonAssmblerService;
 import stb.core.domain.service.ScheduleRecalculationService;
+import stb.core.domain.service.RegionDomainService;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -30,13 +31,14 @@ public class ScheduleEmergencyHandleUseCase {
     private final RequestActionAuditRepository requestActionAuditRepository;
     private final RequestActionAuditService auditFactory;
     private final RouteStorage routeStorage;
+    private final RegionDomainService regionDomainService;
 
     @Transactional
     public void execute(int requestId) {
         Request emergencyRequest = requestRepository.findById(requestId)
                 .orElseThrow(() -> new RequestNotFoundException("Заявка с ID = %s не найдена".formatted(requestId)));
 
-        Region region = emergencyRequest.getRegion();
+        Region region = regionDomainService.root(emergencyRequest.getRegion());
         LocalDate targetDate = LocalDate.now();
 
         routeStorage.clearAll();

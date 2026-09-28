@@ -14,5 +14,6 @@ public record EngineerDto(
         LocalTime shiftStart,
         LocalTime shiftEnd,
         Set<CsvSkill> skills,
-        Vehicle.Keyword vehicle) {
+        Vehicle.Keyword vehicle,
+        String district) {
 }

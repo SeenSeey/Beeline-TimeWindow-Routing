@@ -48,8 +48,9 @@ public class CrewRouteDomainService {
                 .map(ScheduleSlot::getRequest)
                 .toList();
 
-        CrewRouteDto crewRoute = assemble(Location.from(schedule.getRegion()), visits, routes);
+        CrewRouteDto crewRoute = assemble(Location.from(crew), visits, routes);
         routeStorage.saveRoute(schedule, crew, crewRoute);
+
 
         log.info("Маршрут рассчитан");
     }

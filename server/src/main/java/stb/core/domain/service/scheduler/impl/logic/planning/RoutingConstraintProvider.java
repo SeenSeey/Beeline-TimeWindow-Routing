@@ -6,6 +6,7 @@ import ai.timefold.solver.core.api.score.stream.ConstraintFactory;
 import ai.timefold.solver.core.api.score.stream.ConstraintProvider;
 import org.springframework.stereotype.Component;
 import stb.core.domain.model.JobType;
+import stb.core.domain.port.route.dto.Location;
 import stb.core.domain.service.scheduler.dto.EngineerCrewDto;
 import stb.core.domain.service.scheduler.dto.RequestDto;
 import stb.core.domain.service.scheduler.dto.TravelMatrix;
@@ -22,6 +23,8 @@ public class RoutingConstraintProvider implements ConstraintProvider {
     private static final int USED_ENGINEER_SOFT_WEIGHT = 1_000_000;
     private static final int URGENT_START_DELAY_SOFT_WEIGHT = 100;
     private static final int DEADLINE_WEIGHT = 1_000;
+    private static final int FOREIGN_DISTRICT_SOFT_WEIGHT_PER_KM = 20_000;
+    private static final double EARTH_RADIUS_KM = 6371;
 
     @Override
     public Constraint[] defineConstraints(ConstraintFactory factory) {
@@ -39,6 +42,7 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                 mediumPrioritiseDeadlierRequests(factory),
 
                 softMinimizeUsedEngineerCrews(factory),
+                softPreferOwnDistrict(factory),
                 softMinimizeTravelDistance(factory),
                 softMinimizeTravelTime(factory),
                 softStartUrgentRequestsAsEarlyAsPossible(factory),
@@ -285,6 +289,37 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                 );
     }
 
+
+    private Constraint softPreferOwnDistrict(
+            ConstraintFactory factory
+    ) {
+        return factory
+                .forEach(RequestDto.class)
+                .filter(request ->
+                        request.getEngineerCrewDto() != null
+                                && request.getDistrictId() != request.getEngineerCrewDto().getDistrictId()
+                )
+                .penalize(
+                        HardMediumSoftScore.ONE_SOFT,
+                        request -> (int) Math.ceil(FOREIGN_DISTRICT_SOFT_WEIGHT_PER_KM * straightDistanceKm(
+                                request.getEngineerCrewDto().getDistrictOfficeLocation(),
+                                request.getLocation()
+                        ))
+                )
+                .asConstraint(
+                        "Prefer engineer crews of the request's district"
+                );
+    }
+
+    private static double straightDistanceKm(Location from, Location to) {
+        double latitudeDelta = Math.toRadians(to.latitude() - from.latitude());
+        double longitudeDelta = Math.toRadians(to.longitude() - from.longitude());
+
+        double haversine = Math.pow(Math.sin(latitudeDelta / 2), 2)
+                + Math.cos(Math.toRadians(from.latitude())) * Math.cos(Math.toRadians(to.latitude())) * Math.pow(Math.sin(longitudeDelta / 2), 2);
+
+        return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(haversine));
+    }
 
     private Constraint mediumMaximizeCompletedRequests(ConstraintFactory factory) {  //приоритет влияет не на срочность/временное окно, а на ценность выполнения заявки.
         return factory

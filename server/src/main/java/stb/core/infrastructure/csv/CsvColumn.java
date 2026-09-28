@@ -9,4 +9,8 @@ public interface CsvColumn {
     default String header() {
         return name().toLowerCase(Locale.ROOT);
     }
+
+    default boolean optional() {
+        return false;
+    }
 }

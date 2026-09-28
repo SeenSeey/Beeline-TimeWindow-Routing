@@ -42,6 +42,8 @@ public class SchedulerMapper {
         return new EngineerCrewDto(
             engineerCrew.getId(),
             engineerCrew.getName(),
+            engineerCrew.getRegion().getId(),
+            Location.from(engineerCrew),
             location,
             shiftStartTime,
             engineerCrew.getShiftEndTime(),
@@ -65,6 +67,7 @@ public class SchedulerMapper {
             request.getId(),
             request.getFullAddress(),
             Location.from(request),
+            request.getRegion().getId(),
             request.getJobType().getTotalTimeSpanMinutes() - request.getJobType().getMaxTravelTimeSpanMinutes(),
             request.getStartTimeWindow(),
             request.getEndTimeWindow(),

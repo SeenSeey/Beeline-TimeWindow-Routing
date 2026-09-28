@@ -70,7 +70,7 @@ public class ScheduleCalculateUseCase {
             }
 
             List<Location> points = Stream.concat(
-                    Stream.of(Location.from(region)),
+                    engineerCrews.stream().map(Location::from).distinct(),
                     requests.stream().map(Location::from)
             ).toList();
 

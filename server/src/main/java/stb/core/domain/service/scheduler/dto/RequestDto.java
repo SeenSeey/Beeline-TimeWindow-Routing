@@ -30,6 +30,8 @@ public class RequestDto {
 
     private final Location location;
 
+    private final int districtId;
+
     private final int serviceDurationMinutes;
 
     private final LocalTime windowStart;

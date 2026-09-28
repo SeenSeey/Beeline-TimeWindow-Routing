@@ -39,6 +39,10 @@ class CsvRow {
         return value;
     }
 
+    String optionalString(CsvColumn column) {
+        return value(column);
+    }
+
     private String value(CsvColumn column) {
         String name = header(column);
         return record.isSet(name) && !record.get(name).isEmpty() ? record.get(name) : null;

@@ -40,6 +40,15 @@ public class DatasetDomainMapper {
                 null);
     }
 
+    public Region toDistrict(EngineerDto anyDistrictEngineer, Region parentRegion) {
+        return new Region(
+                anyDistrictEngineer.district(),
+                anyDistrictEngineer.startAddress(),
+                anyDistrictEngineer.start().latitude(),
+                anyDistrictEngineer.start().longitude(),
+                parentRegion);
+    }
+
     public EngineerCrew toCrew(EngineerDto engineer,
                                Region region,
                                Map<Vehicle.Keyword, Vehicle> vehicles,

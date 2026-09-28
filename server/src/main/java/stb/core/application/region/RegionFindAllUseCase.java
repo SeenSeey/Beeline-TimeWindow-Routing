@@ -17,7 +17,7 @@ public class RegionFindAllUseCase {
 
     @Transactional(readOnly = true)
     public List<RegionDto> execute() {
-        return regionRepository.findAll(Sort.by("displayName"))
+        return regionRepository.findAllByParentRegionIsNull(Sort.by("displayName"))
                 .stream()
                 .map(RegionDto::from)
                 .toList();

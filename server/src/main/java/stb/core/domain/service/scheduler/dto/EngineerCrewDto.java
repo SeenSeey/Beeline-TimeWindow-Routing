@@ -25,6 +25,10 @@ public class EngineerCrewDto {
 
     private final String name;
 
+    private final int districtId;
+
+    private final Location districtOfficeLocation;
+
     private final Location startLocation;
 
     private final LocalTime workDayStart;

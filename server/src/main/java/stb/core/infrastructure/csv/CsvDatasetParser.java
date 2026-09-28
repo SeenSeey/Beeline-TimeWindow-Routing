@@ -99,7 +99,8 @@ public class CsvDatasetParser {
                 row.time(EngineerColumn.SHIFT_START),
                 row.time(EngineerColumn.SHIFT_END),
                 Set.copyOf(row.enumList(EngineerColumn.SKILLS, CsvSkill.class)),
-                row.enumValue(EngineerColumn.VEHICLE, Vehicle.Keyword.class));
+                row.enumValue(EngineerColumn.VEHICLE, Vehicle.Keyword.class),
+                row.optionalString(EngineerColumn.DISTRICT));
     }
 
     private static ReplanEventDto toEvent(CsvRow row) {
