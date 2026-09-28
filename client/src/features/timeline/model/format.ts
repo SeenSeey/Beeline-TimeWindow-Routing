@@ -13,6 +13,11 @@ export const formatDate = (d: string): string => d.split("-").reverse().join("."
 /** ISO LocalDateTime → "DD.MM.YYYY HH:mm" */
 export const formatDateTime = (dt: string): string => `${formatDate(dt.slice(0, 10))} ${dt.slice(11, 16)}`;
 
+const distanceFormat = new Intl.NumberFormat("ru", { maximumFractionDigits: 1 });
+
+/** 12.34 → "12,3 км" */
+export const formatDistance = (kilometers: number): string => `${distanceFormat.format(kilometers)} км`;
+
 /** 25 → "01:00" */
 export const formatHour = (h: number): string => String(h % 24).padStart(2, "0") + ":00";
 

@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { ApiResponse, CrewRouteDraft, RegionInfo, ScheduleData, SchedulePreview } from "../types";
+import type { ApiResponse, CrewRoute, CrewRouteDraft, RegionInfo, ScheduleData, SchedulePreview } from "../types";
 
 export interface ApiFailure {
   kind: "not-found" | "error";
@@ -35,6 +35,12 @@ export async function saveScheduleEdit(regionId: number, routes: CrewRouteDraft[
   const response = await axios.put<ApiResponse<ScheduleData>>(`/api/v1/schedules/regions/${regionId}/routes`, {
     routes,
   });
+  return response.data?.payload ?? null;
+}
+
+/** The crew's road route in the schedule, leg by leg; the server answers 404 when none is stored */
+export async function fetchCrewRoute(scheduleId: number, crewId: number): Promise<CrewRoute | null> {
+  const response = await axios.get<ApiResponse<CrewRoute>>(`/api/v1/schedules/${scheduleId}/crews/${crewId}/route`);
   return response.data?.payload ?? null;
 }
 

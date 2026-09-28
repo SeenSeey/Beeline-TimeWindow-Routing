@@ -12,6 +12,13 @@ spring:
       ddl-auto: update
     open-in-view: true
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      repositories:
+        enabled: false
+
   task:
     execution:
       mode: force
@@ -20,6 +27,7 @@ app:
   route:
     osm-file: map/central-fed.osm.pbf
     graph-cache: map/graph-cache
+    storage-ttl: 48h
   geo:
     geocoder-api-key: api-key
     base-path: https://geocode-maps.yandex.ru/v1

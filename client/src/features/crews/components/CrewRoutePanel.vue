@@ -12,9 +12,20 @@
 
     <UiEmptyState v-if="!visits.length">В расписании на эту дату у бригады нет заявок.</UiEmptyState>
 
-    <!-- the route on the map, like the one under the timeline -->
-    <div v-if="visits.length" class="h-[360px] border-b border-line">
-      <UiRouteMap :stops="stops" />
+    <!-- the route on the map, like the one under the timeline: along the roads from the office, start and
+         finish marked; without a stored road route just the pins, no line -->
+    <!-- the route's length: from the office through every visit, along the roads -->
+    <div
+      v-if="visits.length"
+      class="flex flex-wrap items-baseline gap-x-2 gap-y-1 border-b border-line px-5 py-3 text-sm"
+    >
+      <span class="text-muted">Протяжённость маршрута</span>
+      <b v-if="roadRoute" class="mono font-semibold text-ink">{{ formatDistance(roadRoute.distanceKilometers) }}</b>
+      <span v-else class="text-faint">маршрут ещё не построен</span>
+    </div>
+
+    <div v-if="visits.length" class="h-[720px] border-b border-line">
+      <UiRouteMap :stops="stops" :legs="legs" start-label="Старт" finish-label="Финиш" />
     </div>
 
     <!-- numbered like the pins on the map above -->
@@ -69,13 +80,16 @@ import UiEmptyState from "@/components/ui/UiEmptyState.vue";
 import UiPanel from "@/components/ui/UiPanel.vue";
 import UiRouteMap, { type UiRouteStop } from "@/components/ui/UiRouteMap.vue";
 import { jobTypeColor, statusColor } from "@/features/requests/model/colors";
-import { formatDate, formatTime } from "@/features/timeline/model/format";
+import { routeLegs, type LngLat } from "@/features/timeline/model/crewRoute";
+import { formatDate, formatDistance, formatTime } from "@/features/timeline/model/format";
 import { formatCoordinates } from "../model/format";
-import type { RouteVisit } from "../types";
+import type { CrewRoute, RouteVisit } from "../types";
 
 const props = defineProps<{
   /** in visit order */
   visits: RouteVisit[];
+  /** the road route through the visits; null while there is none */
+  roadRoute: CrewRoute | null;
   /** "YYYY-MM-DD" */
   routeDate: string;
   regionId: number;
@@ -94,4 +108,7 @@ const stops = computed<UiRouteStop[]>(() =>
     ariaLabel: `${index + 1}. ${formatTime(visit.startTime)}–${formatTime(visit.endTime)}, ${visit.fullAddress}`,
   })),
 );
+
+// no straight segments between the pins in place of a missing road route: they would pass for one
+const legs = computed<LngLat[][]>(() => (props.roadRoute ? routeLegs(props.roadRoute) : []));
 </script>

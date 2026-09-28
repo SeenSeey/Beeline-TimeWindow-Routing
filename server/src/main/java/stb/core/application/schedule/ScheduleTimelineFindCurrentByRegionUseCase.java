@@ -2,6 +2,7 @@ package stb.core.application.schedule;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -15,9 +16,12 @@ import stb.core.domain.dto.ScheduleTimelineDto;
 import stb.core.domain.dto.UnassignedRequestDto;
 import stb.core.domain.exception.RegionNotFoundException;
 import stb.core.domain.exception.ScheduleNotFoundException;
+import stb.core.domain.model.EngineerCrew;
 import stb.core.domain.model.Region;
 import stb.core.domain.model.RequestStatus;
 import stb.core.domain.model.Schedule;
+import stb.core.domain.port.route.RouteStorage;
+import stb.core.domain.port.route.dto.CrewRouteDto;
 import stb.core.domain.repository.AlterationReasonRepository;
 import stb.core.domain.repository.EngineerCrewOffShiftRecordRepository;
 import stb.core.domain.repository.EngineerCrewRepository;
@@ -38,6 +42,7 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
     private final EngineerCrewRepository engineerCrewRepository;
     private final EngineerCrewOffShiftRecordRepository engineerCrewOffShiftRecordRepository;
     private final AlterationReasonRepository reasonRepository;
+    private final RouteStorage routeStorage;
 
     @Transactional(readOnly = true)
     public ScheduleTimelineDto execute(int regionId) {
@@ -59,15 +64,36 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
             );
 
         Map<Integer, AlterationReasonDto> reasonsByRequestId = findAlterationReasons(schedule);
+        List<EngineerCrew> crews = engineerCrewRepository.findAllByRegionId(regionId);
 
-        // every crew of the region is shown, the ones taken off shift today marked as such
         return ScheduleTimelineDto.from(
             schedule,
             findUnassignedRequests(schedule, regionId, reasonsByRequestId),
-            engineerCrewRepository.findAllByRegionId(regionId),
+            crews,
             findOffShiftCrewIds(regionId, targetDate),
-            reasonsByRequestId
+            reasonsByRequestId,
+            findRouteDistances(schedule, crews)
         );
+    }
+
+    /**
+     * crew id → the length of its stored route; only for a calculated schedule, whose routes are final.
+     * The geometry is loaded separately, for the crew the dispatcher selects (ScheduleCrewRouteFindUseCase)
+     */
+    private Map<Integer, Double> findRouteDistances(Schedule schedule, List<EngineerCrew> crews) {
+        if (schedule.getStatus() != Schedule.Status.CREATED) {
+            return Map.of();
+        }
+
+        Map<Integer, Double> distancesByCrewId = new HashMap<>();
+        for (EngineerCrew crew : crews) {
+            CrewRouteDto route = routeStorage.findRoute(schedule, crew);
+            // a crew without a route (no requests, off shift, expired) gets a row without one
+            if (route != null) {
+                distancesByCrewId.put(crew.getId(), route.distanceKilometers());
+            }
+        }
+        return distancesByCrewId;
     }
 
     private Set<Integer> findOffShiftCrewIds(int regionId, LocalDate targetDate) {

@@ -35,7 +35,12 @@
     <!-- 3. today's work and the request history on the left, capabilities on the side -->
     <div class="grid grid-cols-1 items-start gap-4 sm:gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
       <div class="grid min-w-0 gap-4 sm:gap-6">
-        <CrewRoutePanel :visits="crew.route" :route-date="crew.routeDate" :region-id="crew.region.id" />
+        <CrewRoutePanel
+          :visits="crew.route"
+          :road-route="crew.roadRoute ?? null"
+          :route-date="crew.routeDate"
+          :region-id="crew.region.id"
+        />
         <CrewRequestsPanel :requests="crew.assignedRequests" />
       </div>
 

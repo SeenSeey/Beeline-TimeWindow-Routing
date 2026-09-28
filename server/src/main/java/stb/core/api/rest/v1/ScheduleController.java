@@ -7,12 +7,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import stb.core.api.rest.v1.dto.ServerResponse;
 import stb.core.application.dev.DevStateResetUseCase;
+import stb.core.application.schedule.ScheduleCrewRouteFindUseCase;
 import stb.core.application.schedule.ScheduleEditUseCase;
 import stb.core.application.schedule.ScheduleInitialBuildUseCase;
 import stb.core.application.schedule.ScheduleTimelineFindCurrentByRegionUseCase;
 import stb.core.domain.dto.ScheduleEditDto;
 import stb.core.domain.dto.SchedulePreviewDto;
 import stb.core.domain.dto.ScheduleTimelineDto;
+import stb.core.domain.port.route.dto.CrewRouteDto;
 
 @RestController
 @RequestMapping("/api/v1/schedules")
@@ -23,10 +25,18 @@ public class ScheduleController {
     private final ScheduleInitialBuildUseCase scheduleInitialBuildUseCase;
     private final DevStateResetUseCase devStateResetUseCase;
     private final ScheduleEditUseCase scheduleEditUseCase;
+    private final ScheduleCrewRouteFindUseCase scheduleCrewRouteFindUseCase;
 
     @GetMapping("/regions/{regionId}")
     public ResponseEntity<ServerResponse<ScheduleTimelineDto>> findCurrentByRegionId(@PathVariable int regionId) {
         var result = scheduleTimelineFindCurrentByRegionUseCase.execute(regionId);
+        return ResponseEntity.ok(ServerResponse.ok(HttpStatus.OK.value(), result));
+    }
+
+    @GetMapping("/{scheduleId}/crews/{crewId}/route")
+    public ResponseEntity<ServerResponse<CrewRouteDto>> findCrewRoute(@PathVariable int scheduleId,
+                                                                      @PathVariable int crewId) {
+        var result = scheduleCrewRouteFindUseCase.execute(scheduleId, crewId);
         return ResponseEntity.ok(ServerResponse.ok(HttpStatus.OK.value(), result));
     }
 

@@ -33,6 +33,10 @@
       <div class="mono text-xs whitespace-nowrap text-muted">
         {{ formatTime(crew.shiftStartTime) }}–{{ formatTime(crew.shiftEndTime) }} · {{ crew.requests.length }} заявок
       </div>
+      <!-- the day's road route, as stored when the schedule was built -->
+      <div v-if="routeDistance" class="mono text-xs whitespace-nowrap text-muted" :title="`Маршрут за день: ${routeDistance}`">
+        маршрут {{ routeDistance }}
+      </div>
       <!-- equipment on hand now: issued with the schedule, minus requests taken into work -->
       <div v-if="equipmentText" class="truncate text-xs text-muted" :title="`Оборудование: ${equipmentText}`">
         {{ equipmentText }}
@@ -113,7 +117,7 @@
 import { computed, ref } from "vue";
 import UiBadge from "@/components/ui/UiBadge.vue";
 import { skillColor } from "../model/colors";
-import { formatTime } from "../model/format";
+import { formatDistance, formatTime } from "../model/format";
 import { axisMinuteToTime, decodeDragPayload, DRAG_REQUEST_TYPE, indexByDropMinute } from "../model/scheduleDraft";
 import type { CrewRow, TimeScale } from "../model/timeline";
 import { useBoardStore } from "../stores/board";
@@ -167,6 +171,12 @@ const skillNames = computed(() => skills.value.map((skill) => skill.displayName)
 const equipmentText = computed(() =>
   (props.crew.equipment ?? []).map((item) => `${item.displayName} × ${item.quantity}`).join(", "),
 );
+
+/** "12,3 км"; empty without a stored route */
+const routeDistance = computed(() => {
+  const kilometers = props.crew.routeDistanceKilometers;
+  return kilometers != null ? formatDistance(kilometers) : "";
+});
 
 /** a request is being dragged over this row */
 const dropHover = ref(false);

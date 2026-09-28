@@ -20,11 +20,12 @@ import stb.core.domain.service.scheduler.impl.logic.planning.EngineerRoutingPlan
 @Component
 public class SchedulerMapper {
 
-    public EngineerCrewDto toEngineerCrewDto(EngineerCrew engineerCrew,
-                                             Map<Integer, CrewLatestSlot> crewLatestSlots,
-                                             Map<Integer, Integer> slotsCountByCrewId,
-                                             boolean replanning) {
-
+    public EngineerCrewDto toEngineerCrewDto(
+        EngineerCrew engineerCrew,
+        Map<Integer, CrewLatestSlot> crewLatestSlots,
+        Map<Integer, Integer> slotsCountByCrewId,
+        boolean replanning
+    ) {
         Location location;
         LocalTime shiftStartTime;
 
@@ -61,19 +62,19 @@ public class SchedulerMapper {
 
     public RequestDto toRequestDto(Request request) {
         return new RequestDto(
-                request.getId(),
-                request.getFullAddress(),
-                Location.from(request),
-                request.getJobType().getTotalTimeSpanMinutes() - request.getJobType().getMaxTravelTimeSpanMinutes(),
-                request.getStartTimeWindow(),
-                request.getEndTimeWindow(),
-                request.getJobType().getKeyword(),
-                request.getJobType().getRequiredSkills(),
-                request.getRequiredVehicle() != null ? request.getRequiredVehicle().getKeyword() : null,
-                request.isUrgent(),
-                request.getRequiredEquipment() != null ? request.getRequiredEquipment().getId() : null,
-                request.getCreatedAt(),
-                request.getDeadline()
+            request.getId(),
+            request.getFullAddress(),
+            Location.from(request),
+            request.getJobType().getTotalTimeSpanMinutes() - request.getJobType().getMaxTravelTimeSpanMinutes(),
+            request.getStartTimeWindow(),
+            request.getEndTimeWindow(),
+            request.getJobType().getKeyword(),
+            request.getJobType().getRequiredSkills(),
+            request.getRequiredVehicle() != null ? request.getRequiredVehicle().getKeyword() : null,
+            request.isUrgent(),
+            request.getRequiredEquipment() != null ? request.getRequiredEquipment().getId() : null,
+            request.getCreatedAt(),
+            request.getDeadline()
         );
     }
 

@@ -1,6 +1,7 @@
 package stb.core.domain.dto;
 
 import stb.core.domain.model.*;
+import stb.core.domain.port.route.dto.CrewRouteDto;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -19,12 +20,16 @@ public record CrewDetailedDto(
         List<EquipmentDto> equipment,
         LocalDate routeDate,
         List<RouteVisitDto> route,
+        // the road route through those visits, leg by leg; null while there is none (schedule not calculated,
+        // no requests, recalculated or expired)
+        CrewRouteDto roadRoute,
         List<AssignedRequestDto> assignedRequests
 ) {
 
     public static CrewDetailedDto from(EngineerCrew crew,
                                        LocalDate routeDate,
                                        List<ScheduleSlot> routeSlots,
+                                       CrewRouteDto roadRoute,
                                        List<Request> assignedRequests) {
         return new CrewDetailedDto(
                 crew.getId(),
@@ -37,6 +42,7 @@ public record CrewDetailedDto(
                 EquipmentDto.listFrom(crew.getEquipment()),
                 routeDate,
                 routeSlots.stream().map(RouteVisitDto::from).toList(),
+                roadRoute,
                 assignedRequests.stream().map(AssignedRequestDto::from).toList()
         );
     }

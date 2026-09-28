@@ -1,8 +1,9 @@
 // Server DTOs of the crews feature
 
-export type { ApiResponse, RegionInfo, SkillKeyword, VehicleKeyword } from "@/features/timeline/types";
+export type { ApiResponse, CrewRoute, RegionInfo, SkillKeyword, VehicleKeyword } from "@/features/timeline/types";
 export type { PageResponse } from "@/features/requests/types";
 import type {
+  CrewRoute,
   JobType,
   RegionInfo,
   RequestStatus,
@@ -76,6 +77,9 @@ export interface CrewDetailed {
   routeDate: string;
   /** the crew's work slots in that date's schedule, in visit order */
   route: RouteVisit[];
+  /** the road route through those visits, from the office, leg by leg; null while there is none
+      (schedule not calculated yet, no requests) */
+  roadRoute: CrewRoute | null;
   /** latest assignment first */
   assignedRequests: CrewAssignedRequest[];
 }

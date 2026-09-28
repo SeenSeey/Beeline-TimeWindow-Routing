@@ -73,8 +73,31 @@ export interface Engineer {
   /** equipment the crew has on hand now; a request needing something missing here can't be moved to the crew */
   equipment: EquipmentOnHand[];
   slots: Slot[];
+  /** length of the crew's stored road route over the day; null when there is none (schedule calculating,
+      no requests, and the edit preview's recalculated rows). The route itself: fetchCrewRoute */
+  routeDistanceKilometers?: number | null;
   /** taken off shift for the schedule's date: shown on the board, but takes no requests */
   offShift?: boolean;
+}
+
+/** CrewRouteDto.Leg — the drive to one visit */
+export interface CrewRouteLeg {
+  /** position in the route, from 0; leg i leads to the crew's i-th visit */
+  index: number;
+  /** null for the leg from the region's office */
+  fromRequestId: number | null;
+  toRequestId: number;
+  /** 0 between two requests at one address */
+  distanceKilometers: number;
+  /** road geometry in travel order, encoded polyline (precision 5); "" between two requests at one address */
+  polyline: string;
+}
+
+/** CrewRouteDto — GET /api/v1/schedules/{scheduleId}/crews/{crewId}/route */
+export interface CrewRoute {
+  distanceKilometers: number;
+  /** in visit order, starting with the leg from the office */
+  legs: CrewRouteLeg[];
 }
 
 /** EquipmentDto */
@@ -141,6 +164,7 @@ export interface SchedulePreview {
 }
 
 export interface ScheduleData {
+  id: number;
   /** "YYYY-MM-DD" */
   targetDate: string;
   createdAt: string | null;

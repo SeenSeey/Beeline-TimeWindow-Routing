@@ -21,7 +21,7 @@
       class="grid grid-cols-1 items-start gap-4 sm:gap-6"
       :class="{ 'min-[901px]:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]': !calculating }"
     >
-      <CrewRoutePanel :crew="board.selectedCrew" :region-name="schedule.region.displayName" />
+      <CrewRoutePanel :crew="board.selectedCrew" :route="crewRoute" :region-name="schedule.region.displayName" />
       <UnassignedRequestsPanel v-if="!calculating" :requests="board.unassigned" :target-date="schedule.targetDate" />
     </div>
 
@@ -36,7 +36,7 @@
 import { computed } from "vue";
 import { isScheduleCalculating } from "../model/scheduleStatus";
 import { useBoardStore } from "../stores/board";
-import type { ScheduleData } from "../types";
+import type { CrewRoute, ScheduleData } from "../types";
 import BoardControls from "./BoardControls.vue";
 import BoardHeader from "./BoardHeader.vue";
 import BoardLayout from "./BoardLayout.vue";
@@ -51,6 +51,8 @@ import VisitTooltip from "./VisitTooltip.vue";
 
 const props = defineProps<{
   schedule: ScheduleData;
+  /** the selected crew's road route, loaded by the page; null while loading or when there is none */
+  crewRoute: CrewRoute | null;
 }>();
 
 const board = useBoardStore();
