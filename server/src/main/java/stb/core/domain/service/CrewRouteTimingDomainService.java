@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import stb.core.domain.model.EngineerCrew;
 import stb.core.domain.model.Equipment;
 import stb.core.domain.model.Request;
+import stb.core.domain.model.Skill;
 import stb.core.domain.model.Vehicle;
 import stb.core.domain.port.route.RouteBuilder;
 import stb.core.domain.port.route.dto.Location;
@@ -17,6 +18,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Service
@@ -92,9 +95,19 @@ public class CrewRouteTimingDomainService {
                     requiredVehicle.getDisplayName(), crew.getVehicle().getDisplayName()));
         }
 
+        Set<Skill.Keyword> crewSkills = crew.getSkills().stream().map(Skill::getKeyword).collect(Collectors.toSet());
+        request.getJobType().getRequiredSkills().stream()
+                .filter(skill -> !crewSkills.contains(skill.getKeyword()))
+                .forEach(skill -> violations.add("у бригады нет навыка «%s»".formatted(skill.getDisplayName())));
+
         if (start == null || end == null) {
             violations.add("время работы не укладывается в сутки");
             return violations;
+        }
+
+        if (start.isBefore(crew.getShiftStartTime()) || end.isAfter(crew.getShiftEndTime())) {
+            violations.add("работа %s–%s выходит за смену бригады %s–%s".formatted(
+                    TIME.format(start), TIME.format(end), TIME.format(crew.getShiftStartTime()), TIME.format(crew.getShiftEndTime())));
         }
 
         LocalTime windowStart = request.getStartTimeWindow();

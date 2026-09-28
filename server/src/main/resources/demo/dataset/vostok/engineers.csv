@@ -1,13 +1,13 @@
 id;name;start_address;start_latitude;start_longitude;shift_start;shift_end;skills;vehicle
-1;Бригада Соколов;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;09:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON|EMERGENCY;PEDESTRIAN
-2;Бригада Белузин;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;09:00;18:00;LOCAL_WORK|INSTALLATION_OR_ADDON|EMERGENCY;PEDESTRIAN
-3;Бригада Матвеев;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;10:00;19:00;LOCAL_WORK|INSTALLATION_OR_ADDON;BICYCLE
-4;Бригада Мельников;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;13:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON;BICYCLE
-5;Бригада Попов;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;09:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON;PUBLIC_TRANSPORT
-6;Бригада Гусаковский;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;09:00;18:00;LOCAL_WORK|INSTALLATION_OR_ADDON;PUBLIC_TRANSPORT
-7;Бригада Каушнян;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;10:00;19:00;INSTALLATION_OR_ADDON|EMERGENCY;CAR
-8;Бригада Свеженцев;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;13:00;22:00;LOCAL_WORK|EMERGENCY;CAR
-9;Бригада Арташкин;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;09:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON;CAR
-10;Бригада Комарь;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;09:00;18:00;LOCAL_WORK|INSTALLATION_OR_ADDON;BICYCLE
-11;Бригада Перов;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;10:00;19:00;LOCAL_WORK|INSTALLATION_OR_ADDON;CAR
-12;Бригада Зверев;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;13:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON;CAR
+1;Бригада Соколов;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;10:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON|EMERGENCY;PEDESTRIAN
+2;Бригада Белузин;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;10:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON|EMERGENCY;PEDESTRIAN
+3;Бригада Матвеев;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;10:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON;BICYCLE
+4;Бригада Мельников;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;10:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON;BICYCLE
+5;Бригада Попов;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;10:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON;PUBLIC_TRANSPORT
+6;Бригада Гусаковский;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;10:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON;PUBLIC_TRANSPORT
+7;Бригада Каушнян;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;10:00;22:00;INSTALLATION_OR_ADDON|EMERGENCY;CAR
+8;Бригада Свеженцев;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;10:00;22:00;LOCAL_WORK|EMERGENCY;CAR
+9;Бригада Арташкин;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;10:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON;CAR
+10;Бригада Комарь;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;10:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON;BICYCLE
+11;Бригада Перов;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;10:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON;CAR
+12;Бригада Зверев;г. Москва, ул Юных Ленинцев, д 83с 4;55.700320;37.747940;10:00;22:00;LOCAL_WORK|INSTALLATION_OR_ADDON;CAR

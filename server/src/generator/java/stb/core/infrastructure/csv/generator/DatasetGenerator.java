@@ -77,10 +77,7 @@ public final class DatasetGenerator {
     }
 
     private static final List<Shift> SHIFTS = List.of(
-            new Shift(LocalTime.of(9, 0), LocalTime.of(22, 0)),
-            new Shift(LocalTime.of(9, 0), LocalTime.of(18, 0)),
-            new Shift(LocalTime.of(10, 0), LocalTime.of(19, 0)),
-            new Shift(LocalTime.of(13, 0), LocalTime.of(22, 0)));
+            new Shift(LocalTime.of(10, 0), LocalTime.of(22, 0)));
 
     private static final double EARTH_RADIUS_KM = 6371;
     private static final double CAR_HOP_KM = 8;

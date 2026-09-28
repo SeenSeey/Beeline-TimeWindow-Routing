@@ -173,7 +173,7 @@ public class ScheduleEditUseCase {
                 if (request == null) {
                     throw new RequestNotFoundException("Заявка №%d не найдена".formatted(requestId));
                 }
-                checkCanBePlanned(request, regionId, editedCrews.keySet());
+                checkCanBePlanned(request, regionId, editedCrews.keySet(), route.crewId());
                 if (!plannedRequestIds.add(requestId)) {
                     throw new DomainException.ValidationException("Заявка №%d стоит в маршрутах дважды".formatted(requestId));
                 }
@@ -198,14 +198,17 @@ public class ScheduleEditUseCase {
         return Optional.ofNullable(route.stops()).orElse(List.of());
     }
 
-    private static void checkCanBePlanned(Request request, int regionId, Set<Integer> editedCrewIds) {
+    private static void checkCanBePlanned(Request request, int regionId, Set<Integer> editedCrewIds, int routeCrewId) {
         if (request.getRegion().getId() != regionId) {
             throw new DomainException.ValidationException("Заявка №%d из другого региона".formatted(request.getId()));
         }
-        if (request.isCompleted() || request.isCanceled()) {
-            throw new DomainException.ValidationException("Заявка №%d уже выполнена или отменена".formatted(request.getId()));
-        }
         EngineerCrew currentCrew = request.getAssignedCrew();
+        if (request.isCanceled()) {
+            throw new DomainException.ValidationException("Заявка №%d отменена".formatted(request.getId()));
+        }
+        if ((request.isCompleted() || request.isInProgress()) && (currentCrew == null || currentCrew.getId() != routeCrewId)) {
+            throw new DomainException.ValidationException("Заявка №%d уже в работе или выполнена — перенести её к другой бригаде нельзя".formatted(request.getId()));
+        }
         if (currentCrew != null && !editedCrewIds.contains(currentCrew.getId())) {
             throw new DomainException.ValidationException(
                     "Заявка №%d назначена бригаде «%s» — передайте и её маршрут".formatted(request.getId(), currentCrew.getName()));

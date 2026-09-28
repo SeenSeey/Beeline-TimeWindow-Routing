@@ -11,6 +11,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import stb.core.domain.dto.GeoPosition;
 import stb.core.domain.port.Geocoder;
 
+import java.net.URI;
+
 /**
  * Реализация интерфейса {@link Geocoder} для API геокодера Яндекс
  */
@@ -66,13 +68,13 @@ public class GeocoderYandexImpl implements Geocoder {
         }
     }
 
-    private String buildUri(String apiKey, String address) {
+    private URI buildUri(String apiKey, String address) {
         return UriComponentsBuilder.fromUriString(basePath)
                 .queryParam("apikey", apiKey)
                 .queryParam("geocode", address)
                 .queryParam("format", "json")
+                .encode()
                 .build()
-                .toUri()
-                .toString();
+                .toUri();
     }
 }
