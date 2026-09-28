@@ -25,7 +25,7 @@
     </div>
 
     <div v-if="visits.length" class="h-[720px] border-b border-line">
-      <UiRouteMap :stops="stops" :legs="legs" start-label="Старт" finish-label="Финиш" />
+      <UiRouteMap :stops="stops" :legs="legs" :leg-labels="legLabels" start-label="Старт" finish-label="Финиш" />
     </div>
 
     <!-- numbered like the pins on the map above -->
@@ -80,7 +80,7 @@ import UiEmptyState from "@/components/ui/UiEmptyState.vue";
 import UiPanel from "@/components/ui/UiPanel.vue";
 import UiRouteMap, { type UiRouteStop } from "@/components/ui/UiRouteMap.vue";
 import { jobTypeColor, statusColor } from "@/features/requests/model/colors";
-import { routeLegs, type LngLat } from "@/features/timeline/model/crewRoute";
+import { routeLegLabels, routeLegs, type LngLat } from "@/features/timeline/model/crewRoute";
 import { formatDate, formatDistance, formatTime } from "@/features/timeline/model/format";
 import { formatCoordinates } from "../model/format";
 import type { CrewRoute, RouteVisit } from "../types";
@@ -111,4 +111,6 @@ const stops = computed<UiRouteStop[]>(() =>
 
 // no straight segments between the pins in place of a missing road route: they would pass for one
 const legs = computed<LngLat[][]>(() => (props.roadRoute ? routeLegs(props.roadRoute) : []));
+/** each leg's road distance, at its middle */
+const legLabels = computed(() => (props.roadRoute ? routeLegLabels(props.roadRoute) : []));
 </script>

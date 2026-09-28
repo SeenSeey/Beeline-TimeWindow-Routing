@@ -52,9 +52,11 @@
       <CrewsTable
         v-else
         :crews="state.data.payload"
+        :sort="sort"
         class="min-h-0 flex-1 motion-safe:transition-opacity"
         :class="{ 'opacity-60': switching }"
         :aria-busy="switching"
+        @sort="emit('sort', $event)"
       />
 
       <div
@@ -84,7 +86,8 @@ import UiEmptyState from "@/components/ui/UiEmptyState.vue";
 import UiPagination from "@/components/ui/UiPagination.vue";
 import UiPanel from "@/components/ui/UiPanel.vue";
 import UiSelect from "@/components/ui/UiSelect.vue";
-import { hasActiveFilters, PAGE_SIZES } from "../model/query";
+import type { SortOrder } from "@/utils/sort";
+import { hasActiveFilters, PAGE_SIZES, type CrewSortField } from "../model/query";
 import type { CrewsLoadState } from "../stores/crews";
 import type { CrewFilters, RegionInfo } from "../types";
 import CrewFiltersBar from "./CrewFiltersBar.vue";
@@ -95,6 +98,8 @@ const props = defineProps<{
   /** a new page or filter set is loading over the current rows */
   switching: boolean;
   regions: RegionInfo[];
+  /** the list's order; null: by number */
+  sort: SortOrder<CrewSortField> | null;
 }>();
 
 const filters = defineModel<CrewFilters>("filters", { required: true });
@@ -104,6 +109,8 @@ const emit = defineEmits<{
   "update:page": [page: number];
   reset: [];
   retry: [];
+  /** a sortable column head clicked */
+  sort: [field: CrewSortField];
 }>();
 
 const limitOptions = PAGE_SIZES.map((size) => ({ value: size as number, label: String(size) }));

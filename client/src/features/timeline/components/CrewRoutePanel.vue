@@ -25,6 +25,7 @@
         <b v-if="crew.routeDistanceKilometers != null" class="mono font-semibold text-ink">
           {{ formatDistance(crew.routeDistanceKilometers) }}
         </b>
+        <span v-else-if="historical" class="text-faint">маршрут этой версии не сохранился</span>
         <span v-else class="text-faint">маршрут ещё не построен</span>
       </div>
 
@@ -48,6 +49,8 @@ defineProps<{
   crew: CrewRow | null;
   /** the crew's road route; null while loading or when there is none */
   route: CrewRoute | null;
+  /** an earlier version of the schedule is shown; its routes expire like the current one's (storage TTL) */
+  historical?: boolean;
   regionName: string;
 }>();
 </script>

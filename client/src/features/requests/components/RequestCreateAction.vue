@@ -11,7 +11,8 @@
     >
       <path d="M12 5v14M5 12h14" />
     </svg>
-    Создать заявку
+    <!-- the "+" alone on narrow screens, where the header also holds the section tabs -->
+    <span class="max-sm:sr-only">Создать заявку</span>
   </UiButton>
 
   <UiDialog v-model:open="dialogOpen" title="Новая заявка" :dismissible="!pending">

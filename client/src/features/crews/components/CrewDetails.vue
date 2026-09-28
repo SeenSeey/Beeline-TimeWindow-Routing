@@ -29,49 +29,31 @@
       </div>
     </header>
 
-    <!-- 2. at a glance -->
-    <CrewKeyFacts :crew="crew" />
-
-    <!-- 3. today's work and the request history on the left, capabilities on the side -->
-    <div class="grid grid-cols-1 items-start gap-4 sm:gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+    <!-- 2. like the request's page: the crew and its route on the left; its requests on the side -->
+    <div class="grid grid-cols-1 items-start gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
       <div class="grid min-w-0 gap-4 sm:gap-6">
+        <CrewInfoPanel :crew="crew" />
         <CrewRoutePanel
           :visits="crew.route"
           :road-route="crew.roadRoute ?? null"
           :route-date="crew.routeDate"
           :region-id="crew.region.id"
         />
-        <CrewRequestsPanel :requests="crew.assignedRequests" />
       </div>
 
-      <UiPanel title="Навыки и оснащение">
-        <dl class="m-0 divide-y divide-line px-5">
-          <div v-for="group in capabilityGroups" :key="group.label" class="grid gap-2 py-3 text-sm">
-            <dt class="text-muted">{{ group.label }}</dt>
-            <dd class="m-0 flex min-w-0 flex-wrap gap-1.5">
-              <template v-if="group.items.length">
-                <UiBadge v-for="item in group.items" :key="item.label" :color="item.color">{{ item.label }}</UiBadge>
-              </template>
-              <span v-else class="text-faint">—</span>
-            </dd>
-          </div>
-        </dl>
-      </UiPanel>
+      <CrewRequestsPanel :requests="crew.assignedRequests" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
-import UiBadge from "@/components/ui/UiBadge.vue";
-import UiPanel from "@/components/ui/UiPanel.vue";
-import type { CrewDetailed, SkillKeyword } from "../types";
-import CrewKeyFacts from "./CrewKeyFacts.vue";
+import type { CrewDetailed } from "../types";
+import CrewInfoPanel from "./CrewInfoPanel.vue";
 import CrewOffShiftAction from "./CrewOffShiftAction.vue";
 import CrewRequestsPanel from "./CrewRequestsPanel.vue";
 import CrewRoutePanel from "./CrewRoutePanel.vue";
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     crew: CrewDetailed;
     /** taking the crew off shift is in flight */
@@ -87,32 +69,4 @@ const props = withDefaults(
 const emit = defineEmits<{
   takeOffShift: [];
 }>();
-
-/** each skill in the colour of the job types it covers (as in the crews table) */
-const SKILL_COLORS: Record<SkillKeyword, string> = {
-  LOCAL_WORK: "var(--job-local)",
-  INSTALLATION_OR_ADDON: "var(--job-installation)",
-  EMERGENCY: "var(--job-emergency)",
-};
-
-const capabilityGroups = computed(() => [
-  {
-    label: "Навыки",
-    items: props.crew.skills.map((skill) => ({
-      label: skill.displayName,
-      color: SKILL_COLORS[skill.keyword] ?? "var(--muted)",
-    })),
-  },
-  {
-    label: "Оборудование",
-    items: props.crew.equipment.map((item) => ({
-      label: `${item.displayName} × ${item.quantity}`,
-      color: "var(--muted)",
-    })),
-  },
-  {
-    label: "Транспорт",
-    items: props.crew.vehicle ? [{ label: props.crew.vehicle.displayName, color: "var(--accent)" }] : [],
-  },
-]);
 </script>

@@ -3,7 +3,7 @@ import { useRoute } from "vue-router";
 
 export type NavIconName = "map" | "calendar" | "list" | "users" | "settings";
 
-/** App sections; the sidebar (large screens) and the header (small screens) both render these */
+/** App sections, rendered by the sidebar: fixed on large screens, a menu the header's button opens on small ones */
 export const NAV_LINKS: { to: string; label: string; icon: NavIconName }[] = [
   { to: "/map", label: "Карта", icon: "map" },
   { to: "/schedule", label: "Расписание", icon: "calendar" },

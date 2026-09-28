@@ -26,7 +26,8 @@ export type JobTypeKeyword = "LOCAL_WORK" | "INSTALLATION" | "ADDON" | "EMERGENC
 export type RequestStatusKeyword = "IDLE" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" | "CANCELED";
 export type VehicleKeyword = "PEDESTRIAN" | "BICYCLE" | "PUBLIC_TRANSPORT" | "CAR";
 export type SkillKeyword = "LOCAL_WORK" | "INSTALLATION_OR_ADDON" | "EMERGENCY";
-export type ScheduleStatusKeyword = "CALCULATING" | "RECALCULATING" | "CREATED";
+/** OUTDATED: replaced by a newer version (a recalculation), kept as history */
+export type ScheduleStatusKeyword = "CALCULATING" | "RECALCULATING" | "OUTDATED" | "CREATED";
 
 export type JobType = Dictionary<JobTypeKeyword>;
 export type RequestStatus = Dictionary<RequestStatusKeyword>;
@@ -177,6 +178,8 @@ export interface SchedulePreview {
 
 export interface ScheduleData {
   id: number;
+  /** the version this one replaced (the schedule before its recalculation); null for the first */
+  previousScheduleId: number | null;
   /** "YYYY-MM-DD" */
   targetDate: string;
   createdAt: string | null;

@@ -5,9 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import stb.core.domain.common.PolylineEncoder;
 import stb.core.domain.model.EngineerCrew;
-import stb.core.domain.model.Region;
 import stb.core.domain.model.Request;
+import stb.core.domain.model.Schedule;
 import stb.core.domain.model.ScheduleSlot;
+import stb.core.domain.model.Vehicle;
+import stb.core.domain.port.route.RouteBuilder;
 import stb.core.domain.port.route.RouteStorage;
 import stb.core.domain.port.route.dto.CrewRouteDto;
 import stb.core.domain.port.route.dto.GeoPoint;
@@ -24,9 +26,21 @@ import java.util.stream.Collectors;
 public class CrewRouteDomainService {
 
     private final RouteStorage routeStorage;
+    private final RouteBuilder routeBuilder;
 
-    public void recalculateCrewRoute(Region region, EngineerCrew crew, List<ScheduleSlot> slots, List<RouteDto> routes) {
-        log.info("Расчёт маршрута бригады {}", crew.getName());
+    /**
+     * Рассчитать маршрут бригады в версии расписания и сохранить его под этой версией. Версия уже должна
+     * быть сохранена в БД: её ID — часть ключа маршрута. Без заявок у бригады нет и маршрута: сохранённый
+     * раньше удаляется
+     */
+    public void recalculateCrewRoute(Schedule schedule, EngineerCrew crew, List<ScheduleSlot> slots, List<RouteDto> routes) {
+        log.info("Расчёт маршрута бригады {} в расписании {}", crew.getName(), schedule.getId());
+
+        if (slots.isEmpty()) {
+            routeStorage.deleteRoute(schedule, crew);
+            log.info("У бригады нет заявок, маршрут удалён");
+            return;
+        }
 
         List<Request> visits = slots
                 .stream()
@@ -34,8 +48,8 @@ public class CrewRouteDomainService {
                 .map(ScheduleSlot::getRequest)
                 .toList();
 
-        CrewRouteDto crewRoute = assemble(Location.from(region), visits, routes);
-        routeStorage.saveRoute(region, crew, crewRoute);
+        CrewRouteDto crewRoute = assemble(Location.from(schedule.getRegion()), visits, routes);
+        routeStorage.saveRoute(schedule, crew, crewRoute);
 
         log.info("Маршрут рассчитан");
     }
@@ -85,9 +99,11 @@ public class CrewRouteDomainService {
 
     /**
      * Участок от {@code from} до {@code to}, точки в порядке движения. Маршрут строится один раз на пару точек,
-     * поэтому участок в обратную сторону — это сохранённый маршрут, развёрнутый задом наперёд.
+     * поэтому участок в обратную сторону — это сохранённый маршрут, развёрнутый задом наперёд. Пары нет среди
+     * рассчитанных (ручная правка поставила заявку туда, куда расчёт её не ставил, или заявка появилась позже
+     * расчёта) — участок строится сейчас.
      */
-    private static RouteDto legBetween(Map<String, RouteDto> routesByEnds, Location from, Location to) {
+    private RouteDto legBetween(Map<String, RouteDto> routesByEnds, Location from, Location to) {
         RouteDto forward = routesByEnds.get(key(from, to));
         if (forward != null) {
             return forward;
@@ -95,7 +111,10 @@ public class CrewRouteDomainService {
 
         RouteDto backward = routesByEnds.get(key(to, from));
         if (backward == null) {
-            throw new IllegalStateException("Не удалось найти маршрут между точками: %s и %s".formatted(from, to));
+            log.info("Маршрута между точками {} и {} нет среди рассчитанных, строим его", from, to);
+            RouteDto built = routeBuilder.buildRoute(from, to, Vehicle.Keyword.CAR);
+            routesByEnds.put(key(from, to), built);
+            return built;
         }
 
         List<GeoPoint> reversedPoints = new ArrayList<>(backward.points());

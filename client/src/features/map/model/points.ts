@@ -10,11 +10,16 @@ import type { RequestPoint } from "../types";
 export function matchesFilters(p: RequestPoint, f: RequestFilters): boolean {
   const statusKeyword = f.statusId == null ? null : REQUEST_STATUSES.find((s) => s.id === f.statusId)?.keyword;
   const jobTypeKeyword = f.jobTypeId == null ? null : JOB_TYPES.find((j) => j.id === f.jobTypeId)?.keyword;
+  // part of the address anywhere in it, case-insensitive — as the server searches the list
+  const addressPart = f.address?.trim().toLowerCase();
+  const crewNamePart = f.crewName?.trim().toLowerCase();
   return (
     (statusKeyword == null || p.status?.keyword === statusKeyword) &&
     (jobTypeKeyword == null || p.jobType.keyword === jobTypeKeyword) &&
     (f.urgent == null || p.urgent === f.urgent) &&
-    (f.noAssignedCrew == null || (p.assignedCrew == null) === f.noAssignedCrew)
+    (!addressPart || p.fullAddress.toLowerCase().includes(addressPart)) &&
+    // a request without a crew never matches a crew name, as on the server
+    (!crewNamePart || !!p.assignedCrew?.toLowerCase().includes(crewNamePart))
   );
 }
 

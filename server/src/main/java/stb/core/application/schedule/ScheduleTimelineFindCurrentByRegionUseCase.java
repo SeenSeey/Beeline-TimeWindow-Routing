@@ -83,7 +83,7 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
 
         Map<Integer, Double> distancesByCrewId = new HashMap<>();
         for (EngineerCrew crew : crews) {
-            CrewRouteDto route = routeStorage.findRoute(schedule.getRegion(), crew);
+            CrewRouteDto route = routeStorage.findRoute(schedule, crew);
 
             if (route != null) {
                 distancesByCrewId.put(crew.getId(), route.distanceKilometers());
@@ -109,7 +109,10 @@ public class ScheduleTimelineFindCurrentByRegionUseCase {
     private List<UnassignedRequestDto> findUnassignedRequests(Schedule schedule,
                                                               int regionId,
                                                               Map<Integer, AlterationReasonDto> reasonsByRequestId) {
-        if (schedule.getStatus() != Schedule.Status.CREATED) {
+        // a calculated schedule only, current or outdated (the client shows the list for both); while it is
+        // being calculated there is nothing to leave out yet
+        Schedule.Status status = schedule.getStatus();
+        if (status != Schedule.Status.CREATED && status != Schedule.Status.OUTDATED) {
             return List.of();
         }
 

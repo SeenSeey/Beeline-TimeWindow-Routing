@@ -25,7 +25,8 @@ export const useCrewShiftStore = defineStore("timeline/crewShift", () => {
   const error = ref<string | null>(null);
 
   function openMenu(target: CrewShiftMenuTarget): void {
-    if (pending.value) return;
+    // an earlier version of the schedule is read-only
+    if (pending.value || scheduleStore.viewingHistory) return;
     menu.value = target;
     error.value = null;
   }

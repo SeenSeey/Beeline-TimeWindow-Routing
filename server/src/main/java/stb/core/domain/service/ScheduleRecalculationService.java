@@ -148,15 +148,21 @@ public class ScheduleRecalculationService {
             updatedRequests.add(request);
         }
 
-        routeStorage.clearCrewsRoutesByRegion(region);
+        currentSchedule.markAsOutdated();
 
-        schedule.getSlots()
+        scheduleRepository.save(currentSchedule);
+
+        Schedule savedSchedule = scheduleRepository.save(schedule);
+        requestRepository.saveAll(updatedRequests);
+
+        // the new version's routes under its own keys; the replaced version keeps its routes, for its history.
+        // The crew is taken from the slots: a request already in progress keeps a crew that may be off shift
+        // by now, and so missing from crewById
+        savedSchedule.getSlots()
                 .stream()
                 .collect(Collectors.groupingBy(slot -> slot.getEngineerCrew().getId()))
-                .forEach((crewId, slots) -> crewRouteDomainService.recalculateCrewRoute(region, crewById.get(crewId), slots, routes));
-
-        scheduleRepository.save(schedule);
-        requestRepository.saveAll(updatedRequests);
+                .forEach((crewId, slots) -> crewRouteDomainService.recalculateCrewRoute(
+                        savedSchedule, slots.getFirst().getEngineerCrew(), slots, routes));
 
         return new ScheduleHistoryResult(
                 startTimeChanged,
@@ -165,7 +171,7 @@ public class ScheduleRecalculationService {
                 unassigned,
                 notPlaced,
                 engineerCrews,
-                schedule
+                savedSchedule
         );
     }
 

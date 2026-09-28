@@ -18,14 +18,12 @@
               </span>
             </span>
           </div>
-          <div class="flex flex-wrap items-center gap-3">
-            <slot name="actions" />
-            <slot name="region" />
-          </div>
+          <slot name="region" />
         </div>
         <!-- Preline toolbar card -->
         <div class="grid gap-3 rounded-lg border border-line bg-surface p-4 shadow-2xs">
-          <RequestFiltersBar v-model:filters="filters" @reset="filters = { ...EMPTY_FILTERS }" />
+          <!-- the map only has open requests: no completed / canceled status to pick -->
+          <RequestFiltersBar v-model:filters="filters" open-statuses-only @reset="filters = { ...EMPTY_FILTERS }" />
           <MapLegend :job-types="jobTypes" />
         </div>
       </header>

@@ -8,7 +8,10 @@ import stb.core.domain.exception.DomainException;
 import stb.core.domain.exception.RequestNotFoundException;
 import stb.core.domain.exception.ScheduleNotFoundException;
 import stb.core.domain.model.*;
+import stb.core.domain.port.route.RouteStorage;
+import stb.core.domain.port.route.dto.RouteDto;
 import stb.core.domain.repository.*;
+import stb.core.domain.service.CrewRouteDomainService;
 import stb.core.domain.service.CrewRouteTimingDomainService;
 import stb.core.domain.service.CrewRouteTimingDomainService.PlannedVisit;
 
@@ -29,6 +32,8 @@ public class ScheduleEditUseCase {
     private final CrewRouteTimingDomainService crewRouteTimingDomainService;
     private final RequestActionAuditRepository requestActionAuditRepository;
     private final AlterationReasonRepository alterationReasonRepository;
+    private final CrewRouteDomainService crewRouteDomainService;
+    private final RouteStorage routeStorage;
 
     private record CrewPlan(EngineerCrew crew, List<PlannedVisit> visits) {
     }
@@ -128,8 +133,30 @@ public class ScheduleEditUseCase {
         List<Integer> changedRequestIds = audit.stream().map(item -> item.getRequest().getId()).toList();
         alterationReasonRepository.deleteAllByScheduleIdAndRequestIdIn(schedule.getId(), changedRequestIds);
 
-        scheduleRepository.save(schedule);
+        Schedule savedSchedule = scheduleRepository.save(schedule);
         requestActionAuditRepository.saveAll(audit);
+
+        recalculateRoutes(savedSchedule, plan);
+    }
+
+    /**
+     * The edited crews' road routes, from their slots now: stored under the same schedule, so they replace
+     * the routes the timeline and the crew pages show. A crew the edit left without requests loses its route.
+     * The region's routes between points are reused; a leg between points never routed (a request moved where
+     * the calculation didn't put it) is built on the spot.
+     */
+    private void recalculateRoutes(Schedule schedule, EditPlan plan) {
+        List<RouteDto> regionRoutes = routeStorage.findAllRoutesByRegion(schedule.getRegion());
+
+        for (CrewPlan route : plan.routes()) {
+            EngineerCrew crew = route.crew();
+            List<ScheduleSlot> crewSlots = schedule.getSlots()
+                    .stream()
+                    .filter(slot -> slot.getEngineerCrew() != null && slot.getEngineerCrew().getId() == crew.getId())
+                    .toList();
+
+            crewRouteDomainService.recalculateCrewRoute(schedule, crew, crewSlots, regionRoutes);
+        }
     }
 
     private EditPlan plan(int regionId, ScheduleEditDto edit) {

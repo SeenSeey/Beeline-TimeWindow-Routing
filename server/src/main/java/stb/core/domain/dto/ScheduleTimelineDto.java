@@ -9,6 +9,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public record ScheduleTimelineDto(int id,
+                                  // the version this one replaced (the schedule before its recalculation); null for the first
+                                  Integer previousScheduleId,
                                   LocalDate targetDate,
                                   LocalDateTime createdAt,
                                   DictionaryDto status,
@@ -23,6 +25,7 @@ public record ScheduleTimelineDto(int id,
     public static ScheduleTimelineDto from(Schedule schedule, List<UnassignedRequestDto> unassignedRequests) {
         return new ScheduleTimelineDto(
                 schedule.getId(),
+                previousScheduleIdOf(schedule),
                 schedule.getTargetDate(),
                 schedule.getCreatedAt(),
                 DictionaryDto.from(schedule.getStatus()),
@@ -70,6 +73,7 @@ public record ScheduleTimelineDto(int id,
 
         return new ScheduleTimelineDto(
                 schedule.getId(),
+                previousScheduleIdOf(schedule),
                 schedule.getTargetDate(),
                 schedule.getCreatedAt(),
                 DictionaryDto.from(schedule.getStatus()),
@@ -77,6 +81,10 @@ public record ScheduleTimelineDto(int id,
                 rows,
                 unassignedRequests
         );
+    }
+
+    private static Integer previousScheduleIdOf(Schedule schedule) {
+        return Optional.ofNullable(schedule.getPreviousSchedule()).map(Schedule::getId).orElse(null);
     }
 
     public record EngineerCrewRow(int id,

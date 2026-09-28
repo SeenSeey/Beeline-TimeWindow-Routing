@@ -17,7 +17,9 @@
 
     <UiEmptyState v-if="!requests.length">Все активные заявки региона вошли в расписание.</UiEmptyState>
 
-    <ul v-else class="m-0 grid max-h-[640px] list-none gap-2 overflow-y-auto p-3">
+    <!-- scrolls past about the height of the crew's route panel beside it (its 840px map, the distance
+         line), so the two panels end together -->
+    <ul v-else class="m-0 grid max-h-[880px] list-none gap-2 overflow-y-auto p-3">
       <!-- the server orders them urgent first, then by deadline -->
       <UnassignedRequestItem v-for="r in requests" :key="r.id" :request="r" :target-date="targetDate" />
     </ul>

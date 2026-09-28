@@ -2,7 +2,8 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import router from "@/router";
 import { fetchCrews, fetchRegions, toApiFailure, type ApiFailure } from "../api/crewsApi";
-import { EMPTY_FILTERS, readQuery, toUrlQuery, type CrewsQuery } from "../model/query";
+import { nextSortOrder } from "@/utils/sort";
+import { EMPTY_FILTERS, readQuery, toUrlQuery, type CrewSortField, type CrewsQuery } from "../model/query";
 import type { CrewFilters, CrewItem, PageResponse, RegionInfo } from "../types";
 
 export type CrewsLoadState = { kind: "loading" } | { kind: "ready"; data: PageResponse<CrewItem> } | ApiFailure;
@@ -74,5 +75,24 @@ export const useCrewsStore = defineStore("crews/list", () => {
     void load();
   }
 
-  return { query, state, switching, regions, page, init, load, setFilters, resetFilters, setPage, setLimit };
+  /** A column head clicked: ascending, descending, then unsorted; from the first page */
+  function toggleSort(field: CrewSortField): void {
+    query.value = { ...query.value, sort: nextSortOrder(query.value.sort, field), page: 1 };
+    void load();
+  }
+
+  return {
+    query,
+    state,
+    switching,
+    regions,
+    page,
+    init,
+    load,
+    setFilters,
+    resetFilters,
+    setPage,
+    setLimit,
+    toggleSort,
+  };
 });

@@ -5,18 +5,6 @@
     :region-id="regionsStore.regionId"
     @retry="retry"
   >
-    <template #actions>
-      <RequestCreateAction
-        :regions="regionsStore.regions"
-        :region-id="regionsStore.regionId"
-        :open="requestCreateStore.open"
-        :pending="requestCreateStore.pending"
-        :error="requestCreateStore.error"
-        @open="requestCreateStore.openDialog()"
-        @close="requestCreateStore.closeDialog()"
-        @submit="createRequest"
-      />
-    </template>
     <template v-if="regionsStore.regions.length" #region>
       <RegionSelect
         :model-value="regionsStore.regionId"
@@ -29,12 +17,10 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted } from "vue";
+import { onMounted, watch } from "vue";
 import MapBoard from "@/features/map/components/MapBoard.vue";
 import { useRequestPointsStore } from "@/features/map/stores/requestPoints";
-import RequestCreateAction from "@/features/requests/components/RequestCreateAction.vue";
 import { useRequestCreateStore } from "@/features/requests/stores/requestCreate";
-import type { RequestCreateBody } from "@/features/requests/types";
 import RegionSelect from "@/features/timeline/components/RegionSelect.vue";
 import { useRegionsStore } from "@/features/timeline/stores/regions";
 
@@ -64,11 +50,13 @@ function changeRegion(id: number | null): void {
   void pointsStore.load(id);
 }
 
-/** A new request of the shown region gets its point on the map */
-async function createRequest(body: RequestCreateBody): Promise<void> {
-  const created = await requestCreateStore.create(body);
-  if (created && body.regionId === regionsStore.regionId) void pointsStore.load(body.regionId);
-}
+// A request created from the header: one of the shown region gets its point on the map
+watch(
+  () => requestCreateStore.lastCreated,
+  (created) => {
+    if (created && created.region.id === regionsStore.regionId) void pointsStore.load(created.region.id);
+  },
+);
 
 function retry(): void {
   if (regionsStore.regions.length && regionsStore.regionId != null) void pointsStore.load(regionsStore.regionId);
@@ -76,6 +64,4 @@ function retry(): void {
 }
 
 onMounted(init);
-// the store outlives the page: don't reopen the dialog on the next visit
-onBeforeUnmount(() => requestCreateStore.closeDialog());
 </script>

@@ -1,6 +1,7 @@
 package stb.core.api.rest.v1;
 
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -61,13 +62,28 @@ public class RequestController {
         return ResponseEntity.noContent().build();
     }
 
+    /** columns the list can be sorted by: API name → entity property */
+    private static final Map<String, String> SORTABLE_FIELDS = Map.of(
+            "id", "id",
+            "createdAt", "createdAt",
+            "address", "fullAddress",
+            // statuses are numbered in lifecycle order: not assigned → … → canceled
+            "status", "status.id",
+            "jobType", "jobType.displayName",
+            "region", "region.displayName",
+            "crew", "assignedCrew.name",
+            "urgent", "urgent"
+    );
+
     @GetMapping
     public ResponseEntity<ServerResponse<PageResponseDto<RequestDto>>> search(
         @ModelAttribute RequestSearchDto searchDto,
         @RequestParam(defaultValue = "1") int page,
-        @RequestParam(defaultValue = "20") int limit
+        @RequestParam(defaultValue = "20") int limit,
+        // "<field>,<asc|desc>", the field one of SORTABLE_FIELDS
+        @RequestParam(required = false) String sort
     ) {
-        Pageable pageable = PaginationUtils.create(page, limit);
+        Pageable pageable = PaginationUtils.create(page, limit, sort, SORTABLE_FIELDS);
 
         PageResponseDto<RequestDto> payload = requestSearchUseCase.execute(searchDto, pageable);
         return ResponseEntity.ok(ServerResponse.ok(HttpStatus.OK.value(), payload));

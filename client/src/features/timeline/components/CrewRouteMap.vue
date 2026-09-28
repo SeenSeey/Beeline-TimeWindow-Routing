@@ -1,12 +1,12 @@
 <template>
   <!-- start: the office the crew leaves from (the route's first leg); finish: its last visit -->
-  <UiRouteMap :stops="stops" :legs="legs" start-label="Старт" finish-label="Финиш" />
+  <UiRouteMap :stops="stops" :legs="legs" :leg-labels="legLabels" start-label="Старт" finish-label="Финиш" />
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
 import UiRouteMap, { type UiRouteStop } from "@/components/ui/UiRouteMap.vue";
-import { routeLegs, type LngLat } from "../model/crewRoute";
+import { routeLegLabels, routeLegs, type LngLat } from "../model/crewRoute";
 import { formatTime } from "../model/format";
 import { visitKey, type Visit } from "../model/timeline";
 import type { CrewRoute } from "../types";
@@ -38,4 +38,6 @@ const stops = computed<UiRouteStop[]>(() =>
 // the line follows the roads the crew takes, leg by leg from the office through every visit; without a
 // stored route there is no line at all — straight segments between the pins would pass for a route that isn't one
 const legs = computed<LngLat[][]>(() => (props.route ? routeLegs(props.route) : []));
+/** each leg's road distance, at its middle */
+const legLabels = computed(() => (props.route ? routeLegLabels(props.route) : []));
 </script>

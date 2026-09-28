@@ -56,10 +56,9 @@ public class ScheduleCalculateUseCase {
             Region region = schedule.getRegion();
             log.info("Расчёт для региона: {}", region.getDisplayName());
 
-            // only the region being calculated: the other regions' routes stay as long as their schedules do
-            // (clearAll would wipe them whenever a single region is calculated). Before the empty-region
-            // shortcut, so a region left without requests keeps no old routes either
-            routeStorage.clearCrewsRoutesByRegion(region);
+            // only this version's routes, left from an earlier attempt to calculate it: other versions and
+            // regions keep theirs. Before the empty-region shortcut, so an empty schedule keeps no stale routes
+            routeStorage.clearCrewsRoutesBySchedule(schedule);
 
             List<Request> requests = requestRepository.findAllForSchedulingByRegionId(region.getId());
             List<EngineerCrew> engineerCrews = engineerCrewRepository.findAllActiveByRegionIdAndTargetDate(region.getId(), targetDate);
@@ -119,7 +118,7 @@ public class ScheduleCalculateUseCase {
             schedule.getSlots()
                     .stream()
                     .collect(Collectors.groupingBy(slot -> slot.getEngineerCrew().getId()))
-                    .forEach((crewId, slots) -> crewRouteDomainService.recalculateCrewRoute(region, crewById.get(crewId), slots, routes));
+                    .forEach((crewId, slots) -> crewRouteDomainService.recalculateCrewRoute(schedule, crewById.get(crewId), slots, routes));
 
             crewEquipmentDomainService.issueInitialLoadout(engineerCrews, assignedRequests);
             schedule.markAsCreated();

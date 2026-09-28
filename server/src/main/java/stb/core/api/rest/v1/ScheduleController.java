@@ -9,6 +9,7 @@ import stb.core.api.rest.v1.dto.ServerResponse;
 import stb.core.application.dev.DevStateResetUseCase;
 import stb.core.application.schedule.ScheduleCrewRouteFindUseCase;
 import stb.core.application.schedule.ScheduleEditUseCase;
+import stb.core.application.schedule.ScheduleTimelineFindByIdUseCase;
 import stb.core.application.schedule.ScheduleInitialBuildUseCase;
 import stb.core.application.schedule.ScheduleTimelineFindCurrentByRegionUseCase;
 import stb.core.domain.dto.ScheduleEditDto;
@@ -26,10 +27,18 @@ public class ScheduleController {
     private final DevStateResetUseCase devStateResetUseCase;
     private final ScheduleEditUseCase scheduleEditUseCase;
     private final ScheduleCrewRouteFindUseCase scheduleCrewRouteFindUseCase;
+    private final ScheduleTimelineFindByIdUseCase scheduleTimelineFindByIdUseCase;
 
     @GetMapping("/regions/{regionId}")
     public ResponseEntity<ServerResponse<ScheduleTimelineDto>> findCurrentByRegionId(@PathVariable int regionId) {
         var result = scheduleTimelineFindCurrentByRegionUseCase.execute(regionId);
+        return ResponseEntity.ok(ServerResponse.ok(HttpStatus.OK.value(), result));
+    }
+
+    /** any version of a schedule, e.g. the one before a recalculation (ScheduleTimelineDto.previousScheduleId) */
+    @GetMapping("/{scheduleId}")
+    public ResponseEntity<ServerResponse<ScheduleTimelineDto>> findById(@PathVariable int scheduleId) {
+        var result = scheduleTimelineFindByIdUseCase.execute(scheduleId);
         return ResponseEntity.ok(ServerResponse.ok(HttpStatus.OK.value(), result));
     }
 

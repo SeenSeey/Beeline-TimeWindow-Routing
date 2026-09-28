@@ -1,7 +1,8 @@
 <template>
   <div
-    class="group grid min-h-[60px] cursor-pointer grid-cols-[230px_1fr] border-b border-line last:border-b-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-inset motion-safe:transition-colors"
-    :class="selected ? 'bg-accent-soft' : 'hover:bg-canvas'"
+    class="group grid cursor-pointer border-b border-line last:border-b-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-inset motion-safe:transition-colors"
+    :class="[selected ? 'bg-accent-soft' : 'hover:bg-canvas', hasEquipmentLine ? 'min-h-[76px]' : 'min-h-[60px]']"
+    :style="{ gridTemplateColumns: `${labelWidth}px 1fr` }"
     tabindex="0"
     :aria-pressed="selected"
     aria-haspopup="menu"
@@ -17,29 +18,64 @@
         { 'shadow-[2px_0_4px_rgb(0_0_0/0.06)]': scrolled },
       ]"
     >
-      <!-- the name opens the crew's page; stop: the click/Enter must not reach the row, which toggles
-           selection and prevents Enter's default -->
-      <RouterLink
-        :to="{ name: 'crew', params: { id: crew.id } }"
-        class="w-fit max-w-full truncate rounded-sm text-sm font-medium no-underline hover:underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50"
-        :class="selected ? 'text-accent' : 'text-ink hover:text-accent'"
-        :title="`Открыть бригаду ${crew.name}`"
-        @click.stop
-        @keydown.enter.stop
+      <!-- the lines that are never cut: sized to their text (w-max), and measured by TimelineChart to make
+           the crew column as wide as the widest of them -->
+      <div data-crew-label class="grid w-max">
+      <div class="flex items-center gap-x-1.5">
+        <!-- the name opens the crew's page; stop: the click/Enter must not reach the row, which toggles
+             selection and prevents Enter's default -->
+        <RouterLink
+          :to="{ name: 'crew', params: { id: crew.id } }"
+          class="rounded-sm text-sm font-medium whitespace-nowrap no-underline hover:underline focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent/50"
+          :class="selected ? 'text-accent' : 'text-ink hover:text-accent'"
+          :title="`Открыть бригаду ${crew.name}`"
+          @click.stop
+          @keydown.enter.stop
+        >
+          {{ crew.name.replace(/^Бригада\s+/, "") }}
+        </RouterLink>
+        <!-- equipment on hand now (issued with the schedule, minus requests taken into work): an icon beside the
+             name, the list in its tooltip -->
+        <span
+          v-if="equipmentText"
+          class="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-shift text-muted"
+          role="img"
+          :aria-label="`Оборудование: ${equipmentText}`"
+          :title="`Оборудование: ${equipmentText}`"
+        >
+          <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" />
+            <path d="M12 22V12M3.3 7l7.7 4.73a2 2 0 0 0 2 0L20.7 7M7.5 4.27l9 5.15" />
+          </svg>
+        </span>
+        <!-- taken off shift: an icon beside the name, the words in its tooltip -->
+        <span
+          v-if="crew.offShift"
+          class="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--warning)_18%,transparent)] text-[var(--warning)]"
+          role="img"
+          aria-label="Снят со смены"
+          title="Снят со смены"
+        >
+          <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="m17 8 5 5M22 8l-5 5" />
+          </svg>
+        </span>
+      </div>
+      <!-- the vehicle and the day's road route (as stored when the schedule was built), on one line -->
+      <div
+        v-if="crew.vehicle || routeDistance"
+        class="text-xs whitespace-nowrap text-muted"
+        :title="routeDistance ? `Маршрут за день: ${routeDistance}` : undefined"
       >
-        {{ crew.name.replace(/^Бригада\s+/, "") }}
-      </RouterLink>
-      <div v-if="crew.vehicle" class="truncate text-xs text-muted">{{ crew.vehicle.displayName }}</div>
+        <template v-if="crew.vehicle">{{ crew.vehicle.displayName }}</template>
+        <template v-if="crew.vehicle && routeDistance"> · </template>
+        <span v-if="routeDistance" class="mono font-semibold text-ink">{{ routeDistance }}</span>
+      </div>
       <div class="mono text-xs whitespace-nowrap text-muted">
         {{ formatTime(crew.shiftStartTime) }}–{{ formatTime(crew.shiftEndTime) }} · {{ crew.requests.length }} заявок
       </div>
-      <!-- the day's road route, as stored when the schedule was built -->
-      <div v-if="routeDistance" class="mono text-xs whitespace-nowrap text-muted" :title="`Маршрут за день: ${routeDistance}`">
-        маршрут {{ routeDistance }}
-      </div>
-      <!-- equipment on hand now: issued with the schedule, minus requests taken into work -->
-      <div v-if="equipmentText" class="truncate text-xs text-muted" :title="`Оборудование: ${equipmentText}`">
-        {{ equipmentText }}
       </div>
       <!-- edit mode: what the crew can do, to pick where a request fits -->
       <div v-if="edit.active" class="mt-1 flex flex-wrap gap-1" :aria-label="`Навыки: ${skillNames || 'нет'}`">
@@ -51,7 +87,6 @@
       <UiBadge v-if="edit.active && edit.changedCrewIds.has(crew.id)" color="var(--accent)" class="mt-1 w-fit">
         изменено
       </UiBadge>
-      <UiBadge v-if="crew.offShift" color="var(--warning)" class="mt-1 w-fit">снят со смены</UiBadge>
     </div>
 
     <!-- Track; in edit mode also a drop target for requests dragged from other rows or the unassigned list -->
@@ -102,12 +137,27 @@
         />
       </template>
 
+      <!-- an empty track: the same off-shift icon as beside the name (its words in the tooltip), or "без заявок" -->
       <span
-        v-if="!crew.requests.length"
+        v-if="!crew.requests.length && crew.offShift"
+        class="absolute top-2 ms-2 inline-flex size-5 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--warning)_18%,transparent)] text-[var(--warning)]"
+        :style="{ left: scale.left(crew.shift[0]) }"
+        role="img"
+        aria-label="Снят со смены"
+        title="Снят со смены"
+      >
+        <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="m17 8 5 5M22 8l-5 5" />
+        </svg>
+      </span>
+      <span
+        v-else-if="!crew.requests.length"
         class="absolute top-2 ps-2 text-xs text-faint"
         :style="{ left: scale.left(crew.shift[0]) }"
       >
-        {{ crew.offShift ? "снят со смены" : "без заявок" }}
+        без заявок
       </span>
     </div>
   </div>
@@ -134,6 +184,8 @@ const props = defineProps<{
   selected: boolean;
   /** the track is scrolled sideways — the sticky column casts a shadow */
   scrolled: boolean;
+  /** px of the crew column, the same for every row (TimelineChart measures it) */
+  labelWidth: number;
   /** active job type keyword filter; other job bars are dimmed */
   jobTypeFilter?: JobTypeKeyword | "";
 }>();
@@ -162,6 +214,9 @@ function onContextMenu(event: MouseEvent): void {
     y: fromKeyboard ? rect.bottom : event.clientY,
   });
 }
+
+/** a visit shows its equipment as a fourth line: the bars (the row's height minus a margin) need room for it */
+const hasEquipmentLine = computed(() => props.crew.requests.some((visit) => !!visit.slot.requiredEquipment));
 
 // `?? []`: a server from before skills were added to the schedule doesn't send them
 const skills = computed(() => props.crew.skills ?? []);

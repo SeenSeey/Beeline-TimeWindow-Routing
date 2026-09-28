@@ -17,8 +17,8 @@ export interface UiRouteStop {
   color: string;
   /** border colour, e.g. to flag a stop; white when omitted */
   outlineColor?: string;
-  /** where the pin leads */
-  to: RouteLocationRaw;
+  /** where the pin leads; without it the pin is only a mark (e.g. the page's own place) */
+  to?: RouteLocationRaw;
   ariaLabel: string;
   /** extra data-* attributes on the pin, e.g. for a hover tooltip that looks them up */
   data?: Record<string, string>;
@@ -35,7 +35,8 @@ import { currentMapStyleUrl } from "@/utils/mapStyle";
 // MapLibre map of a route: numbered pins and the route's line, leg by leg, each leg in its own colour —
 // along `legs` when given (e.g. the road geometry; no legs, no line), otherwise straight lines joining the
 // pins in order. With `startLabel` / `finishLabel`, the line's first and last points get a start / finish
-// icon (the label is its tooltip). Arrows along the legs show the direction of travel.
+// icon (the label is its tooltip). Arrows along the legs show the direction of travel; `legLabels` puts a
+// label (e.g. the distance) halfway along each leg.
 // Refits the view whenever the stops or the legs change.
 
 const props = defineProps<{
@@ -43,6 +44,8 @@ const props = defineProps<{
   stops: UiRouteStop[];
   /** the line in legs, in order: each a list of [longitude, latitude] points */
   legs?: [number, number][][];
+  /** a label at the middle of each leg, by the legs' order, e.g. its distance; null or missing: none */
+  legLabels?: (string | null)[];
   /** start icon at the line's first point, with this tooltip, e.g. "Старт"; none when omitted */
   startLabel?: string;
   /** finish icon at the line's last point, with this tooltip, e.g. "Финиш"; none when omitted */
@@ -84,10 +87,14 @@ let map: maplibregl.Map | null = null;
 let markers: maplibregl.Marker[] = [];
 /** the start / finish flags */
 let endMarkers: maplibregl.Marker[] = [];
+/** the legs' labels (legLabels) */
+let legLabelMarkers: maplibregl.Marker[] = [];
 /** half a numbered pin (h-6) and a gap: a flag on a pin's spot stands above the pin instead of covering it */
 const FLAG_LIFT_PX = 14;
 /** how close to a pin (in degrees, ~50 m) a flag's point counts as the pin's spot */
 const PIN_SPOT_DEGREES = 0.0005;
+/** px between the centres of pins spread apart at one spot: a pin (min-w-6) and a small gap */
+const PIN_SPREAD_PX = 26;
 
 const coordsOf = (stop: UiRouteStop): [number, number] => [stop.longitude, stop.latitude];
 
@@ -120,29 +127,105 @@ function createArrowImage(color: string): ImageData {
   return context.getImageData(0, 0, side, side);
 }
 
-/** the legs to draw: as given, or a straight line between each two consecutive pins; empty legs dropped */
-function currentLegs(): [number, number][][] {
-  const legs = props.legs ?? props.stops.slice(1).map((stop, index) => [coordsOf(props.stops[index]!), coordsOf(stop)]);
-  return legs.filter((leg) => leg.length >= 2);
+interface DrawnLeg {
+  points: [number, number][];
+  /** from legLabels, by the leg's place among the legs given (before empty ones are dropped) */
+  label: string | null;
 }
 
-/** Numbered pin; a real link, so middle-click and keyboard work */
+/** the legs to draw: as given, or a straight line between each two consecutive pins; empty legs dropped */
+function currentLegs(): DrawnLeg[] {
+  const legs = props.legs ?? props.stops.slice(1).map((stop, index) => [coordsOf(props.stops[index]!), coordsOf(stop)]);
+  return legs
+    .map((points, index) => ({ points, label: props.legLabels?.[index] ?? null }))
+    .filter((leg) => leg.points.length >= 2);
+}
+
+/**
+ * The point halfway along a line, by its length (flat-earth distances: fine within a city) — where its
+ * label goes, on the line itself even where it bends
+ */
+function midpointOf(points: [number, number][]): [number, number] {
+  const cosLatitude = Math.cos(((points[0]![1] ?? 0) * Math.PI) / 180);
+  const segmentLength = (from: [number, number], to: [number, number]) =>
+    Math.hypot((to[0] - from[0]) * cosLatitude, to[1] - from[1]);
+
+  const total = points.slice(1).reduce((sum, point, index) => sum + segmentLength(points[index]!, point), 0);
+  let remaining = total / 2;
+  for (let index = 1; index < points.length; index++) {
+    const from = points[index - 1]!;
+    const to = points[index]!;
+    const length = segmentLength(from, to);
+    if (length >= remaining && length > 0) {
+      const share = remaining / length;
+      return [from[0] + (to[0] - from[0]) * share, from[1] + (to[1] - from[1]) * share];
+    }
+    remaining -= length;
+  }
+  return points[points.length - 1]!;
+}
+
+/** A leg's label: a small pill edged in the leg's colour, so it reads as that line's */
+function createLegLabelElement(text: string, color: string): HTMLElement {
+  const element = document.createElement("span");
+  element.textContent = text;
+  element.className =
+    "mono pointer-events-none rounded-full border-2 bg-surface px-1.5 py-px text-[11px] leading-tight font-semibold whitespace-nowrap text-ink shadow-[0_1px_3px_rgb(0_0_0/0.25)]";
+  element.style.borderColor = color;
+  return element;
+}
+
+/**
+ * Screen offsets of the pins, [x, y] px: pins at one spot (several requests at one address) would cover each
+ * other, so each such group is spread into a row centred on the spot, in route order. The pins keep their
+ * coordinates — only where they are drawn moves, the same at any zoom; a pin alone stays on its point.
+ */
+function pinSpreadOffsets(stops: UiRouteStop[]): [number, number][] {
+  // the same spot: equal to ~1 m (5 decimals)
+  const spotOf = (stop: UiRouteStop) => `${stop.longitude.toFixed(5)},${stop.latitude.toFixed(5)}`;
+  const groups = new Map<string, number[]>();
+  stops.forEach((stop, index) => {
+    const spot = spotOf(stop);
+    groups.set(spot, [...(groups.get(spot) ?? []), index]);
+  });
+
+  return stops.map((stop, index) => {
+    const group = groups.get(spotOf(stop))!;
+    if (group.length < 2) return [0, 0];
+    const place = group.indexOf(index);
+    return [(place - (group.length - 1) / 2) * PIN_SPREAD_PX, 0];
+  });
+}
+
+/** Numbered pin; a real link when it leads somewhere, so middle-click and keyboard work; else a plain mark */
 function createMarkerElement(stop: UiRouteStop): HTMLElement {
-  const element = document.createElement("a");
-  const route = router.resolve(stop.to);
-  element.href = route.href;
+  const element = document.createElement(stop.to ? "a" : "span");
   element.textContent = stop.label;
   element.setAttribute("aria-label", stop.ariaLabel);
   for (const [name, value] of Object.entries(stop.data ?? {})) element.dataset[name] = value;
   element.className =
-    "mono grid h-6 min-w-6 cursor-pointer place-items-center rounded-full border-2 px-1 text-[11.5px] font-semibold text-white no-underline shadow-[0_1px_4px_rgb(0_0_0/0.3)] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
+    "mono grid h-6 min-w-6 place-items-center rounded-full border-2 px-1 text-[11.5px] font-semibold text-white no-underline shadow-[0_1px_4px_rgb(0_0_0/0.3)]";
   element.style.background = stop.color;
   element.style.borderColor = stop.outlineColor ?? "#ffffff";
-  element.addEventListener("click", (event) => {
-    if (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) return;
-    event.preventDefault();
-    void router.push(route);
-  });
+
+  if (stop.to) {
+    const route = router.resolve(stop.to);
+    (element as HTMLAnchorElement).href = route.href;
+    element.classList.add(
+      "cursor-pointer",
+      "hover:brightness-110",
+      "focus-visible:outline-2",
+      "focus-visible:outline-offset-2",
+      "focus-visible:outline-accent",
+    );
+    element.addEventListener("click", (event) => {
+      if (event.ctrlKey || event.metaKey || event.shiftKey || event.button !== 0) return;
+      event.preventDefault();
+      void router.push(route);
+    });
+  } else {
+    element.setAttribute("role", "img");
+  }
   return element;
 }
 
@@ -223,14 +306,17 @@ function render(): void {
   if (!currentMap) return;
 
   markers.forEach((marker) => marker.remove());
-  markers = props.stops.map((stop) =>
-    new maplibregl.Marker({ element: createMarkerElement(stop) }).setLngLat(coordsOf(stop)).addTo(currentMap),
+  const spreadOffsets = pinSpreadOffsets(props.stops);
+  markers = props.stops.map((stop, index) =>
+    new maplibregl.Marker({ element: createMarkerElement(stop), offset: spreadOffsets[index] })
+      .setLngLat(coordsOf(stop))
+      .addTo(currentMap),
   );
 
   const legs = currentLegs();
   // the flags go to where the line starts and ends: the first leg's first point, the last leg's last one
-  const first = legs[0]?.[0];
-  const lastLeg = legs[legs.length - 1];
+  const first = legs[0]?.points[0];
+  const lastLeg = legs[legs.length - 1]?.points;
   renderEndMarkers(currentMap, first, lastLeg?.[lastLeg.length - 1]);
 
   currentMap.getSource<GeoJSONSource>(ROUTE)?.setData({
@@ -241,15 +327,27 @@ function render(): void {
         color: LEG_COLORS[index % LEG_COLORS.length],
         arrow: arrowImageName(index % LEG_COLORS.length),
       },
-      geometry: { type: "LineString", coordinates: leg },
+      geometry: { type: "LineString", coordinates: leg.points },
     })),
   });
+
+  // each leg's label (its distance, say) halfway along it, edged in the leg's colour
+  legLabelMarkers.forEach((marker) => marker.remove());
+  legLabelMarkers = legs.flatMap((leg, index) =>
+    leg.label
+      ? [
+          new maplibregl.Marker({ element: createLegLabelElement(leg.label, LEG_COLORS[index % LEG_COLORS.length]!) })
+            .setLngLat(midpointOf(leg.points))
+            .addTo(currentMap),
+        ]
+      : [],
+  );
 
   // the line may leave the pins' box (a detour, the start at the office): fit both
   if (legs.length || props.stops.length) {
     const bounds = new maplibregl.LngLatBounds();
     props.stops.forEach((stop) => bounds.extend(coordsOf(stop)));
-    legs.forEach((leg) => leg.forEach((point) => bounds.extend(point)));
+    legs.forEach((leg) => leg.points.forEach((point) => bounds.extend(point)));
     currentMap.fitBounds(bounds, { padding: 48, maxZoom: 15, duration: 0 });
   }
 }
@@ -321,9 +419,14 @@ onBeforeUnmount(() => {
   markers = [];
   endMarkers.forEach((marker) => marker.remove());
   endMarkers = [];
+  legLabelMarkers.forEach((marker) => marker.remove());
+  legLabelMarkers = [];
   map?.remove();
   map = null;
 });
 
-watch([() => props.stops, () => props.legs, () => props.startLabel, () => props.finishLabel], render);
+watch(
+  [() => props.stops, () => props.legs, () => props.legLabels, () => props.startLabel, () => props.finishLabel],
+  render,
+);
 </script>

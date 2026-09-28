@@ -1,4 +1,5 @@
 import type { CrewRoute } from "../types";
+import { formatDistance } from "./format";
 
 /** [longitude, latitude], as MapLibre takes coordinates */
 export type LngLat = [number, number];
@@ -42,4 +43,9 @@ export function decodePolyline(encoded: string): LngLat[] {
  */
 export function routeLegs(route: CrewRoute): LngLat[][] {
   return route.legs.map((leg) => decodePolyline(leg.polyline));
+}
+
+/** Each leg's road distance, "3,2 км", by the same order as routeLegs — for the labels on the map */
+export function routeLegLabels(route: CrewRoute): string[] {
+  return route.legs.map((leg) => formatDistance(leg.distanceKilometers));
 }

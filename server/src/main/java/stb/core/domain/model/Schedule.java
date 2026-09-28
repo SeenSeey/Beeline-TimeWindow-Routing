@@ -90,6 +90,10 @@ public class Schedule extends BaseEntity {
         setStatus(Status.RECALCULATING);
     }
 
+    public void markAsOutdated() {
+        setStatus(Status.OUTDATED);
+    }
+
     public void markAsCreated() {
         setStatus(Status.CREATED);
     }
@@ -97,6 +101,7 @@ public class Schedule extends BaseEntity {
     public enum Status {
         CALCULATING("Формируется"),
         RECALCULATING("Переформирование"),
+        OUTDATED("Устарело"),
         CREATED("Готово");
 
         @Getter

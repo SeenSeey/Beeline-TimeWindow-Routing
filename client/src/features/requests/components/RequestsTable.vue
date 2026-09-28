@@ -5,15 +5,17 @@
     <table class="min-w-full text-start">
       <thead>
         <tr>
-          <th
+          <!-- every column sorts the whole list on the server: a click cycles ascending → descending → off -->
+          <UiSortHeader
             v-for="column in COLUMNS"
             :key="column.label"
-            scope="col"
-            class="sticky top-0 z-[1] bg-canvas px-5 py-3 text-start text-xs font-semibold tracking-wide whitespace-nowrap text-ink uppercase shadow-[inset_0_-1px_0_var(--line)]"
+            :direction="sort?.field === column.field ? sort.direction : null"
+            class="sticky top-0 z-[1] bg-canvas px-5 py-3 text-start text-xs font-semibold tracking-wide whitespace-nowrap text-ink shadow-[inset_0_-1px_0_var(--line)]"
             :class="{ 'w-[1%]': column.narrow }"
+            @toggle="emit('sort', column.field)"
           >
             {{ column.label }}
-          </th>
+          </UiSortHeader>
         </tr>
       </thead>
       <tbody class="divide-y divide-line">
@@ -25,6 +27,9 @@
             >
               {{ r.id }}
             </RouterLink>
+          </td>
+          <td class="mono px-5 py-3 text-sm whitespace-nowrap text-muted">
+            {{ r.createdAt ? formatDateTime(r.createdAt) : "—" }}
           </td>
           <td class="px-5 py-3 text-sm text-ink">{{ r.fullAddress }}</td>
           <td class="px-5 py-3">
@@ -51,23 +56,35 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
 import UiBadge from "@/components/ui/UiBadge.vue";
+import UiSortHeader from "@/components/ui/UiSortHeader.vue";
+import type { SortOrder } from "@/utils/sort";
 import { jobTypeColor, statusColor } from "../model/colors";
+import type { RequestSortField } from "../model/query";
 import { statusLabel } from "../model/dictionaries";
+import { formatDateTime } from "../model/format";
 import type { RequestItem } from "../types";
 
 defineProps<{
   requests: RequestItem[];
+  /** the list's order; null: by number (the server's default) */
+  sort: SortOrder<RequestSortField> | null;
+}>();
+
+const emit = defineEmits<{
+  /** a column head clicked */
+  sort: [field: RequestSortField];
 }>();
 
 /** narrow columns shrink to their content; the address takes the rest */
-const COLUMNS = [
-  { label: "№", narrow: true },
-  { label: "Адрес", narrow: false },
-  { label: "Статус", narrow: true },
-  { label: "Тип работ", narrow: true },
-  { label: "Регион", narrow: true },
-  { label: "Бригада", narrow: true },
-  { label: "Срочность", narrow: true },
+const COLUMNS: { label: string; field: RequestSortField; narrow: boolean }[] = [
+  { label: "№", field: "id", narrow: true },
+  { label: "Создана", field: "createdAt", narrow: true },
+  { label: "Адрес", field: "address", narrow: false },
+  { label: "Статус", field: "status", narrow: true },
+  { label: "Тип работ", field: "jobType", narrow: true },
+  { label: "Регион", field: "region", narrow: true },
+  { label: "Бригада", field: "crew", narrow: true },
+  { label: "Срочность", field: "urgent", narrow: true },
 ];
 
 const router = useRouter();

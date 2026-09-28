@@ -20,6 +20,15 @@ export async function fetchSchedule(regionId: number): Promise<ScheduleData | nu
 }
 
 /**
+ * Any version of a schedule by its id — an earlier one, before a recalculation. It comes with its own route
+ * lengths but without the unassigned list: that one only describes the current state
+ */
+export async function fetchScheduleVersion(scheduleId: number): Promise<ScheduleData | null> {
+  const response = await axios.get<ApiResponse<ScheduleData>>(`/api/v1/schedules/${scheduleId}`);
+  return response.data?.payload ?? null;
+}
+
+/**
  * Recalculates the edited crews' routes of today's schedule without saving them. `routes` lists only
  * the crews that changed; a request dropped from their routes leaves the schedule.
  */

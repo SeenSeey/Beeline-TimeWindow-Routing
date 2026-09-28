@@ -1,7 +1,5 @@
 <template>
   <UiPanel title="Ход выполнения">
-    <template v-if="entries.length" #aside>{{ entries.length }}</template>
-
     <UiEmptyState v-if="!entries.length">По заявке пока нет записей в журнале.</UiEmptyState>
 
     <!-- the request's audit as a vertical timeline, oldest first: a coloured marker per action, when it

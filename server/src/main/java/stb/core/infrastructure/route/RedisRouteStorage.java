@@ -28,7 +28,7 @@ import java.util.List;
 public class RedisRouteStorage implements RouteStorage {
 
     private static final String REGION_ROUTES_KEY_PREFIX = "region:routes:";
-    private static final String CREW_ROUTE_KEY_PREFIX = "crew-route:";
+    private static final String CREW_ROUTE_KEY_PREFIX = "schedule-route:";
     private static final int CLEAR_BATCH_SIZE = 500;
     private static final TypeReference<List<RouteDto>> ROUTE_LIST_TYPE = new TypeReference<>() {};
 
@@ -57,8 +57,8 @@ public class RedisRouteStorage implements RouteStorage {
 
     @Override
     @Nullable
-    public CrewRouteDto findRoute(Region region, EngineerCrew engineerCrew) {
-        String key = buildSingleRouteKey(region, engineerCrew);
+    public CrewRouteDto findRoute(Schedule schedule, EngineerCrew engineerCrew) {
+        String key = buildSingleRouteKey(schedule, engineerCrew);
         String json = redisTemplate.opsForValue().get(key);
 
         if (json == null) {
@@ -74,8 +74,13 @@ public class RedisRouteStorage implements RouteStorage {
     }
 
     @Override
-    public void saveRoute(Region region, EngineerCrew engineerCrew, CrewRouteDto route) {
-        redisTemplate.opsForValue().set(buildSingleRouteKey(region, engineerCrew), jsonMapper.writeValueAsString(route), ttl);
+    public void saveRoute(Schedule schedule, EngineerCrew engineerCrew, CrewRouteDto route) {
+        redisTemplate.opsForValue().set(buildSingleRouteKey(schedule, engineerCrew), jsonMapper.writeValueAsString(route), ttl);
+    }
+
+    @Override
+    public void deleteRoute(Schedule schedule, EngineerCrew engineerCrew) {
+        redisTemplate.delete(buildSingleRouteKey(schedule, engineerCrew));
     }
 
     @Override
@@ -95,10 +100,9 @@ public class RedisRouteStorage implements RouteStorage {
     }
 
     @Override
-    public void clearCrewsRoutesByRegion(Region region) {
-        // this region's crews only: "crew-route:<regionId>:" — the bare prefix would take every region's
-        long deleted = deleteByPrefix(CREW_ROUTE_KEY_PREFIX + region.getId() + ":");
-        log.info("Маршруты бригад региона {} удалены из хранилища, удалено ключей: {}", region.getId(), deleted);
+    public void clearCrewsRoutesBySchedule(Schedule schedule) {
+        long deleted = deleteByPrefix(CREW_ROUTE_KEY_PREFIX + schedule.getId() + ":");
+        log.info("Маршруты бригад расписания {} удалены из хранилища, удалено ключей: {}", schedule.getId(), deleted);
     }
 
     private long deleteByPrefix(String prefix) {
@@ -130,7 +134,7 @@ public class RedisRouteStorage implements RouteStorage {
         return REGION_ROUTES_KEY_PREFIX + region.getId();
     }
 
-    private static String buildSingleRouteKey(Region region, EngineerCrew engineerCrew) {
-        return CREW_ROUTE_KEY_PREFIX + region.getId() + ":" + engineerCrew.getId();
+    private static String buildSingleRouteKey(Schedule schedule, EngineerCrew engineerCrew) {
+        return CREW_ROUTE_KEY_PREFIX + schedule.getId() + ":" + engineerCrew.getId();
     }
 }

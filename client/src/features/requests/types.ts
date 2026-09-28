@@ -29,6 +29,8 @@ export interface RequestItem {
   jobType: JobType;
   /** null while no crew is assigned */
   assignedCrew: AssignedCrew | null;
+  /** ISO LocalDateTime */
+  createdAt: string;
 }
 
 /** RequestDetailedDto.JobTypeDto */
@@ -153,6 +155,8 @@ export interface RequestFilters {
   urgent: boolean | null;
   regionId: number | null;
   jobTypeId: number | null;
-  /** true: only requests without a crew, false: only assigned ones */
-  noAssignedCrew: boolean | null;
+  /** part of the full address, case-insensitive */
+  address: string | null;
+  /** part of the assigned crew's name, case-insensitive; requests without a crew don't match */
+  crewName: string | null;
 }

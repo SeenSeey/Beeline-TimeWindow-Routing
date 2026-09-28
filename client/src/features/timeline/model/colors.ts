@@ -38,6 +38,8 @@ const SCHEDULE_STATUS_COLORS: Record<ScheduleStatusKeyword, string> = {
   CREATED: "var(--job-local)",
   CALCULATING: "var(--job-addon)",
   RECALCULATING: "var(--job-addon)",
+  // no longer in force: greyed out, like other things of the past
+  OUTDATED: "var(--faint)",
 };
 
 export const scheduleStatusColor = (keyword: ScheduleStatusKeyword): string =>

@@ -1,6 +1,9 @@
 <template>
   <!-- Preline table head: gray-50 band with small muted labels -->
-  <div class="sticky top-0 z-[3] grid grid-cols-[230px_1fr] border-b border-line bg-canvas">
+  <div
+    class="sticky top-0 z-[3] grid border-b border-line bg-canvas"
+    :style="{ gridTemplateColumns: `${labelWidth}px 1fr` }"
+  >
     <!-- corner above the sticky crew column -->
     <div
       class="sticky left-0 z-[2] flex items-center bg-canvas px-5 text-xs font-semibold tracking-wide text-ink uppercase"
@@ -29,6 +32,8 @@ import type { TimeScale } from "../model/timeline";
 defineProps<{
   hours: number[];
   scale: TimeScale;
+  /** px of the crew column, shared with the rows (TimelineChart measures it) */
+  labelWidth: number;
   /** the track is scrolled sideways — the sticky column casts a shadow */
   scrolled: boolean;
 }>();

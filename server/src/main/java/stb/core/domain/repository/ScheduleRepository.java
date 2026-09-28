@@ -52,4 +52,17 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Integer> {
             "slots.engineerCrew"
     })
     Optional<Schedule> findByTargetDateAndRegionId(LocalDate targetDate, int regionId);
+
+    /** Any version of a schedule, current or earlier, with what its timeline needs */
+    @EntityGraph(attributePaths = {
+            "region",
+            "previousSchedule",
+            "slots",
+            "slots.request",
+            "slots.request.jobType",
+            "slots.request.requiredVehicle",
+            "slots.request.assignedCrew",
+            "slots.engineerCrew"
+    })
+    Optional<Schedule> findWithSlotsById(int id);
 }

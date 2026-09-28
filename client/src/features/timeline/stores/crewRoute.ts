@@ -12,17 +12,19 @@ export const useCrewRouteStore = defineStore("timeline/crewRoute", () => {
   const route = shallowRef<CrewRoute | null>(null);
   const loading = ref(false);
 
-  /** the schedule the cached routes belong to */
-  let cachedScheduleId: number | null = null;
+  /** the schedule (and its revision: an edit changes it in place, with its routes) the cached routes belong to */
+  let cachedFor: string | null = null;
   /** crew id → its loaded route */
   const cache = new Map<number, CrewRoute>();
   // Only the latest request may update the state (quick switching between crews)
   let requestSeq = 0;
 
-  async function load(scheduleId: number, crewId: number): Promise<void> {
+  /** `revision`: the schedule store's, raised when a saved edit replaced the schedule and its routes */
+  async function load(scheduleId: number, crewId: number, revision = 0): Promise<void> {
     const seq = ++requestSeq;
-    if (cachedScheduleId !== scheduleId) {
-      cachedScheduleId = scheduleId;
+    const schedule = `${scheduleId}:${revision}`;
+    if (cachedFor !== schedule) {
+      cachedFor = schedule;
       cache.clear();
     }
 

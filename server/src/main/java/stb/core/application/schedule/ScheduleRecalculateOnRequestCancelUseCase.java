@@ -15,6 +15,8 @@ import stb.core.domain.repository.*;
 import stb.core.domain.service.ScheduleRecalculationService;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Component
@@ -48,7 +50,6 @@ public class ScheduleRecalculateOnRequestCancelUseCase {
         }
 
         List<RouteDto> routes = routeStorage.findAllRoutesByRegion(region);
-        routeStorage.clearCrewsRoutesByRegion(region);
 
         ScheduleHistoryResult result = scheduleRecalculationService.recalculateSchedule(region, targetDate, routes);
 

@@ -55,7 +55,7 @@ public class CrewFindByIdUseCase {
         return scheduleRepository
                 .findByTargetDateAndRegionId(targetDate, crew.getRegion().getId())
                 .filter(schedule -> schedule.getStatus() == Schedule.Status.CREATED)
-                .map(schedule -> routeStorage.findRoute(schedule.getRegion(), crew))
+                .map(schedule -> routeStorage.findRoute(schedule, crew))
                 .orElse(null);
     }
 }

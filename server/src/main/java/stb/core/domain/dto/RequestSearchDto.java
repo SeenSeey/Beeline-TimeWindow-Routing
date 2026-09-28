@@ -8,6 +8,10 @@ public record RequestSearchDto(
         Integer regionId,
         Integer jobTypeId,
         Boolean noAssignedCrew,
-        List<Integer> assignedCrewIds
+        List<Integer> assignedCrewIds,
+        // part of the full address, case-insensitive
+        String address,
+        // part of the assigned crew's name, case-insensitive; requests without a crew never match
+        String crewName
 ) {
 }

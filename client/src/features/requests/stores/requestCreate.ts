@@ -1,19 +1,38 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
-import { createRequest, toApiFailure } from "../api/requestsApi";
-import type { RequestCreateBody, RequestItem } from "../types";
+import { ref, shallowRef } from "vue";
+import { createRequest, fetchRegions, toApiFailure } from "../api/requestsApi";
+import type { RegionInfo, RequestCreateBody, RequestItem } from "../types";
 
-/** The "Создать заявку" dialog, shared by the pages that offer it (schedule board, map) */
+/**
+ * The "Создать заявку" dialog, opened from the app header on any page. It loads the regions it offers
+ * itself (not through the schedule's regions store, which writes ?region= into the URL — a filter on
+ * other pages), and announces each created request in `lastCreated` for the pages to refresh.
+ */
 export const useRequestCreateStore = defineStore("requests/create", () => {
   const open = ref(false);
   /** the request is being created */
   const pending = ref(false);
   /** why the last attempt failed; cleared when the dialog is opened again or on the next try */
   const error = ref<string | null>(null);
+  /** the regions to choose from, loaded when the dialog is first opened */
+  const regions = ref<RegionInfo[]>([]);
+  /** the last request created from the dialog; pages showing its region reload when it changes */
+  const lastCreated = shallowRef<RequestItem | null>(null);
+
+  async function loadRegions(): Promise<void> {
+    if (regions.value.length) return;
+    try {
+      regions.value = await fetchRegions();
+    } catch (e) {
+      const failure = toApiFailure(e);
+      error.value = failure.message ?? "Не удалось загрузить регионы";
+    }
+  }
 
   function openDialog(): void {
     open.value = true;
     error.value = null;
+    void loadRegions();
   }
 
   function closeDialog(): void {
@@ -31,6 +50,7 @@ export const useRequestCreateStore = defineStore("requests/create", () => {
       const created = await createRequest(body);
       pending.value = false;
       open.value = false;
+      lastCreated.value = created;
       return created;
     } catch (e) {
       const failure = toApiFailure(e);
@@ -40,5 +60,5 @@ export const useRequestCreateStore = defineStore("requests/create", () => {
     }
   }
 
-  return { open, pending, error, openDialog, closeDialog, create };
+  return { open, pending, error, regions, lastCreated, openDialog, closeDialog, create };
 });

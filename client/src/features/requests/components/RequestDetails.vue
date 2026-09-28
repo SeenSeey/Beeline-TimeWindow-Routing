@@ -42,43 +42,35 @@
       </div>
     </header>
 
-    <!-- 2. at a glance -->
-    <RequestKeyFacts :request="request" />
-
-    <!-- 3. details: the request's story and work on the left, place and crew on the side -->
-    <div class="grid grid-cols-1 items-start gap-4 sm:gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+    <!-- 2. the request and its place on the left; its crew and history on the side -->
+    <div class="grid grid-cols-1 items-start gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+      <!-- the request and where it is -->
       <div class="grid min-w-0 gap-4 sm:gap-6">
-        <RequestLifecyclePanel :request="request" />
-        <RequestRequirementsPanel :request="request" />
-        <RequestVisitsPanel :visits="request.scheduledVisits" :region-id="request.region.id" />
+        <RequestInfoPanel :request="request" />
+        <RequestLocationPanel :request="request" />
       </div>
 
+      <!-- who does it and what happened to it -->
       <div class="grid min-w-0 gap-4 sm:gap-6">
-        <UiPanel title="Место">
-          <UiDetailList :rows="placeRows" />
-        </UiPanel>
-        <RequestCrewPanel :crew="request.assignedCrew" />
+        <RequestCrewCard :crew="request.assignedCrew" />
+        <RequestLifecyclePanel :request="request" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
 import UiBadge from "@/components/ui/UiBadge.vue";
-import UiDetailList, { type UiDetailRow } from "@/components/ui/UiDetailList.vue";
-import UiPanel from "@/components/ui/UiPanel.vue";
 import { statusColor } from "../model/colors";
 import type { RequestStatusAction } from "../api/requestsApi";
 import type { RequestDetailed } from "../types";
-import RequestCrewPanel from "./RequestCrewPanel.vue";
-import RequestKeyFacts from "./RequestKeyFacts.vue";
+import RequestCrewCard from "./RequestCrewCard.vue";
+import RequestInfoPanel from "./RequestInfoPanel.vue";
 import RequestLifecyclePanel from "./RequestLifecyclePanel.vue";
-import RequestRequirementsPanel from "./RequestRequirementsPanel.vue";
+import RequestLocationPanel from "./RequestLocationPanel.vue";
 import RequestStatusActions from "./RequestStatusActions.vue";
-import RequestVisitsPanel from "./RequestVisitsPanel.vue";
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     request: RequestDetailed;
     /** the status change in flight */
@@ -92,14 +84,4 @@ const props = withDefaults(
 const emit = defineEmits<{
   changeStatus: [action: RequestStatusAction];
 }>();
-
-const placeRows = computed<UiDetailRow[]>(() => {
-  const request = props.request;
-  return [
-    { label: "Адрес", value: request.fullAddress },
-    { label: "Регион", value: request.region.displayName },
-    { label: "Офис региона", value: request.region.officeAddress },
-    { label: "Координаты", value: `${request.latitude.toFixed(5)}, ${request.longitude.toFixed(5)}`, mono: true },
-  ];
-});
 </script>

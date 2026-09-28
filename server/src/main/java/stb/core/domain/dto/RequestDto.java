@@ -4,6 +4,8 @@ import lombok.Builder;
 import stb.core.domain.model.EngineerCrew;
 import stb.core.domain.model.Request;
 
+import java.time.LocalDateTime;
+
 @Builder
 public record RequestDto(
         int id,
@@ -12,7 +14,8 @@ public record RequestDto(
         boolean urgent,
         RegionDto region,
         DictionaryDto jobType,
-        AssignedCrewDto assignedCrew
+        AssignedCrewDto assignedCrew,
+        LocalDateTime createdAt
 ) {
 
     public record AssignedCrewDto(int id, String name) {
@@ -31,6 +34,7 @@ public record RequestDto(
                 .region(RegionDto.from(model.getRegion()))
                 .jobType(DictionaryDto.from(model.getJobType()))
                 .assignedCrew(AssignedCrewDto.from(model.getAssignedCrew()))
+                .createdAt(model.getCreatedAt())
                 .build();
     }
 

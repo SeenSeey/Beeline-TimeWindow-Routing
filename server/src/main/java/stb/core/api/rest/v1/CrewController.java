@@ -17,6 +17,8 @@ import stb.core.domain.dto.CrewDto;
 import stb.core.domain.dto.CrewEquipmentAddDto;
 import stb.core.domain.dto.CrewSearchDto;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/v1/crews")
 @RequiredArgsConstructor
@@ -27,14 +29,24 @@ public class CrewController {
     private final CrewEquipmentAddUseCase crewEquipmentAddUseCase;
     private final CrewOffShiftUseCase crewOffShiftUseCase;
 
+    /** columns the list can be sorted by: API name → entity property */
+    private static final Map<String, String> SORTABLE_FIELDS = Map.of(
+            "id", "id",
+            "name", "name",
+            "region", "region.displayName",
+            "vehicle", "vehicle.displayName"
+    );
+
     @GetMapping
     public ResponseEntity<ServerResponse<PageResponseDto<CrewDto>>> search(
             @ModelAttribute CrewSearchDto searchDto,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int limit
+            @RequestParam(defaultValue = "20") int limit,
+            // "<field>,<asc|desc>", the field one of SORTABLE_FIELDS
+            @RequestParam(required = false) String sort
     ) {
 
-        Pageable pageable = PaginationUtils.create(page, limit);
+        Pageable pageable = PaginationUtils.create(page, limit, sort, SORTABLE_FIELDS);
 
         PageResponseDto<CrewDto> payload = crewSearchUseCase.execute(searchDto, pageable);
 

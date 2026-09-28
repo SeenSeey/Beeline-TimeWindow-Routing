@@ -2,7 +2,8 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import router from "@/router";
 import { fetchRegions, fetchRequests, toApiFailure, type ApiFailure } from "../api/requestsApi";
-import { EMPTY_FILTERS, readQuery, toUrlQuery, type RequestsQuery } from "../model/query";
+import { nextSortOrder } from "@/utils/sort";
+import { EMPTY_FILTERS, readQuery, toUrlQuery, type RequestSortField, type RequestsQuery } from "../model/query";
 import type { PageResponse, RegionInfo, RequestFilters, RequestItem } from "../types";
 
 export type RequestsLoadState = { kind: "loading" } | { kind: "ready"; data: PageResponse<RequestItem> } | ApiFailure;
@@ -74,5 +75,24 @@ export const useRequestsStore = defineStore("requests/list", () => {
     void load();
   }
 
-  return { query, state, switching, regions, page, init, load, setFilters, resetFilters, setPage, setLimit };
+  /** A column head clicked: ascending, descending, then unsorted; from the first page */
+  function toggleSort(field: RequestSortField): void {
+    query.value = { ...query.value, sort: nextSortOrder(query.value.sort, field), page: 1 };
+    void load();
+  }
+
+  return {
+    query,
+    state,
+    switching,
+    regions,
+    page,
+    init,
+    load,
+    setFilters,
+    resetFilters,
+    setPage,
+    setLimit,
+    toggleSort,
+  };
 });

@@ -75,6 +75,31 @@ public class RequestSpecification implements Specification<Request> {
             );
         }
 
+        if (request.address() != null && !request.address().isBlank()) {
+            // part of the address anywhere in it, case-insensitive; % and _ typed by the user match themselves
+            String pattern = "%" + escapeLike(request.address().trim().toLowerCase()) + "%";
+            predicates.add(
+                    cb.like(cb.lower(root.get(Request_.FULL_ADDRESS)), pattern, LIKE_ESCAPE)
+            );
+        }
+
+        if (request.crewName() != null && !request.crewName().isBlank()) {
+            // part of the assigned crew's name, case-insensitive; the join leaves out requests without a crew
+            String pattern = "%" + escapeLike(request.crewName().trim().toLowerCase()) + "%";
+            predicates.add(
+                    cb.like(cb.lower(root.join(Request_.ASSIGNED_CREW).get(EngineerCrew_.NAME)), pattern, LIKE_ESCAPE)
+            );
+        }
+
         return cb.and(predicates);
+    }
+
+    private static final char LIKE_ESCAPE = '\\';
+
+    private static String escapeLike(String text) {
+        return text
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
     }
 }

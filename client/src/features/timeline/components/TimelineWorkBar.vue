@@ -85,6 +85,10 @@
         {{ PROGRESS_LABELS.canceled }}
       </div>
       <div v-else class="truncate opacity-90">{{ visit.slot.fullAddress }}</div>
+      <!-- the equipment the request needs, after the address: the row is made taller for it (TimelineRow) -->
+      <div v-if="visit.slot.requiredEquipment" class="truncate font-medium">
+        {{ visit.slot.requiredEquipment }}
+      </div>
     </div>
 
     <!-- changed by a recalculation: a mark in the corner, the reason in the hover tooltip -->
@@ -98,6 +102,7 @@
       </svg>
     </span>
 
+    <!-- the vehicle the request needs, in the corner (its equipment is a text line above) -->
     <VehicleIcon
       v-if="showVehicle && visit.slot.requiredVehicle && !violations.length"
       :vehicle="visit.slot.requiredVehicle"
@@ -126,8 +131,12 @@ import UiDot from "@/components/ui/UiDot.vue";
 import VehicleIcon from "./VehicleIcon.vue";
 
 const MIN_TEXT_PX = 36;
-/** the icon alone still fits a bar too narrow for text */
-const MIN_ICON_PX = 18;
+/** the icons on the bar's top edge, in px: the vehicle icon (size-3), the changed mark (size-3.5) */
+const ICON_PX = 12;
+const CHANGED_MARK_PX = 14;
+/** their distance from the bar's ends (top-[3px] start/end-[3px]) and between each other */
+const ICON_EDGE_PX = 3;
+const ICON_GAP_PX = 2;
 
 const props = defineProps<{
   visit: Visit;
@@ -147,13 +156,30 @@ const dragging = ref(false);
 /** in edit mode the bar is a keyboard-reachable, draggable button-like handle */
 const editAttrs = { role: "button", tabindex: 0, draggable: "true", "aria-haspopup": "menu" };
 
-const showVehicle = computed(
-  () => !!props.visit.slot.requiredVehicle && props.scale.px(props.from, props.to) >= MIN_ICON_PX,
-);
-
-/** the schedule changed this visit (moved, reassigned…): a mark in the corner, when the bar has room for it */
+/** the schedule changed this visit (moved, reassigned…): a mark in the top-left corner, the reason in the tooltip */
 const changeReason = computed(() => props.visit.slot.alterationReason?.description ?? null);
-const showChanged = computed(() => !!changeReason.value && props.scale.px(props.from, props.to) >= MIN_ICON_PX);
+
+/**
+ * Which icons fit on the bar's top edge: the changed mark on the left, the vehicle on the right. They share
+ * the bar's width, the mark first, so they never run into each other on a narrow bar; one that doesn't fit
+ * is left to the hover tooltip.
+ */
+const topIcons = computed(() => {
+  let room = props.scale.px(props.from, props.to) - ICON_EDGE_PX * 2;
+
+  const fits = (width: number): boolean => {
+    if (room < width) return false;
+    room -= width + ICON_GAP_PX;
+    return true;
+  };
+
+  const changed = !!changeReason.value && fits(CHANGED_MARK_PX);
+  const vehicle = !!props.visit.slot.requiredVehicle && fits(ICON_PX);
+  return { changed, vehicle };
+});
+
+const showChanged = computed(() => topIcons.value.changed);
+const showVehicle = computed(() => topIcons.value.vehicle);
 
 type Progress = "inProgress" | "completed" | "canceled";
 

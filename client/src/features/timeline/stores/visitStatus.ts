@@ -31,7 +31,8 @@ export const useVisitStatusStore = defineStore("timeline/visitStatus", () => {
   const error = ref<string | null>(null);
 
   function openMenu(target: VisitStatusMenuTarget): void {
-    if (pendingAction.value) return;
+    // an earlier version of the schedule is read-only
+    if (pendingAction.value || scheduleStore.viewingHistory) return;
     menu.value = target;
     error.value = null;
   }
