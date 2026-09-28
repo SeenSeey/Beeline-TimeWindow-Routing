@@ -65,6 +65,8 @@ public class AlterationReason extends BaseEntity {
         } else if (request.getRequiredVehicle() != null && skilledCrews.stream()
                 .noneMatch(crew -> crew.getVehicle().getKeyword() == request.getRequiredVehicle().getKeyword())) {
             type = Type.NO_CREW_WITH_REQUIRED_VEHICLE;
+        } else if (request.isUrgent()) {
+            type = Type.URGENT_START_LIMIT_EXCEEDED;
         }
 
         return AlterationReason.builder()
@@ -206,6 +208,7 @@ public class AlterationReason extends BaseEntity {
         INITIAL_NO_AVAILABLE_TIME_SLOT(reason -> formatNoTimeSlotReason(reason.getRequest())),
         NO_CREW_WITH_REQUIRED_SKILL(reason -> formatSkillReason(reason.getRequest())),
         NO_CREW_WITH_REQUIRED_VEHICLE(reason -> "Среди бригад на смене с нужным навыком нет бригады с транспортом «%s»".formatted(reason.getRequest().getRequiredVehicle().getDisplayName())),
+        URGENT_START_LIMIT_EXCEEDED(reason -> formatUrgentStartLimitReason(reason.getRequest())),
 
         ADDED_FOR_HIGHER_PRIORITY_REQUEST(reason -> "Заявка добавлена в расписание при пересчёте после поступления срочной заявки №%d".formatted(reason.getCauseRequest().getId())),
         REASSIGNED_FOR_HIGHER_PRIORITY_REQUEST(reason -> "Заявка передана другой бригаде при пересчёте после поступления срочной заявки №%d".formatted(reason.getCauseRequest().getId())),
@@ -237,6 +240,12 @@ public class AlterationReason extends BaseEntity {
             }
 
             return "%s или оборудования «%s»".formatted(reason, request.getRequiredEquipment().getDisplayName());
+        }
+
+        private static String formatUrgentStartLimitReason(Request request) {
+            return "Срочная заявка не распределена: подходящие бригады не могут начать выполнение в течение %d минут после создания заявки (до %s)".formatted(
+                    Request.URGENT_START_LIMIT.toMinutes(),
+                    TIME_FORMATTER.format(request.getCreatedAt().plus(Request.URGENT_START_LIMIT)));
         }
 
         private static String formatSkillReason(Request request) {
