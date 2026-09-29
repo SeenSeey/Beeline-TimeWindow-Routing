@@ -78,7 +78,7 @@ services:
       APP_GEO_GEOCODERAPIKEY: ${GEOCODER_API_KEY}
       TZ: "Europe/Moscow"
     ports:
-      "8080:8080"
+      - "8080:8080"
     volumes:
       - ./maps:/app/map
       - ./environment/maps/graph-cache:/app/map/graph-cache
