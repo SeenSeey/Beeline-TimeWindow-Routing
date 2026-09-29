@@ -46,6 +46,8 @@ public class EngineerCrewDto {
 
     private final boolean isUsed;
 
+    private final boolean replanning;
+
     @PlanningListVariable(
             valueRangeProviderRefs = "requestRange",
             allowsUnassignedValues = true

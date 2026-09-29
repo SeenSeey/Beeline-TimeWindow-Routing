@@ -12,6 +12,17 @@ services:
       - root_network
     volumes:
       - ./nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    depends_on:
+      server:
+        condition: service_healthy
+      client:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   postgres:
     image: postgres:16.4-alpine
@@ -28,6 +39,12 @@ services:
       - root_network
     env_file:
       - ./.env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   redis:
     image: redis:7.4-alpine
@@ -38,6 +55,12 @@ services:
       - ./environment/redis:/data
     networks:
       - root_network
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
   server:
     build: ./server
@@ -58,10 +81,22 @@ services:
     networks:
       - root_network
     volumes:
-      - ./maps/central-fed.osm.pbf:/app/map/central-fed.osm.pbf
+      - ./maps:/app/map
       - ./environment/maps/graph-cache:/app/map/graph-cache
     env_file:
       - ./.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/8080' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 300s
+      start_interval: 5s
 
   client:
     build: ./client
@@ -73,6 +108,17 @@ services:
       - /app/node_modules
     networks:
       - root_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5173/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 networks:
   root_network:

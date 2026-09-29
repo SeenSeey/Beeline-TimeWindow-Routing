@@ -1,6 +1,8 @@
 FROM eclipse-temurin:25-jdk AS build
 WORKDIR /app
 
+ADD https://lctbln.firsts3.ru/central-fed.osm.pbf /app/map/central-fed.osm.pbf
+
 COPY ./gradlew .
 COPY ./gradle ./gradle
 COPY ./settings.gradle* .
