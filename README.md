@@ -480,25 +480,25 @@ erDiagram
 
 ```
 .
-├── client/                          # фронтенд, Vue 3 + TypeScript
-│   └── src/features/                # разделы: timeline, map, requests, crews, system
-├── server/                          # бэкенд, Spring Boot
+├── client/                              # фронтенд, Vue 3 + TypeScript
+│   └── src/features/                    # разделы: timeline, map, requests, crews, system
+├── server/                              # бэкенд, Spring Boot
 │   └── src/
 │       ├── main/java/stb/core/
-│       │   ├── api/                 # REST-контроллеры
-│       │   ├── application/         # use case по сценариям
+│       │   ├── api/                     # REST-контроллеры
+│       │   ├── application/             # use case по сценариям
 │       │   ├── domain/
 │       │   │   ├── service/scheduler/   # модель и ограничения Timefold
-│       │   │   ├── model/           # сущности JPA
-│       │   │   ├── event/           # доменные события
-│       │   │   └── port/            # интерфейсы внешних сервисов
-│       │   └── infrastructure/      # GraphHopper, Redis, геокодер, CSV, слушатели, cron
+│       │   │   ├── model/               # сущности JPA
+│       │   │   ├── event/               # доменные события
+│       │   │   └── port/                # интерфейсы внешних сервисов
+│       │   └── infrastructure/          # GraphHopper, Redis, геокодер, CSV, слушатели, cron
 │       ├── main/resources/
-│       │   ├── demo/dataset/        # демо-набор
+│       │   ├── demo/dataset/            # демо-набор
 │       │   └── solverConfig.xml
-│       └── generator/               # генератор демо-набора
-├── nginx/                           # reverse proxy
-├── maps/                            # OSM-файл (не в git)
+│       └── generator/                   # генератор демо-набора
+├── nginx/                               # reverse proxy
+├── maps/                                # OSM-файл (не в git)
 ├── compose.yml
 └── .env.example
 ```
