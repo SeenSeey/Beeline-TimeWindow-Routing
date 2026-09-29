@@ -141,35 +141,7 @@ docker compose -f compose.prod.yml down nginx && docker compose -f compose.prod.
 
 {% cut "Схема развёртывания" %}
 
-```mermaid
-flowchart LR
-    user(["Диспетчер<br/>браузер"])
-
-    subgraph compose ["Docker Compose"]
-        nginx["nginx<br/>:3000"]
-        client["client<br/>Vue 3 + Vite"]
-        subgraph srv ["server · Spring Boot"]
-            api["REST API"]
-            solver["Timefold Solver"]
-            gh["GraphHopper<br/>(in-process)"]
-        end
-        pg[("PostgreSQL<br/>заявки, бригады,<br/>версии расписаний")]
-        redis[("Redis<br/>матрица расстояний,<br/>геометрия маршрутов")]
-    end
-
-    osm[/"central-fed.osm.pbf"/]
-    ya["Яндекс Геокодер"]
-
-    user --> nginx
-    nginx -- "/" --> client
-    nginx -- "/api/" --> api
-    api --- solver
-    api --- gh
-    gh -.-> osm
-    api --> pg
-    api --> redis
-    api -.-> ya
-```
+![Схема развёртывания: nginx, клиент, сервер с Timefold Solver и GraphHopper, PostgreSQL, Redis](docs/images/architecture.png "Схема развёртывания в Docker Compose")
 
 {% endcut %}
 
