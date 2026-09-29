@@ -1,24 +1,14 @@
-<div align="center">
-
 # Планирование маршрутов выездных инженерных бригад
 
-**Помощник диспетчера: распределяет заявки между бригадами, строит маршруты по реальным дорогам,<br>перестраивает план при изменениях в течение дня и объясняет, почему план такой.**
+**Помощник диспетчера: распределяет заявки между бригадами, строит маршруты по реальным дорогам, перестраивает план при изменениях в течение дня и объясняет, почему план такой.**
 
 Хакатон «Лидеры цифровой трансформации» 2026 · Кейс «Билайн Бизнес» · Команда «СливЯ»
 
-![Java][java-badge]
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1-6DB33F?logo=springboot&logoColor=white)
-![Timefold](https://img.shields.io/badge/Timefold_Solver-2.6-6C3EB8)
-![GraphHopper](https://img.shields.io/badge/GraphHopper-11.0-2E7D32)
-![Vue](https://img.shields.io/badge/Vue-3.5-42B883?logo=vuedotjs&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
-![Redis][redis-badge]
+![Java][java-badge] ![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1-6DB33F?logo=springboot&logoColor=white) ![Timefold](https://img.shields.io/badge/Timefold_Solver-2.6-6C3EB8) ![GraphHopper](https://img.shields.io/badge/GraphHopper-11.0-2E7D32) ![Vue](https://img.shields.io/badge/Vue-3.5-42B883?logo=vuedotjs&logoColor=white) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white) ![Redis][redis-badge]
 
 [Локальный запуск](#local-run) · [Как проверить](#demo) · [Соответствие ТЗ](#compliance) · [Алгоритм](#algorithm) · [Данные](#data) · [API](#api) · [Ограничения](#limitations)
 
 <!-- 📝 Главный скриншот / GIF: таймлайн расписания + маршрут бригады на карте -->
-
-</div>
 
 ## О проекте
 
@@ -32,10 +22,7 @@
 - **объясняет результат**: для каждой заявки вне плана показана причина, для каждого изменённого визита - что изменилось и из-за какого события;
 - **показывает план**: таймлайн по бригадам, маршруты на карте, метрики, история версий расписания, ручное редактирование с проверкой ограничений.
 
-<details>
-<summary><b>Постановка задачи от организаторов</b></summary>
-
-<br>
+{% cut "Постановка задачи от организаторов" %}
 
 > Создайте понятный прототип, который распределяет заявки между инженерами, строит маршруты, показывает их на карте и умеет перестраивать план при изменениях.
 >
@@ -57,7 +44,7 @@
 
 Ссылка на задачу: [i.moscow/hackaton/lct](https://i.moscow/hackaton/lct/420731fd6e6b4b4c917428b62f125cdd)
 
-</details>
+{% endcut %}
 
 ## Локальный запуск {#local-run}
 
@@ -126,8 +113,7 @@ docker compose -f compose.prod.yml down nginx && docker compose -f compose.prod.
 
 ## Архитектура
 
-<details>
-<summary><b>Схема развёртывания</b></summary>
+{% cut "Схема развёртывания" %}
 
 ```mermaid
 flowchart LR
@@ -159,7 +145,7 @@ flowchart LR
     api -.-> ya
 ```
 
-</details>
+{% endcut %}
 
 - **GraphHopper** работает внутри процесса сервера, внешних API маршрутизации и их лимитов нет.
 - **Redis** кэширует матрицу расстояний региона и геометрию маршрутов бригад (TTL 48 ч).
@@ -281,44 +267,40 @@ LLM для формирования текстов мы сознательно �
 | Югоцентр | 11 | 56 | 3 |
 | **Итого** | **35** | **205** | **9** |
 
-
 ### Формат файлов
 
 На каждый регион три файла в `server/src/main/resources/demo/dataset/<регион>/`. Разделитель `;`, UTF-8, время `HH:MM`, координаты WGS-84.
 
-<details>
-<summary><b><code>requests.csv</code> — заявки</b></summary>
+{% cut "requests.csv — заявки" %}
 
 | Поле | Описание | Пример |
 |---|---|---|
-| `id` | ID заявки | `74198` |
-| `address` | Адрес | `Город Москва, пр-кт.Волгоградский, д. 128 к 5` |
-| `latitude`, `longitude` | Координаты | `55.700867`, `37.782225` |
-| `duration_minutes` | Длительность, мин. Проверяется валидатором, в расчёте используется длительность типа работ | `70` |
-| `window_start`, `window_end` | Окно визита | `20:00`, `22:00` |
-| `required_vehicle` | Требуемый транспорт, необязательно | `CAR` |
-| `job_type` | Тип работ | `INSTALLATION` |
-| `required_equipment` | Требуемое оборудование, необязательно | `ROUTER` |
+| `id` | ID заявки | 74198 |
+| `address` | Адрес | Город Москва, пр-кт.Волгоградский, д. 128 к 5 |
+| `latitude`, `longitude` | Координаты | 55.700867, 37.782225 |
+| `duration_minutes` | Длительность, мин. Проверяется валидатором, в расчёте используется длительность типа работ | 70 |
+| `window_start`, `window_end` | Окно визита | 20:00, 22:00 |
+| `required_vehicle` | Требуемый транспорт, необязательно | CAR |
+| `job_type` | Тип работ | INSTALLATION |
+| `required_equipment` | Требуемое оборудование, необязательно | ROUTER |
 
-</details>
+{% endcut %}
 
-<details>
-<summary><b><code>engineers.csv</code> — бригады</b></summary>
+{% cut "engineers.csv — бригады" %}
 
 | Поле | Описание | Пример |
 |---|---|---|
-| `id`, `name` | ID и название бригады | `1`, `Бригада Соколов` |
-| `start_address` | Адрес стартовой точки | `г. Москва, ул Юных Ленинцев, д 83с 4` |
-| `start_latitude`, `start_longitude` | Координаты старта | `55.700320`, `37.747940` |
-| `shift_start`, `shift_end` | Смена | `10:00`, `22:00` |
-| `skills` | 1–3 навыка через `\|` | `LOCAL_WORK\|EMERGENCY` |
-| `vehicle` | Тип транспорта | `PEDESTRIAN` |
+| `id`, `name` | ID и название бригады | 1, Бригада Соколов |
+| `start_address` | Адрес стартовой точки | г. Москва, ул Юных Ленинцев, д 83с 4 |
+| `start_latitude`, `start_longitude` | Координаты старта | 55.700320, 37.747940 |
+| `shift_start`, `shift_end` | Смена | 10:00, 22:00 |
+| `skills` | 1–3 навыка через `\|` | LOCAL_WORK\|EMERGENCY |
+| `vehicle` | Тип транспорта | PEDESTRIAN |
 | `district` | Подрайон, необязательно. Бригада без подрайона задаёт офис региона | — |
 
-</details>
+{% endcut %}
 
-<details>
-<summary><b><code>events.csv</code> — сценарий событий</b></summary>
+{% cut "events.csv — сценарий событий" %}
 
 | Поле | Описание |
 |---|---|
@@ -328,7 +310,7 @@ LLM для формирования текстов мы сознательно �
 | `engineer_id` | ID выбывшей бригады |
 | `request_*` | Для срочной заявки — поля новой заявки |
 
-</details>
+{% endcut %}
 
 [`DatasetValidator`](server/src/main/java/stb/core/infrastructure/csv/DatasetValidator.java) перед загрузкой проверяет уникальность ID, корректность окон и смен, число навыков и то, что события ссылаются на существующие заявки и бригады.
 
@@ -343,8 +325,7 @@ LLM для формирования текстов мы сознательно �
 
 Транспорт: `CAR`, `PUBLIC_TRANSPORT`, `BICYCLE`, `PEDESTRIAN`. Оборудование: `ROUTER` (роутер), `SET_TOP_BOX` (ТВ-приставка), `SMART_SPEAKER` (умная колонка).
 
-<details>
-<summary><b>Схема базы данных</b></summary>
+{% cut "Схема базы данных" %}
 
 На схеме — основные таблицы и их ключевые поля. Справочники `vehicles`, `skills`, `job_types`, `equipment` и `request_statuses` показаны только внешними ключами с пометкой `→`, чтобы не перегружать схему. Навыки бригад и навыки, которые требует тип работ, хранятся в связующих таблицах `engineer_crew_skills` и `job_type_required_skills`.
 
@@ -433,7 +414,7 @@ erDiagram
     }
 ```
 
-</details>
+{% endcut %}
 
 ## API {#api}
 
@@ -461,8 +442,7 @@ erDiagram
 | `PUT` | `/schedules/regions/{regionId}/routes` | Применить ручное редактирование |
 | `POST` | `/schedules/reset` | Сбросить расписания и статусы заявок |
 
-<details>
-<summary><b>Пример: создать срочную заявку</b></summary>
+{% cut "Пример: создать срочную заявку" %}
 
 ```bash
 curl -X POST http://localhost:3000/api/v1/requests \
@@ -478,7 +458,7 @@ curl -X POST http://localhost:3000/api/v1/requests \
 
 `jobTypeId: 4` — «Глобальная проблема» на чистой базе с демо-набором. Без окна заявку можно выполнить в любое время дня.
 
-</details>
+{% endcut %}
 
 ## Структура репозитория
 
