@@ -62,6 +62,13 @@ services:
       retries: 10
       start_period: 5s
 
+  map-init:
+    image: curlimages/curl
+    user: root
+    volumes:
+      - ./maps:/maps
+    command: ["sh", "-c", "[ -f /maps/central-fed.osm.pbf ] || (curl -fL -o /maps/central-fed.osm.pbf.tmp https://lctbln.firsts3.ru/central-fed.osm.pbf && mv /maps/central-fed.osm.pbf.tmp /maps/central-fed.osm.pbf)"]
+
   server:
     build: ./server
     restart: always
@@ -76,8 +83,6 @@ services:
       APP_ROUTE_GRAPHCACHE: map/graph-cache
       APP_GEO_GEOCODERAPIKEY: ${GEOCODER_API_KEY}
       TZ: "Europe/Moscow"
-    ports:
-      - "8080:8080"
     networks:
       - root_network
     volumes:
@@ -86,6 +91,8 @@ services:
     env_file:
       - ./.env
     depends_on:
+      map-init:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
