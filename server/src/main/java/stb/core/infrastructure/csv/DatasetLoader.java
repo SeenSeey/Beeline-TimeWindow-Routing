@@ -111,8 +111,9 @@ public class DatasetLoader {
             }
         }
         engineerCrewRepository.saveAll(crews);
-        requestRepository.saveAll(requests);
-        requestActionAuditRepository.saveAll(requests.stream()
+        List<Request> savedRequests = requestRepository.saveAll(requests);
+        requestRepository.syncIdSequence();
+        requestActionAuditRepository.saveAll(savedRequests.stream()
                 .map(RequestActionAudit::requestCreated)
                 .toList());
 

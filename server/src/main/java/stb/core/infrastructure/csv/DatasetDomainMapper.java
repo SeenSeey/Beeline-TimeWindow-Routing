@@ -67,7 +67,7 @@ public class DatasetDomainMapper {
     public Request toRequest(RequestDto request, Region region, Map<JobType.Keyword, JobType> jobTypes,
             Map<Vehicle.Keyword, Vehicle> vehicles, Map<CsvEquipment, Equipment> equipment, RequestStatus status,
             LocalDateTime createdAt) {
-        return Request.builder()
+        Request entity = Request.builder()
                 .fullAddress(request.address())
                 .latitude(request.location().latitude())
                 .longitude(request.location().longitude())
@@ -82,6 +82,8 @@ public class DatasetDomainMapper {
                 .requiredEquipment(request.requiredEquipment() == null ? null : equipment.get(request.requiredEquipment()))
                 .createdAt(createdAt)
                 .build();
+        entity.assignId(request.id());
+        return entity;
     }
 
     private LocalDateTime deadline(RequestDto request, LocalDateTime createdAt) {

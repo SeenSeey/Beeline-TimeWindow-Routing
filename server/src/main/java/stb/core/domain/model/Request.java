@@ -114,6 +114,10 @@ public class Request extends BaseEntity implements GeopositionProvider {
         setEndTimeWindow(endTimeWindow);
     }
 
+    public void assignId(int id) {
+        setId(id);
+    }
+
     public void addVehicle(Vehicle vehicle) {
         setRequiredVehicle(vehicle);
     }
