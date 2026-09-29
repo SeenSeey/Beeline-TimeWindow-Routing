@@ -5,6 +5,7 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.jpa.domain.Specification;
@@ -49,13 +50,11 @@ public class EngineerCrewSpecification implements Specification<EngineerCrew> {
         }
 
         if (crew.skillId() != null) {
-            predicates.add(
-                    cb.equal(
-                            root.join(EngineerCrew_.SKILLS).get(Skill_.ID),
-                            crew.skillId()
-                    )
-            );
-            query.distinct(true);
+            Subquery<Integer> skillQuery = query.subquery(Integer.class);
+            Root<EngineerCrew> crewRoot = skillQuery.correlate(root);
+            skillQuery.select(cb.literal(1))
+                    .where(cb.equal(crewRoot.join(EngineerCrew_.SKILLS).get(Skill_.ID), crew.skillId()));
+            predicates.add(cb.exists(skillQuery));
         }
 
         return cb.and(predicates);
