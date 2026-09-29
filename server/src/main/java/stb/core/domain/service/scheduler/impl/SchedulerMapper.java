@@ -52,7 +52,8 @@ public class SchedulerMapper {
             engineerCrew.getVehicle().getAverageSpeedKmh(),
             engineerCrew.getVehicle().getEquipmentCapacity(),
             replanning ? toEquipmentStock(engineerCrew.getEquipment()) : null,
-            replanning && slotsCountByCrewId.containsKey(engineerCrew.getId())
+            replanning && slotsCountByCrewId.containsKey(engineerCrew.getId()),
+            replanning
         );
     }
 

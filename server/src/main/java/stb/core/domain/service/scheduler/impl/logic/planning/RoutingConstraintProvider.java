@@ -21,7 +21,9 @@ import java.util.Map;
 @Component
 public class RoutingConstraintProvider implements ConstraintProvider {
     private static final int USED_ENGINEER_SOFT_WEIGHT = 1_000_000;
-    private static final int URGENT_START_DELAY_SOFT_WEIGHT = 100;
+    private static final int URGENT_START_DELAY_SOFT_WEIGHT = 1_000;
+    private static final int URGENT_START_DELAY_MINUTES_PER_MEDIUM = 10;
+    private static final int NEWLY_USED_ENGINEER_ON_REPLANNING_MEDIUM_WEIGHT = 5_000;
     private static final int DEADLINE_WEIGHT = 1_000;
     private static final int FOREIGN_DISTRICT_SOFT_WEIGHT_PER_KM = 20_000;
     private static final double EARTH_RADIUS_KM = 6371;
@@ -39,15 +41,14 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                 hardEngineerCrewDtoMustHaveRequiredEquipment(factory),
 
                 mediumMaximizeCompletedRequests(factory),
-                mediumMinimizeUnusedEngineerCrews(factory),
+                mediumMinimizeNewlyUsedEngineerCrews(factory),
+                mediumStartUrgentRequestsAsEarlyAsPossible(factory),
 
-                softPrioritiseDeadlierRequests(factory),
                 softMinimizeUsedEngineerCrews(factory),
                 softPreferOwnDistrict(factory),
                 softMinimizeTravelDistance(factory),
                 softMinimizeTravelTime(factory),
-                softStartUrgentRequestsAsEarlyAsPossible(factory),
-                softPenalizeOverdueRequests(factory)
+                softStartUrgentRequestsAsEarlyAsPossible(factory)
         };
     }
 
@@ -246,6 +247,27 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                 );
     }
 
+    private Constraint mediumStartUrgentRequestsAsEarlyAsPossible(
+            ConstraintFactory factory
+    ) {
+        return factory
+                .forEach(RequestDto.class)
+                .filter(request ->
+                        request.isUrgent()
+                                && request.getServiceStartTime() != null
+                )
+                .penalize(
+                        HardMediumSoftScore.ONE_MEDIUM,
+                        request -> (int) Duration.between(
+                                request.getWindowStart(),
+                                request.getServiceStartTime()
+                        ).toMinutes() / URGENT_START_DELAY_MINUTES_PER_MEDIUM
+                )
+                .asConstraint(
+                        "Start urgent requests as early as possible before completing more requests"
+                );
+    }
+
     private Constraint softMinimizeUsedEngineerCrews(
             ConstraintFactory factory
     ) {
@@ -330,11 +352,23 @@ public class RoutingConstraintProvider implements ConstraintProvider {
                 );
     }
 
-    private Constraint mediumMinimizeUnusedEngineerCrews(ConstraintFactory factory){
-        return factory.forEach(EngineerCrewDto.class)
-                .penalize(HardMediumSoftScore.ONE_MEDIUM,
-                crew -> crew.isUsed()?0:5)
-                .asConstraint("Minimize unused engineer crews");
+    private Constraint mediumMinimizeNewlyUsedEngineerCrews(
+            ConstraintFactory factory
+    ) {
+        return factory
+                .forEach(EngineerCrewDto.class)
+                .filter(engineerCrewDto ->
+                        engineerCrewDto.isReplanning()
+                                && !engineerCrewDto.isUsed()
+                                && !engineerCrewDto.getRoute().isEmpty()
+                )
+                .penalize(
+                        HardMediumSoftScore.ONE_MEDIUM,
+                        engineerCrewDto -> NEWLY_USED_ENGINEER_ON_REPLANNING_MEDIUM_WEIGHT
+                )
+                .asConstraint(
+                        "Minimize engineer crews called in without requests"
+                );
     }
 
     private Constraint softPrioritiseDeadlierRequests(ConstraintFactory factory){
