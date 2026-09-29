@@ -7,8 +7,6 @@ services:
       context: ./client
       dockerfile: Dockerfile.prod
     restart: always
-    networks:
-      - bln_root_network
     depends_on:
       postgres:
         condition: service_healthy
@@ -20,7 +18,3 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-
-networks:
-  bln_root_network:
-    external: true

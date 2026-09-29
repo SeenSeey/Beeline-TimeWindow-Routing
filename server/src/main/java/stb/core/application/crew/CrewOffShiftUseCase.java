@@ -22,7 +22,6 @@ public class CrewOffShiftUseCase {
     private final EngineerCrewRepository engineerCrewRepository;
     private final EngineerCrewOffShiftRecordRepository engineerCrewOffShiftRecordRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
-    private final RequestRepository requestRepository;
     private final ScheduleSlotRepository scheduleSlotRepository;
     private final ScheduleRepository scheduleRepository;
 

@@ -46,6 +46,8 @@ public interface ScheduleSlotRepository extends JpaRepository<ScheduleSlot, Inte
             SELECT s FROM ScheduleSlot s
             WHERE s.request.assignedCrew.id = :crewId
             AND s.schedule.targetDate = :targetDate
+            AND s.schedule.status = 'CREATED'
+            AND s.request.status.keyword IN ('IDLE', 'ASSIGNED')
             ORDER BY s.startTimeWindow
             """)
     List<ScheduleSlot> findAllIncomingSlotsByTargetDateAndCrewId(LocalDate targetDate, int crewId);
