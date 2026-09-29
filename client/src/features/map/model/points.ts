@@ -1,15 +1,22 @@
 import type { FeatureCollection, Point } from "geojson";
-import { JOB_TYPES, REQUEST_STATUSES } from "@/features/requests/model/dictionaries";
+import { keywordOf } from "@/features/dictionaries/model/lookup";
+import type { DictionaryItem } from "@/features/dictionaries/types";
 import type { RequestFilters } from "@/features/requests/types";
 import type { RequestPoint } from "../types";
 
+/** the server's dictionaries the filters' ids are looked up in */
+export interface FilterDictionaries {
+  requestStatuses: DictionaryItem[];
+  jobTypes: DictionaryItem[];
+}
+
 /**
  * Same filters as the requests list, applied on the client: the map already holds every request of the region.
- * The filters carry dictionary ids, the points carry keywords.
+ * The filters carry dictionary ids, the points carry keywords: the ids are looked up in the server's dictionaries.
  */
-export function matchesFilters(p: RequestPoint, f: RequestFilters): boolean {
-  const statusKeyword = f.statusId == null ? null : REQUEST_STATUSES.find((s) => s.id === f.statusId)?.keyword;
-  const jobTypeKeyword = f.jobTypeId == null ? null : JOB_TYPES.find((j) => j.id === f.jobTypeId)?.keyword;
+export function matchesFilters(p: RequestPoint, f: RequestFilters, dictionaries: FilterDictionaries): boolean {
+  const statusKeyword = keywordOf(dictionaries.requestStatuses, f.statusId);
+  const jobTypeKeyword = keywordOf(dictionaries.jobTypes, f.jobTypeId);
   // part of the address anywhere in it, case-insensitive — as the server searches the list
   const addressPart = f.address?.trim().toLowerCase();
   const crewNamePart = f.crewName?.trim().toLowerCase();

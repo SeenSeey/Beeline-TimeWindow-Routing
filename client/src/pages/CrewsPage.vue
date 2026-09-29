@@ -19,12 +19,18 @@
 import { onMounted } from "vue";
 import CrewsBoard from "@/features/crews/components/CrewsBoard.vue";
 import { useCrewsStore } from "@/features/crews/stores/crews";
+import { useDictionariesStore } from "@/features/dictionaries/stores/dictionaries";
 
 const store = useCrewsStore();
+const dictionariesStore = useDictionariesStore();
 
 function changeLimit(limit: number | null): void {
   if (limit != null) store.setLimit(limit);
 }
 
-onMounted(() => void store.init());
+onMounted(() => {
+  void store.init();
+  // the vehicle and skill filters, and their names in the table
+  void dictionariesStore.load(["vehicles", "skills"]);
+});
 </script>

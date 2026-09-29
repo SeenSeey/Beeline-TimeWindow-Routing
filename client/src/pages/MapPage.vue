@@ -18,6 +18,7 @@
 
 <script setup lang="ts">
 import { onMounted, watch } from "vue";
+import { useDictionariesStore } from "@/features/dictionaries/stores/dictionaries";
 import MapBoard from "@/features/map/components/MapBoard.vue";
 import { useRequestPointsStore } from "@/features/map/stores/requestPoints";
 import { useRequestCreateStore } from "@/features/requests/stores/requestCreate";
@@ -27,6 +28,7 @@ import { useRegionsStore } from "@/features/timeline/stores/regions";
 const regionsStore = useRegionsStore();
 const pointsStore = useRequestPointsStore();
 const requestCreateStore = useRequestCreateStore();
+const dictionariesStore = useDictionariesStore();
 
 /** Regions first (they decide which requests to show), then that region's requests */
 async function init(): Promise<void> {
@@ -63,5 +65,9 @@ function retry(): void {
   else void init();
 }
 
-onMounted(init);
+onMounted(() => {
+  void init();
+  // the status and job type filters, matched against the points by their ids
+  void dictionariesStore.load(["request-statuses", "job-types"]);
+});
 </script>

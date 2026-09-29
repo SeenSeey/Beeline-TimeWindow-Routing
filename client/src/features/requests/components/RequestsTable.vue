@@ -60,9 +60,14 @@ import UiSortHeader from "@/components/ui/UiSortHeader.vue";
 import type { SortOrder } from "@/utils/sort";
 import { jobTypeColor, statusColor } from "../model/colors";
 import type { RequestSortField } from "../model/query";
-import { statusLabel } from "../model/dictionaries";
+import { displayNameOf } from "@/features/dictionaries/model/lookup";
+import { useDictionariesStore } from "@/features/dictionaries/stores/dictionaries";
 import { formatDateTime } from "../model/format";
 import type { RequestItem } from "../types";
+
+// the list carries the status keyword only: its name comes from the server's dictionary (the page loads it)
+const dictionaries = useDictionariesStore();
+const statusLabel = (keyword: string): string => displayNameOf(dictionaries.requestStatuses, keyword);
 
 defineProps<{
   requests: RequestItem[];

@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { ref, shallowRef } from "vue";
+import { useDictionariesStore } from "@/features/dictionaries/stores/dictionaries";
 import { createRequest, fetchRegions, toApiFailure } from "../api/requestsApi";
 import type { RegionInfo, RequestCreateBody, RequestItem } from "../types";
 
@@ -9,6 +10,7 @@ import type { RegionInfo, RequestCreateBody, RequestItem } from "../types";
  * other pages), and announces each created request in `lastCreated` for the pages to refresh.
  */
 export const useRequestCreateStore = defineStore("requests/create", () => {
+  const dictionaries = useDictionariesStore();
   const open = ref(false);
   /** the request is being created */
   const pending = ref(false);
@@ -33,6 +35,8 @@ export const useRequestCreateStore = defineStore("requests/create", () => {
     open.value = true;
     error.value = null;
     void loadRegions();
+    // the job types, vehicles and equipment the form offers, as the server has them (once per session)
+    void dictionaries.load(["job-types", "vehicles", "equipment"]);
   }
 
   function closeDialog(): void {

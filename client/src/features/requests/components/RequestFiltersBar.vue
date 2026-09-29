@@ -19,7 +19,8 @@ import { computed, onBeforeUnmount, ref, watch } from "vue";
 import UiButton from "@/components/ui/UiButton.vue";
 import UiInput from "@/components/ui/UiInput.vue";
 import UiSelect from "@/components/ui/UiSelect.vue";
-import { JOB_TYPES, REQUEST_STATUSES } from "../model/dictionaries";
+import { toOptions } from "@/features/dictionaries/model/lookup";
+import { useDictionariesStore } from "@/features/dictionaries/stores/dictionaries";
 import { hasActiveFilters } from "../model/query";
 import type { RegionInfo, RequestFilters } from "../types";
 
@@ -75,15 +76,19 @@ onBeforeUnmount(() => searchTimers.forEach(clearTimeout));
 const ANY = "any" as const;
 type Choice<T> = T | typeof ANY;
 
+// the statuses and job types as the server has them (the page loads the dictionaries)
+const dictionaries = useDictionariesStore();
+
 const CLOSED_STATUSES = ["COMPLETED", "CANCELED"];
 const statusOptions = computed(() => [
   { value: ANY, label: "Все" },
-  ...REQUEST_STATUSES.filter((s) => !props.openStatusesOnly || !CLOSED_STATUSES.includes(s.keyword)).map((s) => ({
-    value: s.id,
-    label: s.label,
-  })),
+  ...toOptions(
+    dictionaries.requestStatuses.filter(
+      (status) => !props.openStatusesOnly || !CLOSED_STATUSES.includes(status.keyword ?? ""),
+    ),
+  ),
 ]);
-const jobTypeOptions = [{ value: ANY, label: "Все" }, ...JOB_TYPES.map((j) => ({ value: j.id, label: j.label }))];
+const jobTypeOptions = computed(() => [{ value: ANY, label: "Все" }, ...toOptions(dictionaries.jobTypes)]);
 const regionOptions = computed(() => [
   { value: ANY, label: "Все" },
   ...(props.regions ?? []).map((r) => ({ value: r.id, label: r.displayName })),

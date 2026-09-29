@@ -59,8 +59,9 @@ import { useRouter } from "vue-router";
 import UiBadge from "@/components/ui/UiBadge.vue";
 import UiSortHeader from "@/components/ui/UiSortHeader.vue";
 import VehicleIcon from "@/features/timeline/components/VehicleIcon.vue";
+import { displayNameOf } from "@/features/dictionaries/model/lookup";
+import { useDictionariesStore } from "@/features/dictionaries/stores/dictionaries";
 import type { SortOrder } from "@/utils/sort";
-import { skillLabel, vehicleLabel } from "../model/dictionaries";
 import type { CrewSortField } from "../model/query";
 import type { CrewItem, SkillKeyword } from "../types";
 
@@ -80,6 +81,11 @@ const HEAD_CLASS =
   "sticky top-0 z-[1] bg-canvas px-5 py-3 text-start text-xs font-semibold tracking-wide whitespace-nowrap text-ink shadow-[inset_0_-1px_0_var(--line)]";
 
 const router = useRouter();
+
+// the list carries keywords only: their names come from the server's dictionaries (the page loads them)
+const dictionaries = useDictionariesStore();
+const vehicleLabel = (keyword: string): string => displayNameOf(dictionaries.vehicles, keyword);
+const skillLabel = (keyword: string): string => displayNameOf(dictionaries.skills, keyword);
 
 const detailsRoute = (id: number) => ({ name: "crew", params: { id } });
 

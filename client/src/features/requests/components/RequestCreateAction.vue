@@ -79,7 +79,9 @@
               :aria-invalid="!!shownErrors.jobTypeId"
             >
               <option :value="null" disabled>Выберите тип</option>
-              <option v-for="jobType in JOB_TYPES" :key="jobType.id" :value="jobType.id">{{ jobType.label }}</option>
+              <option v-for="jobType in dictionaries.jobTypes" :key="jobType.id" :value="jobType.id">
+                {{ jobType.displayName }}
+              </option>
             </select>
             <svg
               class="pointer-events-none absolute end-3 top-1/2 size-3.5 -translate-y-1/2 text-muted"
@@ -109,7 +111,9 @@
               :class="[FIELD_CLASS, 'cursor-pointer appearance-none pe-9']"
             >
               <option :value="null">Любой</option>
-              <option v-for="vehicle in VEHICLES" :key="vehicle.id" :value="vehicle.id">{{ vehicle.label }}</option>
+              <option v-for="vehicle in dictionaries.vehicles" :key="vehicle.id" :value="vehicle.id">
+                {{ vehicle.displayName }}
+              </option>
             </select>
             <svg
               class="pointer-events-none absolute end-3 top-1/2 size-3.5 -translate-y-1/2 text-muted"
@@ -124,6 +128,33 @@
               <path d="m7 15 5 5 5-5M7 9l5-5 5 5" />
             </svg>
           </div>
+        </div>
+      </div>
+
+      <!-- the equipment the crew must bring, from the server's list -->
+      <div class="grid gap-1.5">
+        <label :for="`${formId}-equipment`" class="text-sm font-medium text-ink">Оборудование</label>
+        <div class="relative">
+          <select
+            :id="`${formId}-equipment`"
+            v-model="form.equipmentId"
+            :class="[FIELD_CLASS, 'cursor-pointer appearance-none pe-9']"
+          >
+            <option :value="null">Не требуется</option>
+            <option v-for="item in dictionaries.equipment" :key="item.id" :value="item.id">{{ item.displayName }}</option>
+          </select>
+          <svg
+            class="pointer-events-none absolute end-3 top-1/2 size-3.5 -translate-y-1/2 text-muted"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m7 15 5 5 5-5M7 9l5-5 5 5" />
+          </svg>
         </div>
       </div>
 
@@ -172,9 +203,11 @@ import { computed, reactive, ref, useId, watch } from "vue";
 import UiButton from "@/components/ui/UiButton.vue";
 import UiDialog from "@/components/ui/UiDialog.vue";
 import UiDot from "@/components/ui/UiDot.vue";
-import { VEHICLES } from "@/features/crews/model/dictionaries";
-import { JOB_TYPES } from "../model/dictionaries";
+import { useDictionariesStore } from "@/features/dictionaries/stores/dictionaries";
 import type { RegionInfo, RequestCreateBody } from "../types";
+
+// the job types, vehicles and equipment as the server has them (loaded when the dialog opens)
+const dictionaries = useDictionariesStore();
 
 const props = defineProps<{
   regions: RegionInfo[];
@@ -210,6 +243,7 @@ interface FormState {
   address: string;
   jobTypeId: number | null;
   vehicleId: number | null;
+  equipmentId: number | null;
   /** "HH:mm" from the time inputs, "" when empty */
   windowStart: string;
   windowEnd: string;
@@ -220,6 +254,7 @@ const emptyForm = (): FormState => ({
   address: "",
   jobTypeId: null,
   vehicleId: null,
+  equipmentId: null,
   windowStart: "",
   windowEnd: "",
 });
@@ -238,7 +273,9 @@ watch(
   },
 );
 
-const isEmergency = computed(() => JOB_TYPES.find((jobType) => jobType.id === form.jobTypeId)?.keyword === "EMERGENCY");
+const isEmergency = computed(
+  () => dictionaries.jobTypes.find((jobType) => jobType.id === form.jobTypeId)?.keyword === "EMERGENCY",
+);
 
 // an emergency takes no time window: times entered before switching to it are dropped, not just hidden
 watch(isEmergency, (emergency) => {
@@ -271,7 +308,7 @@ function submit(): void {
     address: form.address.trim(),
     jobTypeId: form.jobTypeId as number,
     requiredVehicleId: form.vehicleId,
-    requiredEquipmentId: null,
+    requiredEquipmentId: form.equipmentId,
     // an emergency is sent without a window; the server then takes the whole day
     startTimeWindow: isEmergency.value ? null : toServerTime(form.windowStart),
     endTimeWindow: isEmergency.value ? null : toServerTime(form.windowEnd),

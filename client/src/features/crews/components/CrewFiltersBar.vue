@@ -16,7 +16,8 @@ import { computed, onBeforeUnmount, ref, watch } from "vue";
 import UiButton from "@/components/ui/UiButton.vue";
 import UiInput from "@/components/ui/UiInput.vue";
 import UiSelect from "@/components/ui/UiSelect.vue";
-import { SKILLS, VEHICLES } from "../model/dictionaries";
+import { toOptions } from "@/features/dictionaries/model/lookup";
+import { useDictionariesStore } from "@/features/dictionaries/stores/dictionaries";
 import { hasActiveFilters } from "../model/query";
 import type { CrewFilters, RegionInfo } from "../types";
 
@@ -61,9 +62,12 @@ type IdFilterKey = "regionId" | "vehicleId" | "skillId";
 
 const withAny = (options: { value: number; label: string }[]) => [{ value: ANY, label: "Все" }, ...options];
 
+// the vehicles and skills as the server has them (the page loads the dictionaries)
+const dictionaries = useDictionariesStore();
+
 const regionOptions = computed(() => withAny(props.regions.map((r) => ({ value: r.id, label: r.displayName }))));
-const vehicleOptions = withAny(VEHICLES.map((v) => ({ value: v.id, label: v.label })));
-const skillOptions = withAny(SKILLS.map((s) => ({ value: s.id, label: s.label })));
+const vehicleOptions = computed(() => withAny(toOptions(dictionaries.vehicles)));
+const skillOptions = computed(() => withAny(toOptions(dictionaries.skills)));
 
 /** Two-way binding of one id filter through the ANY sentinel */
 function idField(key: IdFilterKey) {

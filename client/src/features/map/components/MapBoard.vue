@@ -90,6 +90,7 @@
 import { computed, ref, watch } from "vue";
 import UiButton from "@/components/ui/UiButton.vue";
 import UiDot from "@/components/ui/UiDot.vue";
+import { useDictionariesStore } from "@/features/dictionaries/stores/dictionaries";
 import RequestFiltersBar from "@/features/requests/components/RequestFiltersBar.vue";
 import { EMPTY_FILTERS } from "@/features/requests/model/query";
 import type { RequestFilters } from "@/features/requests/types";
@@ -116,8 +117,15 @@ const emit = defineEmits<{
 const filters = ref<RequestFilters>({ ...EMPTY_FILTERS });
 const selectedId = ref<number | null>(null);
 
+// the filters' status and job type ids are looked up in the server's dictionaries (the page loads them)
+const dictionaries = useDictionariesStore();
+
 const points = computed(() => (props.state.kind === "ready" ? props.state.points : null));
-const visiblePoints = computed(() => (points.value ?? []).filter((p) => matchesFilters(p, filters.value)));
+const visiblePoints = computed(() =>
+  (points.value ?? []).filter((p) =>
+    matchesFilters(p, filters.value, { requestStatuses: dictionaries.requestStatuses, jobTypes: dictionaries.jobTypes }),
+  ),
+);
 const selected = computed(() => visiblePoints.value.find((p) => p.id === selectedId.value) ?? null);
 const jobTypes = computed(() => collectJobTypes((points.value ?? []).map((p) => p.jobType)));
 
