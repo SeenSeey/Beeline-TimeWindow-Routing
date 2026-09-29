@@ -68,6 +68,7 @@ public class DatasetDomainMapper {
             Map<Vehicle.Keyword, Vehicle> vehicles, Map<CsvEquipment, Equipment> equipment, RequestStatus status,
             LocalDateTime createdAt) {
         return Request.builder()
+                .id(request.id())
                 .fullAddress(request.address())
                 .latitude(request.location().latitude())
                 .longitude(request.location().longitude())

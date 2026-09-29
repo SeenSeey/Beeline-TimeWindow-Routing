@@ -13,6 +13,9 @@ import java.util.List;
 @Repository
 public interface RequestRepository extends JpaRepository<Request, Integer>, JpaSpecificationExecutor<Request> {
 
+    @Query(value = "SELECT setval('seq_requests', (SELECT MAX(id) FROM requests))", nativeQuery = true)
+    long syncIdSequence();
+
     @Query("""
             SELECT r FROM Request r
             WHERE (r.region.id = :regionId OR r.region.parentRegion.id = :regionId)

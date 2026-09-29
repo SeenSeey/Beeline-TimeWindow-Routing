@@ -18,9 +18,14 @@ import java.util.List;
 @Builder
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Request extends BaseEntity implements GeopositionProvider {
+public class Request implements GeopositionProvider {
 
     public static final Duration URGENT_START_LIMIT = Duration.ofMinutes(100);
+
+    @Id
+    @AssignedOrSequence(sequenceName = "seq_requests")
+    @Column(name = "id", nullable = false)
+    private int id;
 
     @Column(name = "full_address", nullable = false)
     private String fullAddress;
