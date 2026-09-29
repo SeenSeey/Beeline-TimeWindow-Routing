@@ -468,24 +468,6 @@ erDiagram
 | `PUT` | `/schedules/regions/{regionId}/routes` | Применить ручное редактирование |
 | `POST` | `/schedules/reset` | Сбросить расписания и статусы заявок |
 
-{% cut "Пример: создать срочную заявку" %}
-
-```bash
-curl -X POST http://localhost:3000/api/v1/requests \
-  -H 'Content-Type: application/json' \
-  -d '{
-        "regionId": 1,
-        "address": "Москва, Ленинский проспект, 70/11",
-        "jobTypeId": 4,
-        "startTimeWindow": "14:00",
-        "endTimeWindow": "16:00"
-      }'
-```
-
-`jobTypeId: 4` — «Глобальная проблема» на чистой базе с демо-набором. Без окна заявку можно выполнить в любое время дня.
-
-{% endcut %}
-
 ---
 
 ## Структура репозитория
