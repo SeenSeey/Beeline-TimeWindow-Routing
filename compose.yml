@@ -9,7 +9,7 @@ services:
       - FRONTEND_HOST=client:5173
     env_file: .env
     networks:
-      - root_network
+      - bln_root_network
     volumes:
       - ./nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
     depends_on:
@@ -36,7 +36,7 @@ services:
     volumes:
       - ./environment/postgres:/var/lib/postgresql/data
     networks:
-      - root_network
+      - bln_root_network
     env_file:
       - ./.env
     healthcheck:
@@ -54,7 +54,7 @@ services:
     volumes:
       - ./environment/redis:/data
     networks:
-      - root_network
+      - bln_root_network
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
       interval: 5s
@@ -84,7 +84,7 @@ services:
       APP_GEO_GEOCODERAPIKEY: ${GEOCODER_API_KEY}
       TZ: "Europe/Moscow"
     networks:
-      - root_network
+      - bln_root_network
     volumes:
       - ./maps:/app/map
       - ./environment/maps/graph-cache:/app/map/graph-cache
@@ -105,27 +105,6 @@ services:
       start_period: 300s
       start_interval: 5s
 
-  client:
-    build: ./client
-    restart: always
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./client:/app
-      - /app/node_modules
-    networks:
-      - root_network
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5173/ || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-
 networks:
-  root_network:
+  bln_root_network:
+    external: true
