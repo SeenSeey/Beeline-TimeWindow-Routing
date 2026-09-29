@@ -13,6 +13,27 @@ public class DevStateResetRepository {
 
     private final EntityManager entityManager;
 
+    public void clearAll() {
+        lockTables();
+
+        entityManager.createQuery("delete from RequestActionAudit").executeUpdate();
+        entityManager.createQuery("delete from EngineerCrewEquipment").executeUpdate();
+        entityManager.createQuery("delete from AlterationReason").executeUpdate();
+        entityManager.createQuery("delete from ScheduleSlot").executeUpdate();
+        entityManager.createQuery("delete from Schedule").executeUpdate();
+        entityManager.createQuery("delete from EngineerCrewOffShiftRecord").executeUpdate();
+        entityManager.createQuery("delete from Request").executeUpdate();
+        entityManager.createQuery("delete from Equipment").executeUpdate();
+        entityManager.createQuery("delete from JobType").executeUpdate();
+        entityManager.createQuery("delete from EngineerCrew").executeUpdate();
+        entityManager.createQuery("delete from Region").executeUpdate();
+        entityManager.createQuery("delete from RequestStatus").executeUpdate();
+        entityManager.createQuery("delete from Skill").executeUpdate();
+        entityManager.createQuery("delete from Vehicle").executeUpdate();
+
+        entityManager.clear();
+    }
+
     public void reset() {
         lockTables();
 
