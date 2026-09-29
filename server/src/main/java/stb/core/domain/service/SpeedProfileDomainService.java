@@ -1,23 +1,25 @@
 package stb.core.domain.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import stb.core.domain.service.scheduler.impl.logic.speed.SpeedInterval;
+import stb.core.domain.repository.TimeCoefficientRepository;
+import stb.core.domain.repository.projection.SpeedIntervalProjection;
 import stb.core.domain.service.scheduler.impl.logic.speed.SpeedProfile;
 
-import java.time.LocalTime;
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class SpeedProfileDomainService {
 
+    private final TimeCoefficientRepository timeCoefficientRepository;
+    private final Clock clock;
+
     public SpeedProfile createSpeedProfile() {
-        return new SpeedProfile(
-                List.of(new SpeedInterval(LocalTime.of(0, 0), LocalTime.of(7, 0), 1.00),
-                        new SpeedInterval(LocalTime.of(7, 0), LocalTime.of(9, 0), 0.90),
-                        new SpeedInterval(LocalTime.of(9, 0), LocalTime.of(16, 0), 1.10),
-                        new SpeedInterval(LocalTime.of(16, 0), LocalTime.of(19, 0), 0.75),
-                        new SpeedInterval(LocalTime.of(19, 0), LocalTime.MAX, 1.00)
-                )
-        );
+        LocalDateTime dateTime = LocalDateTime.now(clock);
+        List<SpeedIntervalProjection> speedIntervals = timeCoefficientRepository.findIntervals(dateTime.getMonthValue(), dateTime.getDayOfWeek().getValue());
+        return SpeedProfile.from(speedIntervals);
     }
 }

@@ -11,7 +11,9 @@ import stb.core.infrastructure.csv.dto.DatasetDto;
 import stb.core.infrastructure.csv.dto.EngineerDto;
 import stb.core.infrastructure.csv.dto.RequestDto;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 @Component
@@ -48,10 +50,33 @@ public class DatasetLoader {
     private final EngineerCrewRepository engineerCrewRepository;
     private final RequestRepository requestRepository;
     private final RequestActionAuditRepository requestActionAuditRepository;
+    private final SeasonRepository seasonRepository;
+    private final TimePeriodRepository timePeriodRepository;
     private final RegionDomainService regionDomainService;
 
     @Transactional
     public void loadDataFromCsv() {
+        if (seasonRepository.count() == 0) {
+            seasonRepository.saveAll(List.of(
+                    new Season("Spring", new BigDecimal("1.000"), 4, 5),
+                    new Season("Autumn", new BigDecimal("1.000"), 9, 10, 11),
+                    new Season("Summer", new BigDecimal("0.875"), 6, 7, 8),
+                    new Season("Winter", new BigDecimal("1.250"), 12, 1, 2, 3)
+            ));
+        }
+
+        if (timePeriodRepository.count() == 0) {
+            timePeriodRepository.saveAll(List.of(
+                    period(time(0, 0), time(6, 30), 1.0, 1.0, 1.0, 1.0, 1.0),
+                    period(time(6, 30), time(8, 0), 1.5, 1.4, 1.3, 1.2, 1.1),
+                    period(time(8, 0), time(10, 30), 2.5, 2.3, 2.2, 1.3, 1.1),
+                    period(time(10, 30), time(16, 30), 1.6, 1.6, 1.7, 1.4, 1.2),
+                    period(time(16, 30), time(20, 0), 2.6, 2.5, 3.0, 1.6, 1.3),
+                    period(time(20, 0), time(23, 0), 1.5, 1.4, 1.7, 1.3, 1.2),
+                    period(time(23, 0), time(23, 59), 1.0, 1.0, 1.0, 1.0, 1.0)
+            ));
+        }
+
         if (regionRepository.count() > 0) {
             log.info("Демо-датасет уже загружен, пропускаю");
             return;
@@ -93,6 +118,21 @@ public class DatasetLoader {
 
         log.info("Демо-датасет загружен: регионов {}, бригад {}, заявок {}",
                 REGION_DIRS.size(), crews.size(), requests.size());
+    }
+
+    private static TimePeriod period(LocalTime start, LocalTime end, double monday, double tuesdayThursday, double friday, double saturday, double sunday) {
+        TimePeriod period = new TimePeriod(start, end);
+        double[] byDay = {monday, tuesdayThursday, tuesdayThursday, tuesdayThursday, friday, saturday, sunday};
+
+        for (int i = 0; i < byDay.length; i++) {
+            period.addCoefficient(i + 1, BigDecimal.valueOf(byDay[i]));
+        }
+
+        return period;
+    }
+
+    private static LocalTime time(int hour, int minute) {
+        return LocalTime.of(hour, minute);
     }
 
     private static EngineerDto officeEngineer(DatasetDto dataset, String dir) {

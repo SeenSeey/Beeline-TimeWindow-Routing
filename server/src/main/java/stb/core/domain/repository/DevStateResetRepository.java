@@ -30,6 +30,10 @@ public class DevStateResetRepository {
         entityManager.createQuery("delete from RequestStatus").executeUpdate();
         entityManager.createQuery("delete from Skill").executeUpdate();
         entityManager.createQuery("delete from Vehicle").executeUpdate();
+        entityManager.createQuery("delete from SeasonMonth").executeUpdate();
+        entityManager.createQuery("delete from Season").executeUpdate();
+        entityManager.createQuery("delete from TimeCoefficient").executeUpdate();
+        entityManager.createQuery("delete from TimePeriod").executeUpdate();
 
         entityManager.clear();
     }

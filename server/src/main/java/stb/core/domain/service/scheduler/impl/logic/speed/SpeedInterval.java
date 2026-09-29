@@ -1,5 +1,7 @@
 package stb.core.domain.service.scheduler.impl.logic.speed;
 
+import stb.core.domain.repository.projection.SpeedIntervalProjection;
+
 import java.time.LocalTime;
 
 public record SpeedInterval(
@@ -7,6 +9,15 @@ public record SpeedInterval(
         LocalTime end,
         double coefficient
 ) {
+
+    public static SpeedInterval from(SpeedIntervalProjection projection) {
+        LocalTime start = projection.getStartTime();
+        LocalTime end = projection.getEndTime().equals(LocalTime.of(23, 59))
+                ? LocalTime.MAX
+                : projection.getEndTime();
+
+        return new SpeedInterval(start, end, projection.getCoefficient());
+    }
 
     public SpeedInterval {
         if (start == null || end == null) {

@@ -2,6 +2,7 @@ package stb.core.domain.service.scheduler.impl.logic.speed;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import stb.core.domain.repository.projection.SpeedIntervalProjection;
 
 import java.time.Duration;
 import java.time.LocalTime;
@@ -12,6 +13,10 @@ import java.util.List;
 public class SpeedProfile {
 
     private final List<SpeedInterval> intervals;
+
+    public static SpeedProfile from(List<SpeedIntervalProjection> speedIntervals) {
+        return new SpeedProfile(speedIntervals.stream().map(SpeedInterval::from).toList());
+    }
 
     public SpeedProfile(List<SpeedInterval> intervals) {
         if (intervals == null || intervals.isEmpty()) {
